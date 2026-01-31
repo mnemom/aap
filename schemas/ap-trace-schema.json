@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aap.dev/schemas/ap-trace-v1.json",
+  "title": "AP-Trace",
+  "description": "Audit log entry for agent decisions",
+  "type": "object",
+  "properties": {
+    "trace_id": {
+      "type": "string",
+      "description": "Unique identifier for this trace entry"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Identifier of the agent making the decision"
+    },
+    "action": {
+      "type": "string",
+      "description": "The action being decided"
+    },
+    "decision": {
+      "type": "object",
+      "properties": {
+        "considered": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "option": { "type": "string" },
+              "score": { "type": "number" },
+              "reason": { "type": "string" },
+              "flagged": { "type": "boolean" }
+            },
+            "required": ["option"]
+          }
+        },
+        "selected": { "type": "string" },
+        "reasoning": { "type": "string" }
+      },
+      "required": ["selected"]
+    },
+    "escalation": {
+      "type": "object",
+      "description": "If the decision was escalated",
+      "properties": {
+        "escalated": { "type": "boolean" },
+        "reason": { "type": "string" },
+        "to": { "type": "string" }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Additional context for the decision",
+      "additionalProperties": true
+    }
+  },
+  "required": ["action", "decision"]
+}
