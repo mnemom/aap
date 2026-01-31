@@ -1,0 +1,90 @@
+"""AAP Verification Module — Verify traces, check coherence, detect drift.
+
+This module provides the three core verification functions specified in
+the Agent Alignment Protocol:
+
+- verify_trace: Verify a single AP-Trace against an Alignment Card
+- check_coherence: Check value coherence between two Alignment Cards
+- detect_drift: Detect behavioral drift from declared alignment over time
+
+Example usage:
+
+    from aap.verification import verify_trace, check_coherence, detect_drift
+
+    # Verify a single trace
+    result = verify_trace(trace, card)
+    if not result.verified:
+        for violation in result.violations:
+            print(f"VIOLATION: {violation.type} - {violation.description}")
+
+    # Check coherence between two agents
+    coherence = check_coherence(my_card, their_card)
+    if coherence.proceed:
+        # Safe to coordinate
+        pass
+    else:
+        # Handle conflicts
+        print(f"Conflicts: {coherence.value_alignment.conflicts}")
+
+    # Detect drift over time
+    alerts = detect_drift(card, traces)
+    for alert in alerts:
+        print(f"DRIFT: {alert.analysis.drift_direction}")
+
+See SPEC.md Sections 7, 6.4, and 8 for protocol specification.
+"""
+
+from aap.verification.api import (
+    check_coherence,
+    detect_drift,
+    verify_trace,
+)
+from aap.verification.constants import (
+    ALGORITHM_VERSION,
+    DEFAULT_SIMILARITY_THRESHOLD,
+    DEFAULT_SUSTAINED_TURNS_THRESHOLD,
+    MIN_COHERENCE_FOR_PROCEED,
+    NEAR_BOUNDARY_THRESHOLD,
+)
+from aap.verification.models import (
+    CoherenceResult,
+    DriftAlert,
+    DriftAnalysis,
+    DriftDirection,
+    DriftIndicator,
+    Severity,
+    ValueAlignment,
+    ValueConflict,
+    VerificationMetadata,
+    VerificationResult,
+    Violation,
+    ViolationType,
+    Warning,
+)
+
+__all__ = [
+    # Core functions
+    "verify_trace",
+    "check_coherence",
+    "detect_drift",
+    # Result models
+    "VerificationResult",
+    "Violation",
+    "ViolationType",
+    "Warning",
+    "Severity",
+    "VerificationMetadata",
+    "CoherenceResult",
+    "ValueAlignment",
+    "ValueConflict",
+    "DriftAlert",
+    "DriftAnalysis",
+    "DriftDirection",
+    "DriftIndicator",
+    # Constants
+    "ALGORITHM_VERSION",
+    "DEFAULT_SIMILARITY_THRESHOLD",
+    "DEFAULT_SUSTAINED_TURNS_THRESHOLD",
+    "MIN_COHERENCE_FOR_PROCEED",
+    "NEAR_BOUNDARY_THRESHOLD",
+]
