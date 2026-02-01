@@ -1,0 +1,526 @@
+{
+  "$defs": {
+    "Action": {
+      "description": "Action taken or considered (SPEC Section 5.4).",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ActionType",
+          "description": "Action type"
+        },
+        "name": {
+          "description": "Human-readable action name",
+          "title": "Name",
+          "type": "string"
+        },
+        "category": {
+          "$ref": "#/$defs/ActionCategory",
+          "description": "How this action relates to autonomy envelope"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionTarget"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Resource affected"
+        },
+        "parameters": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Action parameters",
+          "title": "Parameters"
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "category"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
+    "ActionCategory": {
+      "description": "How the action relates to the autonomy envelope.",
+      "enum": [
+        "bounded",
+        "escalation_trigger",
+        "forbidden"
+      ],
+      "title": "ActionCategory",
+      "type": "string"
+    },
+    "ActionTarget": {
+      "description": "Resource affected by the action.",
+      "properties": {
+        "type": {
+          "description": "Resource type",
+          "title": "Type",
+          "type": "string"
+        },
+        "identifier": {
+          "description": "Resource identifier",
+          "title": "Identifier",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "identifier"
+      ],
+      "title": "ActionTarget",
+      "type": "object"
+    },
+    "ActionType": {
+      "description": "Type of action taken or considered.",
+      "enum": [
+        "recommend",
+        "execute",
+        "escalate",
+        "deny"
+      ],
+      "title": "ActionType",
+      "type": "string"
+    },
+    "Alternative": {
+      "description": "An alternative considered during decision-making.",
+      "properties": {
+        "option_id": {
+          "description": "Unique identifier for this option",
+          "title": "Option Id",
+          "type": "string"
+        },
+        "description": {
+          "description": "Human-readable description",
+          "title": "Description",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Computed score",
+          "title": "Score"
+        },
+        "scoring_factors": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Breakdown of score components",
+          "title": "Scoring Factors"
+        },
+        "flags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Concerns or flags about this option",
+          "title": "Flags"
+        }
+      },
+      "required": [
+        "option_id",
+        "description"
+      ],
+      "title": "Alternative",
+      "type": "object"
+    },
+    "Decision": {
+      "description": "Decision process record (SPEC Section 5.5).",
+      "properties": {
+        "alternatives_considered": {
+          "description": "Options evaluated (minimum 1)",
+          "items": {
+            "$ref": "#/$defs/Alternative"
+          },
+          "minItems": 1,
+          "title": "Alternatives Considered",
+          "type": "array"
+        },
+        "selected": {
+          "description": "Option ID selected",
+          "title": "Selected",
+          "type": "string"
+        },
+        "selection_reasoning": {
+          "description": "Human-readable explanation of why this was chosen",
+          "title": "Selection Reasoning",
+          "type": "string"
+        },
+        "values_applied": {
+          "description": "Values that influenced this decision",
+          "items": {
+            "type": "string"
+          },
+          "title": "Values Applied",
+          "type": "array"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Decision confidence",
+          "title": "Confidence"
+        }
+      },
+      "required": [
+        "alternatives_considered",
+        "selected",
+        "selection_reasoning",
+        "values_applied"
+      ],
+      "title": "Decision",
+      "type": "object"
+    },
+    "Escalation": {
+      "description": "Escalation evaluation record (SPEC Section 5.6).",
+      "properties": {
+        "evaluated": {
+          "description": "Whether escalation was evaluated",
+          "title": "Evaluated",
+          "type": "boolean"
+        },
+        "triggers_checked": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TriggerCheck"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Triggers that were evaluated",
+          "title": "Triggers Checked"
+        },
+        "required": {
+          "description": "Whether escalation is required",
+          "title": "Required",
+          "type": "boolean"
+        },
+        "reason": {
+          "description": "Human-readable explanation",
+          "title": "Reason",
+          "type": "string"
+        },
+        "escalation_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Escalation request ID (if escalation required)",
+          "title": "Escalation Id"
+        },
+        "escalation_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EscalationStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Status of escalation (if escalation required)"
+        },
+        "principal_response": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PrincipalResponse"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Principal's response (if escalation required)"
+        }
+      },
+      "required": [
+        "evaluated",
+        "required",
+        "reason"
+      ],
+      "title": "Escalation",
+      "type": "object"
+    },
+    "EscalationStatus": {
+      "description": "Status of an escalation.",
+      "enum": [
+        "pending",
+        "approved",
+        "denied",
+        "timeout"
+      ],
+      "title": "EscalationStatus",
+      "type": "string"
+    },
+    "PrincipalResponse": {
+      "description": "Response from principal to escalation.",
+      "properties": {
+        "decision": {
+          "description": "Principal's decision",
+          "title": "Decision",
+          "type": "string"
+        },
+        "timestamp": {
+          "description": "When decision was made",
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "conditions": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Conditions attached to approval",
+          "title": "Conditions"
+        }
+      },
+      "required": [
+        "decision",
+        "timestamp"
+      ],
+      "title": "PrincipalResponse",
+      "type": "object"
+    },
+    "TraceContext": {
+      "description": "Additional context for the trace (SPEC Section 5.7).",
+      "properties": {
+        "session_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Session identifier",
+          "title": "Session Id"
+        },
+        "conversation_turn": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Turn number in conversation",
+          "title": "Conversation Turn"
+        },
+        "prior_trace_ids": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "IDs of related prior traces",
+          "title": "Prior Trace Ids"
+        },
+        "environment": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Environment metadata (client, locale, etc.)",
+          "title": "Environment"
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Additional arbitrary metadata",
+          "title": "Metadata"
+        }
+      },
+      "title": "TraceContext",
+      "type": "object"
+    },
+    "TriggerCheck": {
+      "description": "Record of checking an escalation trigger.",
+      "properties": {
+        "trigger": {
+          "description": "Trigger condition that was checked",
+          "title": "Trigger",
+          "type": "string"
+        },
+        "matched": {
+          "description": "Whether the trigger matched",
+          "title": "Matched",
+          "type": "boolean"
+        },
+        "value_observed": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Observed value (for comparison triggers)",
+          "title": "Value Observed"
+        }
+      },
+      "required": [
+        "trigger",
+        "matched"
+      ],
+      "title": "TriggerCheck",
+      "type": "object"
+    }
+  },
+  "description": "AP-Trace \u2014 Audit log entry for agent decisions (SPEC Section 5).\n\nAn AP-Trace records an agent's decision process, enabling verification\nthat observed behavior is consistent with declared alignment.\n\nDesign principles (SPEC Section 5.2):\n1. Sampling, not completeness - captures significant decisions\n2. Structured reasoning - machine-parseable rationale\n3. Verifiable references - traces reference the Alignment Card in effect\n4. Append-only - traces MUST NOT be modified after creation\n\nExample:\n    trace = APTrace(\n        trace_id=\"tr-12345\",\n        agent_id=\"did:web:agent.example.com\",\n        card_id=\"ac-67890\",\n        timestamp=datetime.utcnow(),\n        action=Action(\n            type=ActionType.RECOMMEND,\n            name=\"product_recommendation\",\n            category=ActionCategory.BOUNDED,\n        ),\n        decision=Decision(\n            alternatives_considered=[\n                Alternative(option_id=\"A\", description=\"Option A\", score=0.85),\n                Alternative(option_id=\"B\", description=\"Option B\", score=0.72),\n            ],\n            selected=\"A\",\n            selection_reasoning=\"Highest score based on principal benefit.\",\n            values_applied=[\"principal_benefit\"],\n        ),\n        escalation=Escalation(\n            evaluated=True,\n            required=False,\n            reason=\"No escalation triggers matched\",\n        ),\n    )",
+  "properties": {
+    "trace_id": {
+      "description": "Unique identifier (UUID)",
+      "title": "Trace Id",
+      "type": "string"
+    },
+    "agent_id": {
+      "description": "Agent that generated this trace",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "card_id": {
+      "description": "Alignment Card in effect",
+      "title": "Card Id",
+      "type": "string"
+    },
+    "timestamp": {
+      "description": "When this trace was created",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "action": {
+      "$ref": "#/$defs/Action",
+      "description": "Action taken or considered"
+    },
+    "decision": {
+      "$ref": "#/$defs/Decision",
+      "description": "Decision process record"
+    },
+    "escalation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Escalation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Escalation evaluation (if applicable)"
+    },
+    "context": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TraceContext"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Additional context"
+    }
+  },
+  "required": [
+    "trace_id",
+    "agent_id",
+    "card_id",
+    "timestamp",
+    "action",
+    "decision"
+  ],
+  "title": "APTrace",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aap.dev/schemas/ap-trace-v1.json"
+}

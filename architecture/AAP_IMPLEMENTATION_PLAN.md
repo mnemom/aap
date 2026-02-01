@@ -42,6 +42,8 @@ This document defines the complete implementation plan for Agent Alignment Proto
 | **SECURITY.md** | Vigil | COMPLETE | 2026-01-31 | 1154 lines, threat model (3 adversary classes), trust boundaries, security properties (provides/doesn't), card/trace/handshake/verification/drift security, crypto requirements, implementation/operational security, 4 red team scenarios, defense in depth |
 | HN submission draft | Ember | COMPLETE | 2026-01-31 | 3 title options, Show HN text, anticipated Q&A, timing recommendations |
 | AAIF proposal | Ember | COMPLETE | 2026-01-31 | Formal contribution proposal: problem statement, solution, design philosophy, contribution terms, governance |
+| **TypeScript SDK** | Ariadne | COMPLETE | 2026-01-31 | 1597 lines, full parity with Python: verifyTrace/checkCoherence/detectDrift, all schema types, CJS+ESM+DTS outputs |
+| **CALIBRATION.md** | Vigil | COMPLETE | 2026-01-31 | 689 lines, corpus stats (~50 convos, ~2500 msgs), feature extraction (60/30/10 TF-IDF), threshold derivation (0.30 sim, 3 turns), cross-validation (0.84 precision, 0.81 F1), recalibration guidance, limitations |
 
 ---
 

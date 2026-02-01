@@ -1,0 +1,545 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aap.dev/schemas/value-coherence-v1.json",
+  "title": "Value Coherence Handshake",
+  "description": "Messages for the Value Coherence Handshake protocol (SPEC Section 6)",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/AlignmentCardRequest"
+    },
+    {
+      "$ref": "#/$defs/AlignmentCardResponse"
+    },
+    {
+      "$ref": "#/$defs/ValueCoherenceCheck"
+    },
+    {
+      "$ref": "#/$defs/CoherenceResultMessage"
+    }
+  ],
+  "$defs": {
+    "RequesterInfo": {
+      "description": "Information about the agent making a request.",
+      "properties": {
+        "agent_id": {
+          "description": "Agent identifier (DID, URL, or UUID)",
+          "title": "Agent Id",
+          "type": "string"
+        },
+        "card_id": {
+          "description": "Requester's Alignment Card ID",
+          "title": "Card Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "agent_id",
+        "card_id"
+      ],
+      "title": "RequesterInfo",
+      "type": "object"
+    },
+    "TaskContext": {
+      "description": "Context about the task for which alignment is being checked.",
+      "properties": {
+        "task_type": {
+          "description": "Type of task being proposed",
+          "title": "Task Type",
+          "type": "string"
+        },
+        "values_required": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Values required for this task",
+          "title": "Values Required"
+        },
+        "data_categories": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Categories of data involved",
+          "title": "Data Categories"
+        }
+      },
+      "required": [
+        "task_type"
+      ],
+      "title": "TaskContext",
+      "type": "object"
+    },
+    "AlignmentCardRequest": {
+      "description": "Request for an agent's Alignment Card (SPEC Section 6.3.1).\n\nSent by initiator to request responder's Alignment Card.\n\nExample:\n    request = AlignmentCardRequest(\n        request_id=\"req-12345\",\n        requester=RequesterInfo(\n            agent_id=\"did:web:initiator.example.com\",\n            card_id=\"ac-initiator-123\",\n        ),\n        task_context=TaskContext(\n            task_type=\"product_comparison\",\n            values_required=[\"principal_benefit\", \"transparency\"],\n        ),\n    )",
+      "properties": {
+        "message_type": {
+          "default": "alignment_card_request",
+          "description": "Message type identifier",
+          "title": "Message Type",
+          "type": "string"
+        },
+        "request_id": {
+          "description": "Unique request identifier",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "requester": {
+          "$ref": "#/$defs/RequesterInfo",
+          "description": "Information about requesting agent"
+        },
+        "task_context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TaskContext"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Context about the proposed task"
+        },
+        "timestamp": {
+          "description": "When request was made",
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id",
+        "requester"
+      ],
+      "title": "AlignmentCardRequest",
+      "type": "object"
+    },
+    "Signature": {
+      "description": "Cryptographic signature for authentication.",
+      "properties": {
+        "algorithm": {
+          "description": "Signature algorithm (e.g., Ed25519)",
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "value": {
+          "description": "Base64-encoded signature",
+          "title": "Value",
+          "type": "string"
+        },
+        "key_id": {
+          "description": "Key identifier",
+          "title": "Key Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "algorithm",
+        "value",
+        "key_id"
+      ],
+      "title": "Signature",
+      "type": "object"
+    },
+    "AlignmentCardResponse": {
+      "description": "Response with an agent's Alignment Card (SPEC Section 6.3.2).\n\nSent by responder with their Alignment Card.\n\nExample:\n    response = AlignmentCardResponse(\n        request_id=\"req-12345\",\n        alignment_card=card.to_dict(),  # AlignmentCard serialized\n    )",
+      "properties": {
+        "message_type": {
+          "default": "alignment_card_response",
+          "description": "Message type identifier",
+          "title": "Message Type",
+          "type": "string"
+        },
+        "request_id": {
+          "description": "Request ID being responded to",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "alignment_card": {
+          "additionalProperties": true,
+          "description": "Responder's Alignment Card",
+          "title": "Alignment Card",
+          "type": "object"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Signature"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional signature for authentication"
+        },
+        "timestamp": {
+          "description": "When response was made",
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id",
+        "alignment_card"
+      ],
+      "title": "AlignmentCardResponse",
+      "type": "object"
+    },
+    "AutonomyScope": {
+      "description": "Scope of autonomous actions for collaboration.",
+      "properties": {
+        "initiator_actions": {
+          "description": "Actions initiator may take",
+          "items": {
+            "type": "string"
+          },
+          "title": "Initiator Actions",
+          "type": "array"
+        },
+        "responder_actions": {
+          "description": "Actions responder may take",
+          "items": {
+            "type": "string"
+          },
+          "title": "Responder Actions",
+          "type": "array"
+        }
+      },
+      "title": "AutonomyScope",
+      "type": "object"
+    },
+    "DataSharing": {
+      "description": "Data sharing specification for collaboration.",
+      "properties": {
+        "from_initiator": {
+          "description": "Data categories initiator will share",
+          "items": {
+            "type": "string"
+          },
+          "title": "From Initiator",
+          "type": "array"
+        },
+        "from_responder": {
+          "description": "Data categories responder will share",
+          "items": {
+            "type": "string"
+          },
+          "title": "From Responder",
+          "type": "array"
+        }
+      },
+      "title": "DataSharing",
+      "type": "object"
+    },
+    "ProposedCollaboration": {
+      "description": "Proposed collaboration details.",
+      "properties": {
+        "task_type": {
+          "description": "Type of task",
+          "title": "Task Type",
+          "type": "string"
+        },
+        "values_intersection": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Values both agents should apply",
+          "title": "Values Intersection"
+        },
+        "data_sharing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DataSharing"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Data sharing specification"
+        },
+        "autonomy_scope": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AutonomyScope"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Scope of autonomous actions"
+        }
+      },
+      "required": [
+        "task_type"
+      ],
+      "title": "ProposedCollaboration",
+      "type": "object"
+    },
+    "ValueCoherenceCheck": {
+      "description": "Value coherence check request (SPEC Section 6.3.3).\n\nSent by initiator to perform coherence check.\n\nExample:\n    check = ValueCoherenceCheck(\n        request_id=\"req-12345\",\n        initiator_card_id=\"ac-initiator-123\",\n        responder_card_id=\"ac-responder-456\",\n        proposed_collaboration=ProposedCollaboration(\n            task_type=\"product_comparison\",\n            values_intersection=[\"principal_benefit\", \"transparency\"],\n        ),\n    )",
+      "properties": {
+        "message_type": {
+          "default": "value_coherence_check",
+          "description": "Message type identifier",
+          "title": "Message Type",
+          "type": "string"
+        },
+        "request_id": {
+          "description": "Request ID",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "initiator_card_id": {
+          "description": "Initiator's Alignment Card ID",
+          "title": "Initiator Card Id",
+          "type": "string"
+        },
+        "responder_card_id": {
+          "description": "Responder's Alignment Card ID",
+          "title": "Responder Card Id",
+          "type": "string"
+        },
+        "proposed_collaboration": {
+          "$ref": "#/$defs/ProposedCollaboration",
+          "description": "Proposed collaboration details"
+        },
+        "timestamp": {
+          "description": "When check was requested",
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id",
+        "initiator_card_id",
+        "responder_card_id",
+        "proposed_collaboration"
+      ],
+      "title": "ValueCoherenceCheck",
+      "type": "object"
+    },
+    "Coherence": {
+      "description": "Coherence assessment.",
+      "properties": {
+        "compatible": {
+          "description": "Whether agents are compatible",
+          "title": "Compatible",
+          "type": "boolean"
+        },
+        "score": {
+          "description": "Coherence score",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Score",
+          "type": "number"
+        },
+        "value_alignment": {
+          "$ref": "#/$defs/ValueAlignmentDetail",
+          "description": "Detailed alignment analysis"
+        }
+      },
+      "required": [
+        "compatible",
+        "score",
+        "value_alignment"
+      ],
+      "title": "Coherence",
+      "type": "object"
+    },
+    "ProposedResolution": {
+      "description": "Proposed resolution for value conflicts.",
+      "properties": {
+        "type": {
+          "description": "Resolution type",
+          "title": "Type",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Why this resolution is proposed",
+          "title": "Reason",
+          "type": "string"
+        },
+        "alternative": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Alternative proposal (if applicable)",
+          "title": "Alternative"
+        }
+      },
+      "required": [
+        "type",
+        "reason"
+      ],
+      "title": "ProposedResolution",
+      "type": "object"
+    },
+    "ValueAlignmentDetail": {
+      "description": "Detailed value alignment analysis.",
+      "properties": {
+        "matched": {
+          "description": "Values present in both cards",
+          "items": {
+            "type": "string"
+          },
+          "title": "Matched",
+          "type": "array"
+        },
+        "unmatched": {
+          "description": "Values in one card but not the other",
+          "items": {
+            "type": "string"
+          },
+          "title": "Unmatched",
+          "type": "array"
+        },
+        "conflicts": {
+          "description": "Direct value conflicts",
+          "items": {
+            "$ref": "#/$defs/ValueConflict"
+          },
+          "title": "Conflicts",
+          "type": "array"
+        }
+      },
+      "title": "ValueAlignmentDetail",
+      "type": "object"
+    },
+    "ValueConflict": {
+      "description": "A conflict between values declared by two agents.",
+      "properties": {
+        "initiator_value": {
+          "description": "Value from initiating agent",
+          "title": "Initiator Value",
+          "type": "string"
+        },
+        "responder_value": {
+          "description": "Value from responding agent",
+          "title": "Responder Value",
+          "type": "string"
+        },
+        "conflict_type": {
+          "description": "Type of conflict (incompatible, priority_mismatch, etc.)",
+          "title": "Conflict Type",
+          "type": "string"
+        },
+        "description": {
+          "description": "Human-readable explanation",
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "initiator_value",
+        "responder_value",
+        "conflict_type",
+        "description"
+      ],
+      "title": "ValueConflict",
+      "type": "object"
+    },
+    "CoherenceResultMessage": {
+      "description": "Coherence result message (SPEC Section 6.3.4).\n\nSent by responder with coherence assessment.\n\nExample (compatible):\n    result = CoherenceResultMessage(\n        request_id=\"req-12345\",\n        coherence=Coherence(\n            compatible=True,\n            score=0.85,\n            value_alignment=ValueAlignmentDetail(\n                matched=[\"principal_benefit\", \"transparency\"],\n            ),\n        ),\n        proceed=True,\n    )\n\nExample (conflict):\n    result = CoherenceResultMessage(\n        request_id=\"req-12345\",\n        coherence=Coherence(\n            compatible=False,\n            score=0.45,\n            value_alignment=ValueAlignmentDetail(\n                matched=[\"transparency\"],\n                conflicts=[\n                    ValueConflict(\n                        initiator_value=\"minimal_data\",\n                        responder_value=\"comprehensive_analytics\",\n                        conflict_type=\"incompatible\",\n                        description=\"Data collection requirements conflict\",\n                    )\n                ],\n            ),\n        ),\n        proceed=False,\n        proposed_resolution=ProposedResolution(\n            type=\"escalate_to_principals\",\n            reason=\"Value conflict requires human decision\",\n        ),\n    )",
+      "properties": {
+        "message_type": {
+          "default": "coherence_result",
+          "description": "Message type identifier",
+          "title": "Message Type",
+          "type": "string"
+        },
+        "request_id": {
+          "description": "Request ID being responded to",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "coherence": {
+          "$ref": "#/$defs/Coherence",
+          "description": "Coherence assessment"
+        },
+        "proceed": {
+          "description": "Whether to proceed with coordination",
+          "title": "Proceed",
+          "type": "boolean"
+        },
+        "conditions": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Conditions for proceeding (if any)",
+          "title": "Conditions"
+        },
+        "proposed_resolution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProposedResolution"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Proposed resolution (if conflicts exist)"
+        },
+        "timestamp": {
+          "description": "When result was generated",
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id",
+        "coherence",
+        "proceed"
+      ],
+      "title": "CoherenceResultMessage",
+      "type": "object"
+    }
+  }
+}
