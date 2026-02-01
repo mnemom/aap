@@ -7,6 +7,8 @@
  * @see SPEC.md Section 6 for complete specification.
  */
 
+import type { AlignmentCard } from "./alignment-card";
+
 /** Information about the agent making a request. */
 export interface RequesterInfo {
   /** Agent identifier (DID, URL, or UUID) */
@@ -56,7 +58,7 @@ export interface AlignmentCardResponse {
   /** Request ID being responded to */
   request_id: string;
   /** Responder's Alignment Card */
-  alignment_card: Record<string, unknown>;
+  alignment_card: AlignmentCard;
   /** Optional signature for authentication */
   signature?: Signature | null;
   /** When response was made (ISO 8601) */

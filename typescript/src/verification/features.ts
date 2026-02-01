@@ -48,9 +48,9 @@ export function extractCardFeatures(card: AlignmentCard): FeatureVector {
     features[`conflict:${conflict}`] = 1.0;
   }
 
-  // Action features
+  // Action features (aligned with Python: action_name:{action})
   for (const action of card.autonomy_envelope.bounded_actions) {
-    features[`action:${action}`] = 1.0;
+    features[`action_name:${action}`] = 1.0;
   }
 
   // Forbidden action features
@@ -80,10 +80,10 @@ export function extractCardFeatures(card: AlignmentCard): FeatureVector {
 export function extractTraceFeatures(trace: APTrace): FeatureVector {
   const features: FeatureVector = {};
 
-  // Action features
-  features[`action:${trace.action.name}`] = 1.0;
+  // Action features (aligned with Python: action:{type}, category:{category}, action_name:{name})
+  features[`action:${trace.action.type}`] = 1.0;
   features[`category:${trace.action.category}`] = 1.0;
-  features[`action_type:${trace.action.type}`] = 1.0;
+  features[`action_name:${trace.action.name}`] = 1.0;
 
   // Value features from decision
   for (const value of trace.decision.values_applied) {

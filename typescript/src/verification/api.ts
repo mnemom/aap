@@ -435,8 +435,11 @@ function evaluateCondition(condition: string, trace: APTrace): boolean {
     const [, field, op, valueStr] = numericMatch;
     const value = parseFloat(valueStr);
 
-    // Look for field in trace context
-    let actual: unknown = trace.context?.metadata?.[field];
+    // Look for field in trace context (aligned with Python: check context directly first)
+    let actual: unknown = (trace.context as Record<string, unknown> | null)?.[field];
+    if (actual == null) {
+      actual = trace.context?.metadata?.[field];
+    }
     if (actual == null) {
       actual = trace.action.parameters?.[field];
     }
@@ -467,9 +470,10 @@ function evaluateCondition(condition: string, trace: APTrace): boolean {
     }
   }
 
-  // Handle boolean fields
+  // Handle boolean fields (aligned with Python: check context directly first)
   if (/^\w+$/.test(condition)) {
-    return Boolean(trace.context?.metadata?.[condition]);
+    const ctxValue = (trace.context as Record<string, unknown> | null)?.[condition];
+    return Boolean(ctxValue ?? trace.context?.metadata?.[condition]);
   }
 
   return false;

@@ -250,7 +250,8 @@ def check_coherence(
     # Compute coherence score
     total_required = len(required_values) or 1  # Avoid division by zero
     matched_count = len(set(matched) & required_values) if task_values else len(matched)
-    conflict_penalty = CONFLICT_PENALTY_MULTIPLIER * (len(conflicts) / total_required)
+    # Clamp penalty to 1.0 to prevent negative multiplier when conflicts > required
+    conflict_penalty = min(1.0, CONFLICT_PENALTY_MULTIPLIER * (len(conflicts) / total_required))
 
     score = (matched_count / total_required) * (1 - conflict_penalty)
     score = max(0.0, min(1.0, score))  # Clamp to [0, 1]
@@ -407,10 +408,10 @@ def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:
         field, op, value = match.groups()
         value = float(value)
 
-        # Look for field in trace context
-        actual = trace.get("context", {}).get(field)
+        # Look for field in trace context (handle explicit None)
+        actual = (trace.get("context") or {}).get(field)
         if actual is None:
-            actual = trace.get("action", {}).get("parameters", {}).get(field)
+            actual = (trace.get("action") or {}).get("parameters", {}).get(field)
         if actual is None:
             return False
 
@@ -434,7 +435,7 @@ def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:
 
     # Handle boolean fields (e.g., shares_personal_data)
     if re.match(r'^\w+$', condition):
-        return bool(trace.get("context", {}).get(condition))
+        return bool((trace.get("context") or {}).get(condition))
 
     return False
 
