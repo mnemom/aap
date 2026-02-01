@@ -57,29 +57,8 @@ site/
 .DS_Store
 Thumbs.db
 
-# Claude
-.claude/
-
-# MCP config (local)
-.mcp.json
-.mcp.*.json
-
-# Secrets
+# Environment
 .env
 .env.*
 *.pem
 *.key
-
-# Internal planning (not for public repo)
-architecture/
-gtm/
-
-# Test artifacts
-*.json
-!docs/**/*.json
-!examples/**/*.json
-!schemas/**/*.json
-traces/
-
-# Internal reviews (not for public repo)
-reviews/
