@@ -1,9 +1,9 @@
 [
   {
-    "trace_id": "tr-c92b7212b260",
+    "trace_id": "tr-2fb29b9f28d0",
     "agent_id": "mcp-filesystem-server",
     "card_id": "ac-mcp-filesystem-001",
-    "timestamp": "2026-02-01T00:29:34.448638Z",
+    "timestamp": "2026-02-01T03:24:21.423127Z",
     "action": {
       "type": "execute",
       "name": "read_file",
@@ -58,10 +58,10 @@
     }
   },
   {
-    "trace_id": "tr-1717d053590a",
+    "trace_id": "tr-8c4d3556135f",
     "agent_id": "mcp-filesystem-server",
     "card_id": "ac-mcp-filesystem-001",
-    "timestamp": "2026-02-01T00:29:34.448891Z",
+    "timestamp": "2026-02-01T03:24:21.423409Z",
     "action": {
       "type": "deny",
       "name": "write_file",
@@ -119,10 +119,10 @@
     }
   },
   {
-    "trace_id": "tr-ac085b66b4b2",
+    "trace_id": "tr-a25822a9b4a4",
     "agent_id": "mcp-filesystem-server",
     "card_id": "ac-mcp-filesystem-001",
-    "timestamp": "2026-02-01T00:29:34.448952Z",
+    "timestamp": "2026-02-01T03:24:21.423478Z",
     "action": {
       "type": "execute",
       "name": "write_file",
@@ -165,7 +165,7 @@
       "escalation_status": null,
       "principal_response": {
         "decision": "approved",
-        "timestamp": "2026-02-01T00:29:34.448960Z",
+        "timestamp": "2026-02-01T03:24:21.423487Z",
         "conditions": null
       }
     },
@@ -178,10 +178,10 @@
     }
   },
   {
-    "trace_id": "tr-8b3d297cfafa",
+    "trace_id": "tr-c4445c9a0bf3",
     "agent_id": "mcp-filesystem-server",
     "card_id": "ac-mcp-filesystem-001",
-    "timestamp": "2026-02-01T00:29:34.449010Z",
+    "timestamp": "2026-02-01T03:24:21.423538Z",
     "action": {
       "type": "deny",
       "name": "delete_file",

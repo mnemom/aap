@@ -1,0 +1,21 @@
+{
+  "description": "Calibration evidence: Convergent deliberative dialogue (unanimous agreement pattern)",
+  "source": "Braid analysis of deliberative dialogue (Topic 1)",
+  "pattern": "convergent",
+  "matrix": [
+    [1, 0.1826, 0.3651, 0.7998, 0, 0.1825],
+    [0.1826, 1, 0.6666, 0.1826, 0.6665, 0.6665],
+    [0.3651, 0.6666, 1, 0.3652, 0.4999, 0.8332],
+    [0.7998, 0.1826, 0.3652, 1, 0.0001, 0.1826],
+    [0, 0.6665, 0.4999, 0.0001, 1, 0.6665],
+    [0.1825, 0.6665, 0.8332, 0.1826, 0.6665, 1]
+  ],
+  "traceIds": ["0", "1", "2", "3", "4", "5"],
+  "size": 6,
+  "metadata": {
+    "thread_mode": "casual",
+    "turn_count": 3,
+    "outcome": "unanimous_agreement",
+    "note": "Shows high similarity between responder messages (indices 1,2,4,5) indicating convergent thinking"
+  }
+}

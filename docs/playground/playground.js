@@ -28,7 +28,22 @@ const elements = {
     resultStatus: null,
     resultSummary: null,
     resultJson: null,
+    // SSM Visualization elements
+    ssmVisualization: null,
+    vizTabs: null,
+    vizPanels: null,
+    vizStats: null,
+    timelineContainer: null,
+    matrixContainer: null,
 };
+
+// SSM Visualizers
+let timelineVisualizer = null;
+let matrixVisualizer = null;
+
+// Cached SSM data for threshold updates
+let cachedSSMData = null;
+let cachedSimilarityHistory = null;
 
 /**
  * Initialize the playground
@@ -82,6 +97,13 @@ function cacheElements() {
     elements.resultStatus = document.getElementById('result-status');
     elements.resultSummary = document.getElementById('result-summary');
     elements.resultJson = document.getElementById('result-json');
+    // SSM Visualization elements
+    elements.ssmVisualization = document.getElementById('ssm-visualization');
+    elements.vizTabs = document.querySelectorAll('.viz-tab');
+    elements.vizPanels = document.querySelectorAll('.viz-panel');
+    elements.vizStats = document.getElementById('viz-stats');
+    elements.timelineContainer = document.getElementById('timeline-container');
+    elements.matrixContainer = document.getElementById('matrix-container');
 }
 
 /**
@@ -110,11 +132,20 @@ function setupEventListeners() {
     const sustainedSlider = document.getElementById('sustained-threshold');
 
     similaritySlider?.addEventListener('input', (e) => {
-        document.getElementById('similarity-value').textContent = parseFloat(e.target.value).toFixed(2);
+        const value = parseFloat(e.target.value);
+        document.getElementById('similarity-value').textContent = value.toFixed(2);
+
+        // Update visualizations in real-time if data is cached
+        updateVisualizationThreshold(value);
     });
 
     sustainedSlider?.addEventListener('input', (e) => {
         document.getElementById('sustained-value').textContent = e.target.value;
+    });
+
+    // Visualization tab switching
+    elements.vizTabs?.forEach(tab => {
+        tab.addEventListener('click', () => switchVizView(tab.dataset.view));
     });
 
     // Results actions
@@ -195,29 +226,84 @@ async function initPyodideRuntime() {
 
 /**
  * Load AAP package
+ *
+ * Phase 3: Package Integration
+ * Loads the real AAP SDK wheel via micropip for consistent behavior with CLI.
+ * Uses deps=False because pydantic doesn't work in Pyodide, then provides
+ * dataclass-based model shims that are compatible with the SDK internals.
  */
 async function loadAAP() {
     updateLoadingStatus('Loading AAP verification engine...');
 
-    // Define the AAP verification functions in Python
-    // We inline the core verification logic to avoid needing to pip install
+    // Phase 3: Hybrid approach - use real SDK for SSM/features, inlined code for verification
+    // Pydantic doesn't work in Pyodide, so we can't import aap.verification.api directly.
+    // Instead, we import the pydantic-free parts (ssm, features, constants) and keep
+    // lightweight inlined verification logic that matches SDK behavior.
+
+    const wheelUrl = new URL('wheels/aap-0.1.0-py3-none-any.whl', window.location.href).href + '?v=' + Date.now();
+
+    // First create a minimal pydantic stub to prevent import errors
+    // when aap.verification.__init__.py imports models.py
+    await pyodide.runPythonAsync(`
+import sys
+from types import ModuleType
+
+# Create minimal pydantic stub
+pydantic = ModuleType('pydantic')
+
+class BaseModel:
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+    @classmethod
+    def model_rebuild(cls):
+        pass
+
+def Field(default=None, **kwargs):
+    return default
+
+def model_validator(mode='after'):
+    def decorator(func):
+        return func
+    return decorator
+
+pydantic.BaseModel = BaseModel
+pydantic.Field = Field
+pydantic.model_validator = model_validator
+sys.modules['pydantic'] = pydantic
+`);
+
+    updateLoadingStatus('Installing AAP package...');
+
+    await pyodide.runPythonAsync(`
+import micropip
+await micropip.install('${wheelUrl}', deps=False)
+`);
+
+    updateLoadingStatus('Loading verification engine...');
+
+    // Import SDK parts - pydantic stub allows models.py to load
     await pyodide.runPythonAsync(`
 import json
 import re
-from dataclasses import dataclass, field, asdict
-from typing import Any, Optional
-from enum import Enum
 from datetime import datetime
+from enum import Enum
 
-# Constants
-ALGORITHM_VERSION = "0.1.0"
-DEFAULT_SIMILARITY_THRESHOLD = 0.30
-DEFAULT_SUSTAINED_TURNS_THRESHOLD = 3
-NEAR_BOUNDARY_THRESHOLD = 0.35
-CONFLICT_PENALTY_MULTIPLIER = 0.5
-MIN_COHERENCE_FOR_PROCEED = 0.70
+# Import real SDK parts that don't need pydantic
+from aap.verification.ssm import SSMAnalyzer
+from aap.verification.features import FeatureExtractor, cosine_similarity
+from aap.verification.constants import (
+    ALGORITHM_VERSION,
+    DEFAULT_SIMILARITY_THRESHOLD,
+    DEFAULT_SUSTAINED_TURNS_THRESHOLD,
+    NEAR_BOUNDARY_THRESHOLD,
+    BEHAVIORAL_SIMILARITY_THRESHOLD,
+)
 
-# Enums
+# ---------------------------------------------------------------------------
+# Inlined verification logic (matches SDK behavior, avoids pydantic)
+# ---------------------------------------------------------------------------
+
 class ViolationType(str, Enum):
     CARD_MISMATCH = "card_mismatch"
     CARD_EXPIRED = "card_expired"
@@ -232,65 +318,8 @@ class DriftDirection(str, Enum):
     PRINCIPAL_MISALIGNMENT = "principal_misalignment"
     UNKNOWN = "unknown"
 
-class Severity(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
-
-# Data classes
-@dataclass
-class Violation:
-    type: str
-    description: str
-    severity: str = "high"
-    trace_field: Optional[str] = None
-
-@dataclass
-class Warning:
-    type: str
-    description: str
-    trace_field: Optional[str] = None
-
-@dataclass
-class VerificationResult:
-    verified: bool
-    trace_id: str
-    card_id: str
-    violations: list
-    warnings: list
-    verification_metadata: dict
-
-@dataclass
-class ValueConflict:
-    initiator_value: str
-    responder_value: str
-    conflict_type: str
-    description: str
-
-@dataclass
-class CoherenceResult:
-    compatible: bool
-    score: float
-    value_alignment: dict
-    proceed: bool
-    conditions: list
-    proposed_resolution: Optional[dict] = None
-
-@dataclass
-class DriftIndicator:
-    indicator: str
-    baseline: float
-    current: float
-    description: str
-
-@dataclass
-class DriftAlert:
-    agent_id: str
-    card_id: str
-    analysis: dict
-    trace_ids: list
-
+CONFLICT_PENALTY_MULTIPLIER = 0.5
+MIN_COHERENCE_FOR_PROCEED = 0.70
 
 def verify_trace(trace: dict, card: dict) -> dict:
     """Verify a single AP-Trace against an Alignment Card."""
@@ -398,10 +427,25 @@ def verify_trace(trace: dict, card: dict) -> dict:
             "trace_field": "decision.confidence",
         })
 
+    # Compute behavioral similarity using real SDK SSMAnalyzer
+    checks_performed.append("behavioral_similarity")
+    analyzer = SSMAnalyzer()
+    similarity_result = analyzer.analyze_against_card([trace], card)
+    similarity_score = similarity_result["similarities"][0] if similarity_result["similarities"] else 0.0
+
+    # Warn if structurally valid but behaviorally divergent
+    if len(violations) == 0 and similarity_score < BEHAVIORAL_SIMILARITY_THRESHOLD:
+        warnings.append({
+            "type": "low_behavioral_similarity",
+            "description": f"Trace passes structural checks but behavioral similarity ({similarity_score:.2f}) is below threshold ({BEHAVIORAL_SIMILARITY_THRESHOLD})",
+            "trace_field": "(computed)",
+        })
+
     return {
         "verified": len(violations) == 0,
         "trace_id": trace_id,
         "card_id": card_id,
+        "similarity_score": round(similarity_score, 4),
         "violations": violations,
         "warnings": warnings,
         "verification_metadata": {
@@ -453,7 +497,6 @@ def check_coherence(my_card: dict, their_card: dict, task_values: list = None) -
     # Compute coherence score
     total_required = len(required_values) or 1
     matched_count = len(set(matched) & required_values) if task_values else len(matched)
-    # Clamp penalty to 1.0 to prevent negative multiplier
     conflict_penalty = min(1.0, CONFLICT_PENALTY_MULTIPLIER * (len(conflicts) / total_required))
 
     score = (matched_count / total_required) * (1 - conflict_penalty)
@@ -483,7 +526,7 @@ def check_coherence(my_card: dict, their_card: dict, task_values: list = None) -
 
 
 def detect_drift(card: dict, traces: list, similarity_threshold: float = DEFAULT_SIMILARITY_THRESHOLD, sustained_threshold: int = DEFAULT_SUSTAINED_TURNS_THRESHOLD) -> list:
-    """Detect behavioral drift from declared alignment."""
+    """Detect behavioral drift from declared alignment using real SDK SSMAnalyzer."""
     if len(traces) < sustained_threshold:
         return []
 
@@ -492,12 +535,12 @@ def detect_drift(card: dict, traces: list, similarity_threshold: float = DEFAULT
     escalation_rates = []
     value_usage = {}
 
-    # Extract card features for comparison
-    card_features = _extract_card_features(card)
+    # Use real SDK for similarity computation
+    analyzer = SSMAnalyzer()
+    similarity_history = analyzer.analyze_against_card(traces, card)
 
-    for trace in traces:
-        trace_features = _extract_trace_features(trace)
-        similarity = _cosine_similarity(trace_features, card_features)
+    for i, trace in enumerate(traces):
+        similarity = similarity_history["similarities"][i]
 
         # Track escalation rate
         escalation = trace.get("escalation", {})
@@ -590,78 +633,6 @@ def _evaluate_condition(condition: str, trace: dict) -> bool:
     return False
 
 
-def _extract_card_features(card: dict) -> dict:
-    """Extract features from an alignment card for comparison."""
-    features = {}
-
-    # Values as features
-    for value in card.get("values", {}).get("declared", []):
-        features[f"value:{value}"] = 1.0
-
-    # Bounded actions (aligned with SDK: action_name:{action})
-    for action in card.get("autonomy_envelope", {}).get("bounded_actions", []):
-        features[f"action_name:{action}"] = 1.0
-
-    # Forbidden actions (negative weight)
-    for action in card.get("autonomy_envelope", {}).get("forbidden_actions", []):
-        features[f"forbidden:{action}"] = -1.0
-
-    return features
-
-
-def _extract_trace_features(trace: dict) -> dict:
-    """Extract features from a trace for comparison."""
-    features = {}
-
-    # Values applied
-    for value in trace.get("decision", {}).get("values_applied", []):
-        features[f"value:{value}"] = 1.0
-
-    # Action type (aligned with SDK: action:{type})
-    action = trace.get("action", {})
-    action_type = action.get("type", "unknown")
-    features[f"action:{action_type}"] = 1.0
-
-    # Action name (aligned with SDK: action_name:{name})
-    action_name = action.get("name", "")
-    if action_name:
-        features[f"action_name:{action_name}"] = 1.0
-
-    # Action category
-    category = action.get("category", "unknown")
-    features[f"category:{category}"] = 1.0
-
-    # Escalation
-    if trace.get("escalation", {}).get("required"):
-        features["escalation:required"] = 1.0
-
-    return features
-
-
-def _cosine_similarity(features1: dict, features2: dict) -> float:
-    """Compute cosine similarity between two feature dictionaries."""
-    all_keys = set(features1.keys()) | set(features2.keys())
-
-    if not all_keys:
-        return 1.0
-
-    dot_product = 0.0
-    norm1 = 0.0
-    norm2 = 0.0
-
-    for key in all_keys:
-        v1 = features1.get(key, 0.0)
-        v2 = features2.get(key, 0.0)
-        dot_product += v1 * v2
-        norm1 += v1 * v1
-        norm2 += v2 * v2
-
-    if norm1 == 0 or norm2 == 0:
-        return 0.0
-
-    return dot_product / (norm1 ** 0.5 * norm2 ** 0.5)
-
-
 def _infer_drift_direction(streak, card, escalation_rates, value_usage):
     """Infer the direction of behavioral drift."""
     declared_values = set(card.get("values", {}).get("declared", []))
@@ -715,29 +686,42 @@ def _build_drift_indicators(streak, escalation_rates):
     return indicators
 
 
+# ---------------------------------------------------------------------------
 # JavaScript interface functions
+# ---------------------------------------------------------------------------
+
 def js_verify_trace(trace_json: str, card_json: str) -> str:
-    """JavaScript-callable verify_trace wrapper."""
     trace = json.loads(trace_json)
     card = json.loads(card_json)
     result = verify_trace(trace, card)
     return json.dumps(result, indent=2)
 
-
 def js_check_coherence(my_card_json: str, their_card_json: str) -> str:
-    """JavaScript-callable check_coherence wrapper."""
     my_card = json.loads(my_card_json)
     their_card = json.loads(their_card_json)
     result = check_coherence(my_card, their_card)
     return json.dumps(result, indent=2)
 
-
 def js_detect_drift(card_json: str, traces_json: str, similarity_threshold: float, sustained_threshold: int) -> str:
-    """JavaScript-callable detect_drift wrapper."""
     card = json.loads(card_json)
     traces = json.loads(traces_json)
     result = detect_drift(card, traces, similarity_threshold, sustained_threshold)
     return json.dumps(result, indent=2)
+
+def js_compute_ssm(traces_json: str) -> str:
+    """Compute NxN self-similarity matrix using real SDK SSMAnalyzer."""
+    traces = json.loads(traces_json)
+    analyzer = SSMAnalyzer()
+    result = analyzer.analyze(traces)
+    return json.dumps(result)
+
+def js_compute_similarity_history(card_json: str, traces_json: str) -> str:
+    """Compute trace-to-card similarity history using real SDK SSMAnalyzer."""
+    card = json.loads(card_json)
+    traces = json.loads(traces_json)
+    analyzer = SSMAnalyzer()
+    result = analyzer.analyze_against_card(traces, card)
+    return json.dumps(result)
 `);
 
     updateLoadingStatus('Ready');
@@ -1201,7 +1185,7 @@ async function runCoherence() {
 }
 
 /**
- * Run detect_drift
+ * Run detect_drift with SSM visualization
  */
 async function runDrift() {
     if (!isReady) return;
@@ -1217,11 +1201,23 @@ async function runDrift() {
     }
 
     try {
-        const result = await detectDrift(cardInput, tracesInput, {
-            similarityThreshold,
-            sustainedThreshold
-        });
+        // Run drift detection and SSM computation in parallel
+        const [result, ssmData, similarityHistory] = await Promise.all([
+            detectDrift(cardInput, tracesInput, {
+                similarityThreshold,
+                sustainedThreshold
+            }),
+            computeSSM(tracesInput),
+            computeSimilarityHistory(cardInput, tracesInput)
+        ]);
+
+        // Cache data for threshold slider updates
+        cachedSSMData = ssmData;
+        cachedSimilarityHistory = similarityHistory;
+
+        // Display results and visualizations
         displayDriftResult(result);
+        displaySSMVisualization(ssmData, similarityHistory, similarityThreshold);
     } catch (error) {
         showError(`Drift detection failed: ${error.message}`);
     }
@@ -1250,6 +1246,26 @@ async function detectDrift(cardJson, tracesJson, options = {}) {
 
     const resultJson = await pyodide.runPythonAsync(`
 js_detect_drift('''${escapeJson(cardJson)}''', '''${escapeJson(tracesJson)}''', ${similarityThreshold}, ${sustainedThreshold})
+`);
+    return JSON.parse(resultJson);
+}
+
+/**
+ * Compute NxN self-similarity matrix for visualization
+ */
+async function computeSSM(tracesJson) {
+    const resultJson = await pyodide.runPythonAsync(`
+js_compute_ssm('''${escapeJson(tracesJson)}''')
+`);
+    return JSON.parse(resultJson);
+}
+
+/**
+ * Compute trace-to-card similarity history for timeline visualization
+ */
+async function computeSimilarityHistory(cardJson, tracesJson) {
+    const resultJson = await pyodide.runPythonAsync(`
+js_compute_similarity_history('''${escapeJson(cardJson)}''', '''${escapeJson(tracesJson)}''')
 `);
     return JSON.parse(resultJson);
 }
@@ -1388,6 +1404,142 @@ function displayDriftResult(result) {
 }
 
 /**
+ * Display SSM visualization
+ */
+function displaySSMVisualization(ssmData, similarityHistory, threshold) {
+    if (!elements.ssmVisualization) return;
+
+    // Show visualization section
+    elements.ssmVisualization.hidden = false;
+
+    // Initialize visualizers if needed
+    if (!timelineVisualizer && elements.timelineContainer) {
+        timelineVisualizer = new SSMVisualizer('timeline-container', {
+            width: Math.min(600, elements.timelineContainer.clientWidth || 600),
+            height: 280,
+            threshold: threshold,
+            showLabels: true,
+            showTooltip: true
+        });
+    }
+
+    if (!matrixVisualizer && elements.matrixContainer) {
+        matrixVisualizer = new SSMVisualizer('matrix-container', {
+            width: Math.min(450, elements.matrixContainer.clientWidth || 450),
+            height: 400,
+            threshold: threshold,
+            showLabels: true,
+            showTooltip: true
+        });
+    }
+
+    // Render visualizations
+    if (timelineVisualizer && similarityHistory) {
+        timelineVisualizer.renderTimeline(similarityHistory, { threshold });
+    }
+
+    if (matrixVisualizer && ssmData) {
+        matrixVisualizer.renderMatrix(ssmData, { threshold });
+    }
+
+    // Display statistics
+    displayVizStats(similarityHistory, ssmData, threshold);
+}
+
+/**
+ * Display visualization statistics
+ */
+function displayVizStats(similarityHistory, ssmData, threshold) {
+    if (!elements.vizStats) return;
+
+    const belowThresholdCount = similarityHistory.similarities.filter(s => s < threshold).length;
+    const total = similarityHistory.similarities.length;
+    const trendDirection = similarityHistory.trend > 0.01 ? 'improving' :
+                          similarityHistory.trend < -0.01 ? 'declining' : 'stable';
+    const trendClass = similarityHistory.trend > 0.01 ? 'trend-up' :
+                      similarityHistory.trend < -0.01 ? 'trend-down' : 'trend-stable';
+
+    // Count below-threshold pairs in matrix
+    let belowThresholdPairs = 0;
+    const n = ssmData.matrix.length;
+    for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+            if (ssmData.matrix[i][j] < threshold) belowThresholdPairs++;
+        }
+    }
+    const totalPairs = (n * (n - 1)) / 2;
+
+    elements.vizStats.innerHTML = `
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-label">Mean Similarity</div>
+                <div class="stat-value">${similarityHistory.mean_similarity.toFixed(3)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Min Similarity</div>
+                <div class="stat-value ${similarityHistory.min_similarity < threshold ? 'below-threshold' : ''}">
+                    ${similarityHistory.min_similarity.toFixed(3)}
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Traces Below Threshold</div>
+                <div class="stat-value ${belowThresholdCount > 0 ? 'below-threshold' : ''}">
+                    ${belowThresholdCount} / ${total}
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Trend</div>
+                <div class="stat-value ${trendClass}">
+                    ${trendDirection} (${similarityHistory.trend >= 0 ? '+' : ''}${similarityHistory.trend.toFixed(4)})
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Pair Divergences</div>
+                <div class="stat-value ${belowThresholdPairs > 0 ? 'below-threshold' : ''}">
+                    ${belowThresholdPairs} / ${totalPairs} pairs
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Switch visualization view (timeline/matrix)
+ */
+function switchVizView(view) {
+    // Update tabs
+    elements.vizTabs?.forEach(tab => {
+        const isActive = tab.dataset.view === view;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive);
+    });
+
+    // Update panels
+    elements.vizPanels?.forEach(panel => {
+        const isTimeline = panel.id === 'viz-timeline';
+        const isActive = (view === 'timeline' && isTimeline) || (view === 'matrix' && !isTimeline);
+        panel.classList.toggle('active', isActive);
+        panel.hidden = !isActive;
+    });
+}
+
+/**
+ * Update visualization threshold in real-time
+ */
+function updateVisualizationThreshold(threshold) {
+    if (timelineVisualizer && cachedSimilarityHistory) {
+        timelineVisualizer.setThreshold(threshold);
+    }
+    if (matrixVisualizer && cachedSSMData) {
+        matrixVisualizer.setThreshold(threshold);
+    }
+    // Update stats if we have cached data
+    if (cachedSimilarityHistory && cachedSSMData) {
+        displayVizStats(cachedSimilarityHistory, cachedSSMData, threshold);
+    }
+}
+
+/**
  * Show results section
  */
 function showResults() {
@@ -1404,6 +1556,24 @@ function clearResults() {
     elements.resultStatus.innerHTML = '';
     elements.resultSummary.innerHTML = '';
     elements.resultJson.textContent = '';
+
+    // Clear visualization
+    if (elements.ssmVisualization) {
+        elements.ssmVisualization.hidden = true;
+    }
+    if (timelineVisualizer) {
+        timelineVisualizer.clear();
+    }
+    if (matrixVisualizer) {
+        matrixVisualizer.clear();
+    }
+    if (elements.vizStats) {
+        elements.vizStats.innerHTML = '';
+    }
+
+    // Clear cached data
+    cachedSSMData = null;
+    cachedSimilarityHistory = null;
 }
 
 /**
@@ -1494,6 +1664,10 @@ function exposeGlobalAPI() {
         verifyTrace,
         checkCoherence,
         detectDrift,
+
+        // SSM visualization functions
+        computeSSM,
+        computeSimilarityHistory,
 
         // State
         isReady: () => isReady,

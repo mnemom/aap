@@ -25,6 +25,10 @@ DEFAULT_SUSTAINED_TURNS_THRESHOLD: int = 3
 # Score below which an action is flagged as "near boundary" warning
 NEAR_BOUNDARY_THRESHOLD: float = 0.35
 
+# Warn when behavioral similarity is below this threshold even if structural checks pass.
+# This catches semantically divergent behavior that passes schema validation.
+BEHAVIORAL_SIMILARITY_THRESHOLD: float = 0.50
+
 # Coherence Scoring
 # -----------------
 # Minimum coherence score for automatic "proceed" recommendation

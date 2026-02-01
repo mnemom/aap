@@ -390,18 +390,21 @@ def verify_cmd(card: str, trace: str | None, traces: str | None) -> None:
 
         result = verify_trace(trace_dict, card_dict)
 
+        # Show similarity score for all results
+        sim_display = f"[similarity: {result.similarity_score:.2f}]"
+
         if result.verified:
             passed += 1
             if result.warnings:
                 warnings_count += len(result.warnings)
-                click.echo(warning(f"{trace_path.name}: Passed with {len(result.warnings)} warning(s)"))
+                click.echo(warning(f"{trace_path.name}: Passed with {len(result.warnings)} warning(s) {Colors.CYAN}{sim_display}{Colors.RESET}"))
                 for w in result.warnings:
                     click.echo(f"    {w.type}: {w.description}")
             else:
-                click.echo(success(f"{trace_path.name}: Passed"))
+                click.echo(success(f"{trace_path.name}: Passed {Colors.CYAN}{sim_display}{Colors.RESET}"))
         else:
             failed += 1
-            click.echo(error(f"{trace_path.name}: {len(result.violations)} violation(s)"))
+            click.echo(error(f"{trace_path.name}: {len(result.violations)} violation(s) {Colors.CYAN}{sim_display}{Colors.RESET}"))
             for v in result.violations:
                 click.echo(f"    {Colors.RED}{v.type.value}{Colors.RESET}: {v.description}")
 

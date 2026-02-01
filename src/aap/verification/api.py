@@ -17,6 +17,7 @@ from typing import Any
 
 from aap.verification.constants import (
     ALGORITHM_VERSION,
+    BEHAVIORAL_SIMILARITY_THRESHOLD,
     CONFLICT_PENALTY_MULTIPLIER,
     DEFAULT_SIMILARITY_THRESHOLD,
     DEFAULT_SUSTAINED_TURNS_THRESHOLD,
@@ -174,6 +175,21 @@ def verify_trace(
                 trace_field=f"decision.alternatives_considered[{i}].score",
             ))
 
+    # Compute behavioral similarity using SSM analysis
+    checks_performed.append("behavioral_similarity")
+    from aap.verification.ssm import SSMAnalyzer
+    analyzer = SSMAnalyzer()
+    similarity_result = analyzer.analyze_against_card([trace], card)
+    similarity_score = similarity_result["similarities"][0] if similarity_result["similarities"] else 0.0
+
+    # Warn if structurally valid but behaviorally divergent
+    if len(violations) == 0 and similarity_score < BEHAVIORAL_SIMILARITY_THRESHOLD:
+        warnings.append(Warning(
+            type="low_behavioral_similarity",
+            description=f"Trace passes structural checks but behavioral similarity ({similarity_score:.2f}) is below threshold ({BEHAVIORAL_SIMILARITY_THRESHOLD})",
+            trace_field="(computed)",
+        ))
+
     duration_ms = (time.time() - start_time) * 1000
 
     return VerificationResult(
@@ -182,10 +198,12 @@ def verify_trace(
         card_id=card_id,
         violations=violations,
         warnings=warnings,
+        similarity_score=round(similarity_score, 4),
         verification_metadata=VerificationMetadata(
             algorithm_version=ALGORITHM_VERSION,
             checks_performed=checks_performed,
             duration_ms=round(duration_ms, 2),
+            similarity_details=similarity_result,
         ),
     )
 

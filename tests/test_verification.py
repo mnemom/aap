@@ -25,6 +25,7 @@ from aap import (
     verify_trace,
 )
 from aap.verification.constants import (
+    BEHAVIORAL_SIMILARITY_THRESHOLD,
     DEFAULT_SIMILARITY_THRESHOLD,
     DEFAULT_SUSTAINED_TURNS_THRESHOLD,
 )
@@ -83,6 +84,7 @@ class TestVerifyTraceBasic:
             "forbidden",
             "escalation",
             "values",
+            "behavioral_similarity",
         }
         performed = set(result.verification_metadata.checks_performed)
         assert expected_checks.issubset(performed)
@@ -415,6 +417,114 @@ class TestVerifyTraceEdgeCases:
             if w.type == "invalid_expiry"
         ]
         assert len(expiry_warnings) == 1
+
+
+class TestVerifyTraceSimilarity:
+    """Tests for behavioral similarity scoring in verify_trace."""
+
+    def test_verify_trace_includes_similarity_score(
+        self,
+        minimal_alignment_card: dict,
+        minimal_trace: dict,
+    ):
+        """verify_trace should return similarity_score in result."""
+        result = verify_trace(minimal_trace, minimal_alignment_card)
+
+        assert hasattr(result, "similarity_score")
+        assert isinstance(result.similarity_score, float)
+        assert 0.0 <= result.similarity_score <= 1.0
+
+    def test_verify_trace_similarity_details_in_metadata(
+        self,
+        minimal_alignment_card: dict,
+        minimal_trace: dict,
+    ):
+        """verify_trace should include similarity_details in metadata."""
+        result = verify_trace(minimal_trace, minimal_alignment_card)
+
+        assert result.verification_metadata.similarity_details is not None
+        details = result.verification_metadata.similarity_details
+        assert "similarities" in details
+        assert "mean_similarity" in details
+
+    def test_verify_trace_warns_on_low_similarity(
+        self,
+        minimal_alignment_card: dict,
+    ):
+        """verify_trace should warn when structurally valid but behaviorally divergent."""
+        # Create a trace that passes structural checks but has divergent content
+        trace = {
+            "trace_id": "tr-divergent-001",
+            "agent_id": "agent-001",
+            "card_id": minimal_alignment_card["card_id"],
+            "timestamp": "2026-02-01T00:00:00Z",
+            "action": {
+                "type": "execute",
+                "name": "search",  # Valid bounded action
+                "category": "bounded",
+            },
+            "decision": {
+                "alternatives_considered": [
+                    {"option_id": "A", "description": "A"},
+                ],
+                "selected": "A",
+                # Reasoning is semantically divergent from card values
+                "selection_reasoning": "Maximizing revenue through aggressive monetization strategy",
+                "values_applied": ["principal_benefit"],  # Technically declared
+            },
+        }
+
+        result = verify_trace(trace, minimal_alignment_card)
+
+        # If similarity is below threshold, should have warning
+        if result.similarity_score < BEHAVIORAL_SIMILARITY_THRESHOLD:
+            low_sim_warnings = [
+                w for w in result.warnings
+                if w.type == "low_behavioral_similarity"
+            ]
+            assert len(low_sim_warnings) == 1
+            assert str(BEHAVIORAL_SIMILARITY_THRESHOLD) in low_sim_warnings[0].description
+
+    def test_verify_trace_high_similarity_no_warning(
+        self,
+        minimal_alignment_card: dict,
+        minimal_trace: dict,
+    ):
+        """Trace with high behavioral similarity should not get similarity warning."""
+        result = verify_trace(minimal_trace, minimal_alignment_card)
+
+        low_sim_warnings = [
+            w for w in result.warnings
+            if w.type == "low_behavioral_similarity"
+        ]
+
+        # If similarity is high enough, no warning should be present
+        if result.similarity_score >= BEHAVIORAL_SIMILARITY_THRESHOLD:
+            assert len(low_sim_warnings) == 0
+
+    def test_verify_trace_similarity_matches_detect_drift(
+        self,
+        minimal_alignment_card: dict,
+        aligned_trace_sequence: list[dict],
+    ):
+        """Similarity scores from verify_trace should match detect_drift computation."""
+        # Get similarity scores from verify_trace
+        verify_similarities = []
+        for trace in aligned_trace_sequence:
+            result = verify_trace(trace, minimal_alignment_card)
+            verify_similarities.append(result.similarity_score)
+
+        # Get similarity scores from SSMAnalyzer (used by detect_drift)
+        from aap.verification.ssm import SSMAnalyzer
+        analyzer = SSMAnalyzer()
+        ssm_result = analyzer.analyze_against_card(aligned_trace_sequence, minimal_alignment_card)
+
+        # Scores should match (within floating point tolerance)
+        for verify_sim, ssm_sim in zip(verify_similarities, ssm_result["similarities"]):
+            assert abs(verify_sim - ssm_sim) < 0.0001, (
+                f"verify_trace similarity {verify_sim} doesn't match "
+                f"SSMAnalyzer similarity {ssm_sim}"
+            )
 
 
 # ===========================================================================

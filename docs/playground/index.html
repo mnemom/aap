@@ -35,7 +35,9 @@
             "Verify AP-Trace against Alignment Card",
             "Check value coherence between agents",
             "Detect behavioral drift over time",
-            "Adjustable similarity thresholds",
+            "SSM heatmap visualization of trace patterns",
+            "Interactive similarity timeline charts",
+            "Adjustable similarity thresholds with live preview",
             "Pre-loaded examples for learning"
         ],
         "softwareHelp": {
@@ -49,6 +51,9 @@
 
     <!-- Pyodide for Python-in-browser -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+
+    <!-- SSM Visualization module -->
+    <script src="ssm-viz.js"></script>
 </head>
 <body>
     <!-- Skip link for accessibility -->
@@ -307,6 +312,66 @@
                         <span class="btn-icon" aria-hidden="true">&#x25B6;</span>
                         Detect Drift
                     </button>
+                </div>
+
+                <!-- SSM Visualization Section -->
+                <div id="ssm-visualization" class="ssm-visualization" hidden>
+                    <div class="viz-header">
+                        <h3>Behavioral Pattern Analysis</h3>
+                        <div class="viz-toggle" role="tablist" aria-label="Visualization view toggle">
+                            <button role="tab"
+                                    id="viz-tab-timeline"
+                                    aria-selected="true"
+                                    aria-controls="viz-timeline"
+                                    class="viz-tab active"
+                                    data-view="timeline">
+                                Timeline
+                            </button>
+                            <button role="tab"
+                                    id="viz-tab-matrix"
+                                    aria-selected="false"
+                                    aria-controls="viz-matrix"
+                                    class="viz-tab"
+                                    data-view="matrix">
+                                Matrix
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="viz-panels">
+                        <!-- Timeline visualization -->
+                        <div id="viz-timeline"
+                             role="tabpanel"
+                             aria-labelledby="viz-tab-timeline"
+                             class="viz-panel active">
+                            <div id="timeline-container" class="viz-container">
+                                <!-- SSMVisualizer will render here -->
+                            </div>
+                            <p class="viz-caption">
+                                Trace-to-card similarity over time. Red bars indicate below-threshold similarity.
+                                Dashed lines show threshold and mean values.
+                            </p>
+                        </div>
+
+                        <!-- Matrix visualization -->
+                        <div id="viz-matrix"
+                             role="tabpanel"
+                             aria-labelledby="viz-tab-matrix"
+                             class="viz-panel"
+                             hidden>
+                            <div id="matrix-container" class="viz-container">
+                                <!-- SSMVisualizer will render here -->
+                            </div>
+                            <p class="viz-caption">
+                                Self-similarity matrix showing pairwise trace similarity.
+                                Red borders indicate below-threshold pairs.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="viz-stats" id="viz-stats">
+                        <!-- Statistics populated by JavaScript -->
+                    </div>
                 </div>
             </div>
         </section>

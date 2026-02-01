@@ -101,6 +101,9 @@ class VerificationMetadata(BaseModel):
     duration_ms: float | None = Field(
         None, description="Time taken to perform verification in milliseconds"
     )
+    similarity_details: dict[str, Any] | None = Field(
+        None, description="SSM analysis details when behavioral similarity is computed"
+    )
 
 
 class VerificationResult(BaseModel):
@@ -120,6 +123,9 @@ class VerificationResult(BaseModel):
     )
     warnings: list[Warning] = Field(
         default_factory=list, description="List of non-critical warnings"
+    )
+    similarity_score: float = Field(
+        ..., description="Behavioral similarity to Alignment Card (0.0-1.0)"
     )
     verification_metadata: VerificationMetadata = Field(
         ..., description="Metadata about the verification process"

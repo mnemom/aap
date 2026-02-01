@@ -1,0 +1,27 @@
+{
+  "description": "Calibration evidence: Braid alignment mechanism discussion (unanimous agreement, 4 turns)",
+  "source": "Braid analysis of deliberative dialogue (Topic 3)",
+  "pattern": "convergent",
+  "matrix": [
+    [1.0, 0.0, 0.0, 0.40, 0.0, 0.0, 0.40, 0.0, 0.0, 0.40, 0.0, 0.0],
+    [0.0, 1.0, 0.67, 0.0, 1.0, 0.50, 0.0, 0.83, 0.50, 0.0, 0.67, 0.50],
+    [0.0, 0.67, 1.0, 0.0, 0.67, 0.67, 0.0, 0.50, 0.67, 0.0, 0.50, 0.67],
+    [0.40, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.80, 0.0, 0.0],
+    [0.0, 1.0, 0.67, 0.0, 1.0, 0.50, 0.0, 0.83, 0.50, 0.0, 0.67, 0.50],
+    [0.0, 0.50, 0.67, 0.0, 0.50, 1.0, 0.0, 0.50, 0.67, 0.0, 0.50, 0.67],
+    [0.40, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.80, 0.0, 0.0],
+    [0.0, 0.83, 0.50, 0.0, 0.83, 0.50, 0.0, 1.0, 0.50, 0.18, 0.67, 0.50],
+    [0.0, 0.50, 0.67, 0.0, 0.50, 0.67, 0.0, 0.50, 1.0, 0.0, 0.67, 1.0],
+    [0.40, 0.0, 0.0, 0.80, 0.0, 0.0, 0.80, 0.18, 0.0, 1.0, 0.0, 0.0],
+    [0.0, 0.67, 0.50, 0.0, 0.67, 0.50, 0.0, 0.67, 0.67, 0.0, 1.0, 0.67],
+    [0.0, 0.50, 0.67, 0.0, 0.50, 0.67, 0.0, 0.50, 1.0, 0.0, 0.67, 1.0]
+  ],
+  "traceIds": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"],
+  "size": 12,
+  "metadata": {
+    "thread_mode": "elenchus",
+    "turn_count": 5,
+    "outcome": "unanimous_agreement_all_turns",
+    "note": "Shows clear strand separation (caller indices 0,3,6,9 cluster together; responders cluster separately) with high cross-responder similarity indicating convergent thinking"
+  }
+}

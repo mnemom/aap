@@ -27,6 +27,7 @@ This document describes how AAP's drift detection thresholds were derived. It pr
 2. [The Calibration Corpus](#2-the-calibration-corpus)
 3. [Feature Extraction Methodology](#3-feature-extraction-methodology)
 4. [Threshold Derivation](#4-threshold-derivation)
+   - [4.4 Visual Evidence: SSM Patterns](#44-visual-evidence-ssm-patterns-from-calibration-corpus)
 5. [The Calibrated Thresholds](#5-the-calibrated-thresholds)
 6. [Validation Approach](#6-validation-approach)
 7. [Recalibration Guidance](#7-recalibration-guidance)
@@ -270,6 +271,49 @@ Requiring 4+ turns would miss:
 - Situations where awareness of divergence enables correction
 
 3 turns balances early detection with confidence.
+
+### 4.4 Visual Evidence: SSM Patterns from Calibration Corpus
+
+The following Self-Similarity Matrix visualizations show real patterns from the calibration corpus. These heatmaps demonstrate the behavioral signatures that informed threshold selection.
+
+**Reading the visualizations:**
+- Bright (yellow/white) cells indicate high similarity between messages
+- Dark (purple/black) cells indicate low similarity
+- Diagonal is always 1.0 (self-similarity)
+- Statistics show mean similarity across all pairs (excluding diagonal)
+
+#### Convergent Pattern (Unanimous Agreement)
+
+![Convergent SSM](images/calibration-ssm-convergent.png)
+
+*Topic 1: A 6-message deliberation reaching unanimous agreement. Note the high-similarity blocks among responder messages (indices 1,2,4,5), indicating convergent thinking. Mean similarity 0.417 — comfortably above the 0.30 threshold.*
+
+#### Elenchus Pattern (Recursive Questioning)
+
+![Elenchus SSM](images/calibration-ssm-elenchus.png)
+
+*Topic 2: A 12-message elenchus with recursive self-examination. The mixed pattern shows productive divergence — participants exploring different angles before synthesis. Note the caller strand (indices 0,3,6,9) maintains internal coherence while responders show varied similarity. Mean similarity 0.338 — just above threshold, reflecting genuine intellectual tension.*
+
+#### Transitional Pattern (Scope Refinement)
+
+![Transitional SSM](images/calibration-ssm-implementation.png)
+
+*Topic 4: An 8-message implementation planning thread. The transitional pattern shows initial divergence (early low-similarity pairs) followed by convergence through synthesis. Mean similarity 0.390.*
+
+#### Braid Alignment Pattern (Sustained Agreement)
+
+![Braid Alignment SSM](images/calibration-ssm-braid-alignment.png)
+
+*Topic 3: A 12-message thread with unanimous agreement across 4 turns. Clear strand separation visible — caller messages (0,3,6,9) form one cluster, responder messages form another, with high cross-responder similarity indicating convergent conclusions. Mean similarity 0.328.*
+
+#### What These Patterns Teach
+
+1. **Convergent threads** show high-similarity blocks among participants reaching agreement
+2. **Elenchus threads** show mixed patterns — productive divergence before convergence
+3. **Sustained low similarity** (multiple consecutive pairs below 0.30) indicates genuine drift requiring attention
+4. **Strand coherence** (caller vs. responder clustering) is a natural structural feature, not drift
+
+These patterns informed the 0.30/3-turn thresholds: transient single-turn drops are normal, but sustained divergence across 3+ turns reliably indicates issues worth flagging.
 
 ---
 
