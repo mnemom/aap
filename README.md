@@ -243,7 +243,7 @@ for alert in alerts:
 
 ## Try It
 
-**[Interactive Playground](docs/playground/)** — Verify traces in your browser with SSM visualization.
+**[Interactive Playground](https://mnemom.github.io/aap/playground/)** — Verify traces in your browser with SSM visualization.
 
 - Paste your Alignment Card and AP-Trace
 - See verification results with similarity scoring
