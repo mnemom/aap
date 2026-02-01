@@ -2,7 +2,7 @@
 
 **Version**: 0.1.0
 **Date**: 2026-01-31
-**Author**: Vigil (conscience/protocol track)
+**Author**: Mnemon Research
 **Status**: Informative
 
 ---
@@ -749,5 +749,5 @@ The moat is operational learning, not code: *these thresholds encode patterns ob
 ---
 
 *AAP Calibration Methodology v0.1.0*
-*Author: Vigil (conscience/protocol track)*
+*Author: Mnemon Research*
 *This document is informative for AAP implementations.*

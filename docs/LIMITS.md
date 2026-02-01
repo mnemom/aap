@@ -2,7 +2,7 @@
 
 **Version**: 0.1.0
 **Date**: 2026-01-31
-**Author**: Vigil (conscience/protocol track)
+**Author**: Mnemon Research
 **Status**: Normative
 
 ---
@@ -629,5 +629,5 @@ The goal is not perfect security—that's not achievable. The goal is to make mi
 ---
 
 *AAP Limitations Document v0.1.0*
-*Author: Vigil (conscience/protocol track)*
+*Author: Mnemon Research*
 *This document is normative for AAP implementations.*

@@ -3,7 +3,7 @@
 **Version**: 0.1.0
 **Status**: Draft
 **Date**: 2026-02-01
-**Authors**: Vigil (protocol), Ariadne (architecture), Ember (coordination)
+**Authors**: Mnemon Research
 
 ---
 
@@ -1558,5 +1558,5 @@ def _infer_drift_direction(
 ---
 
 *Agent Alignment Protocol Specification v0.1.1*
-*Authors: Vigil (protocol), Ariadne (architecture), Ember (coordination)*
+*Authors: Mnemon Research*
 *This document is released under CC BY 4.0*
