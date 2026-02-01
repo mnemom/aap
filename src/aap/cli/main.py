@@ -333,7 +333,13 @@ def _create_card_interactive(agent_id: str | None = None) -> dict[str, Any]:
     type=click.Path(exists=True),
     help="Path to directory containing AP-Trace JSON files",
 )
-def verify_cmd(card: str, trace: str | None, traces: str | None) -> None:
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Show detailed verification info (checks performed, timing)",
+)
+def verify_cmd(card: str, trace: str | None, traces: str | None, verbose: bool) -> None:
     """Verify AP-Traces against an Alignment Card.
 
     \b
@@ -409,6 +415,12 @@ def verify_cmd(card: str, trace: str | None, traces: str | None) -> None:
             for v in result.violations:
                 click.echo(f"    {Colors.RED}{v.type.value}{Colors.RESET}: {v.description}")
 
+        # Verbose output
+        if verbose and result.verification_metadata:
+            meta = result.verification_metadata
+            click.echo(f"    {Colors.CYAN}checks: {', '.join(meta.checks_performed)}{Colors.RESET}")
+            click.echo(f"    {Colors.CYAN}duration: {meta.duration_ms:.1f}ms{Colors.RESET}")
+
     # Summary
     click.echo(bold("\n--- Summary ---"))
     click.echo(f"Total:    {total}")
@@ -417,6 +429,9 @@ def verify_cmd(card: str, trace: str | None, traces: str | None) -> None:
         click.echo(warning(f"Warnings: {warnings_count}"))
     if failed > 0:
         click.echo(error(f"Failed:   {failed}"))
+
+    if verbose:
+        click.echo(f"\n{Colors.CYAN}Verification checks: card_reference, card_expiration, autonomy, forbidden, escalation, values, behavioral_similarity{Colors.RESET}")
 
     sys.exit(0 if failed == 0 else 1)
 
