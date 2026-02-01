@@ -77,7 +77,9 @@ class TestMainHelp:
         """--version should display version."""
         result = runner.invoke(main, ["--version"])
         assert result.exit_code == 0
-        assert "0.1.0" in result.output or "aap" in result.output
+        # Check for semver pattern (e.g., "0.1.0", "0.1.1")
+        import re
+        assert re.search(r"\d+\.\d+\.\d+", result.output)
 
 
 # ---------------------------------------------------------------------------
