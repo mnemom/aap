@@ -51,6 +51,7 @@ This document defines the complete implementation plan for Agent Alignment Proto
 | **mcp-migration.md** | Ember | COMPLETE | 2026-02-01 | 767 lines, step-by-step MCP server extension guide, tool category mapping (bounded/escalate/forbidden), AP-Trace generation patterns, alignment resource exposure, client-side verification, migration checklist |
 | **mcp-integration example** | Ember | COMPLETE | 2026-02-01 | 442 lines main.py + 226 lines README, working demo: simulated filesystem server, 3 tool categories (read=bounded, write=escalate, delete=forbidden), 4 AP-Traces generated, verification against alignment card, 2 generated artifacts |
 | **Interactive Playground** | Ariadne | COMPLETE | 2026-02-01 | 2699 lines (index.html, styles.css, playground.js), Pyodide-based Python-in-browser verification, all 3 modes (verify_trace, check_coherence, detect_drift), live threshold sliders, pre-loaded examples, cross-browser compatible (Chrome/Firefox/Safari), dark mode, WCAG 2.1 AA accessible, JSON-LD structured data for AI browsers, window.AAP global API for programmatic access |
+| **docs/architecture.md** | Ariadne | COMPLETE | 2026-02-01 | 533 lines, protocol stack diagram, component architecture (SDK layers, verification engine, schema layer), data flow diagrams (verification, coherence, drift), extension points (custom values, protocol extensions, escalation triggers, threshold customization, integration hooks), implementation notes (Python, TypeScript, JSON Schema, Browser) |
 
 ---
 
