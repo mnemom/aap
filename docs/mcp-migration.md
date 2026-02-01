@@ -384,7 +384,7 @@ class AlignedMCPClient:
         # 4. Verify the trace (if server provides one)
         if hasattr(result, 'trace'):
             verification = verify_trace(result.trace, self.server_alignment)
-            if not verification.passed:
+            if not verification.verified:
                 raise ValueError(f"Trace verification failed: {verification.violations}")
 
         return result
@@ -651,7 +651,7 @@ def verify_recent_traces(limit: int = 10) -> dict:
         result = verify_trace(trace, SERVER_ALIGNMENT)
         results.append({
             "trace_id": trace.trace_id,
-            "passed": result.passed,
+            "passed": result.verified,
             "violations": [v.description for v in result.violations] if result.violations else [],
         })
 

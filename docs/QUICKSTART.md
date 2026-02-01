@@ -298,52 +298,43 @@ print(f"Warnings: {len(result.warnings)}")
 
 ### Decorator for Automatic Tracing
 
+AAP provides built-in decorators for automatic trace generation:
+
 ```python
-import functools
-from datetime import datetime
-import uuid
+from aap import trace_decision, TracedResult
 
-def traced_action(card_id: str, action_name: str, action_category: str = "bounded"):
-    """Decorator to automatically generate traces for agent actions."""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            # Call the original function
-            result, decision_info = func(*args, **kwargs)
+# Basic usage — traces are written to ./traces/ by default
+@trace_decision(card_path="alignment-card.json")
+def search_products(query: str) -> list:
+    """Function automatically generates AP-Trace on each call."""
+    results = find_products(query)
+    return results
 
-            # Generate trace
-            trace = {
-                "trace_id": f"tr-{uuid.uuid4().hex[:12]}",
-                "card_id": card_id,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
-                "action": {
-                    "type": decision_info.get("action_type", "execute"),
-                    "name": action_name,
-                    "category": action_category,
-                },
-                "decision": decision_info.get("decision", {}),
-                "escalation": decision_info.get("escalation", {"evaluated": False}),
-            }
+# Rich tracing with TracedResult — capture reasoning and alternatives
+@trace_decision(card_path="alignment-card.json")
+def recommend_product(query: str) -> TracedResult:
+    """Return TracedResult for detailed decision metadata."""
+    products = find_products(query)
+    best = products[0]
 
-            # Store trace (implement your storage)
-            store_trace(trace)
+    return TracedResult(
+        result=best,
+        alternatives=[
+            {"option_id": p["id"], "score": p["score"]}
+            for p in products[:3]
+        ],
+        reasoning=f"Selected {best['name']} with highest score",
+        values_applied=["principal_benefit", "transparency"],
+        confidence=best["score"],
+    )
 
-            return result
-        return wrapper
-    return decorator
+# MCP tool tracing
+from aap import mcp_traced
 
-# Usage:
-@traced_action("ac-my-agent", "search_products")
-def search_products(query):
-    results = do_search(query)
-    return results, {
-        "decision": {
-            "alternatives_considered": [...],
-            "selected": results[0]["id"],
-            "selection_reasoning": "...",
-            "values_applied": ["principal_benefit"],
-        }
-    }
+@mcp_traced(card_path="alignment-card.json")
+def my_mcp_tool(params: dict) -> dict:
+    """MCP tool with automatic alignment tracing."""
+    return {"status": "success"}
 ```
 
 ### Batch Verification

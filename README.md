@@ -27,11 +27,9 @@ aap init --values "principal_benefit,transparency,harm_prevention"
 ```
 
 ```python
-from aap import trace_decision, load_card
+from aap import trace_decision
 
-card = load_card("alignment-card.json")
-
-@trace_decision(card)
+@trace_decision(card_path="alignment-card.json")
 def recommend_product(user_preferences):
     # Your agent logic here
     # Decisions are automatically traced
@@ -205,9 +203,9 @@ See [A2A Migration Guide](docs/a2a-migration.md).
 AAP can trace tool invocations and verify they match declared alignment:
 
 ```python
-from aap.integrations import mcp_traced
+from aap import mcp_traced
 
-@mcp_traced(card)
+@mcp_traced(card_path="alignment-card.json")
 def my_tool(params):
     ...
 ```
@@ -264,11 +262,11 @@ for alert in alerts:
 | Component | Status |
 |-----------|--------|
 | Specification | ✅ Complete |
-| JSON Schemas | 🔄 In Progress |
-| Python SDK | 🔄 In Progress |
-| TypeScript SDK | 📋 Planned |
-| Verification Engine | 🔄 In Progress |
-| Interactive Playground | 📋 Planned |
+| JSON Schemas | ✅ Complete |
+| Python SDK | ✅ Complete |
+| TypeScript SDK | 🔄 Beta |
+| Verification Engine | ✅ Complete |
+| Interactive Playground | ✅ Complete |
 
 ## API Reference
 
@@ -278,10 +276,12 @@ from aap import (
     verify_trace,      # Verify single trace against card
     check_coherence,   # Check value compatibility between agents
     detect_drift,      # Detect behavioral drift over time
+    trace_decision,    # Decorator for automatic AP-Trace generation
+    mcp_traced,        # Decorator for MCP tool tracing
 )
 
 # Models
-from aap.schemas import (
+from aap import (
     AlignmentCard,
     APTrace,
     VerificationResult,
@@ -293,6 +293,7 @@ from aap.schemas import (
 # aap init [--values VALUES] [--output FILE]
 # aap verify --card CARD --trace TRACE
 # aap check-coherence --my-card MINE --their-card THEIRS
+# aap drift --card CARD --traces TRACES_DIR
 ```
 
 ## Contributing
