@@ -45,7 +45,7 @@ def render_ssm_heatmap(
         transform=ax.transAxes,
         fontsize=9,
         verticalalignment='top',
-        bbox=dict(boxstyle='round', facecolor='white', alpha=0.8)
+        bbox={"boxstyle": "round", "facecolor": "white", "alpha": 0.8}
     )
 
     # Add pattern label
@@ -64,7 +64,7 @@ def render_ssm_heatmap(
         verticalalignment='top',
         horizontalalignment='right',
         color=pattern_color,
-        bbox=dict(boxstyle='round', facecolor='white', alpha=0.8)
+        bbox={"boxstyle": "round", "facecolor": "white", "alpha": 0.8}
     )
 
     # Labels
@@ -135,7 +135,6 @@ def main():
         matrix = data["matrix"]
         description = data.get("description", "Calibration SSM")
         pattern = data.get("pattern", "unknown")
-        source = data.get("source", "")
 
         # Create title from description
         # e.g., "Calibration evidence: Convergent deliberative dialogue"

@@ -24,11 +24,9 @@ from aap.verification.constants import (
     MIN_COHERENCE_FOR_PROCEED,
     NEAR_BOUNDARY_THRESHOLD,
 )
-from aap.verification.features import FeatureExtractor, cosine_similarity
 from aap.verification.models import (
     CoherenceResult,
     DriftAlert,
-    DriftAnalysis,
     DriftDirection,
     DriftIndicator,
     ValueAlignment,

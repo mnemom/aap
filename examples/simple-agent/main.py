@@ -14,11 +14,11 @@ import json
 from datetime import datetime, timezone
 
 from aap import (
+    Action,
     # Schema models
     AlignmentCard,
-    APTrace,
-    Action,
     Alternative,
+    APTrace,
     AuditCommitment,
     AutonomyEnvelope,
     Decision,

@@ -520,7 +520,7 @@ class TestVerifyTraceSimilarity:
         ssm_result = analyzer.analyze_against_card(aligned_trace_sequence, minimal_alignment_card)
 
         # Scores should match (within floating point tolerance)
-        for verify_sim, ssm_sim in zip(verify_similarities, ssm_result["similarities"]):
+        for verify_sim, ssm_sim in zip(verify_similarities, ssm_result["similarities"], strict=True):
             assert abs(verify_sim - ssm_sim) < 0.0001, (
                 f"verify_trace similarity {verify_sim} doesn't match "
                 f"SSMAnalyzer similarity {ssm_sim}"

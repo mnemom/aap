@@ -17,19 +17,16 @@ Example:
 
 from __future__ import annotations
 
-import asyncio
 import functools
 import inspect
 import json
-import os
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
-    Literal,
     ParamSpec,
     Protocol,
     TypeVar,
@@ -37,14 +34,8 @@ from typing import (
 )
 
 from aap.schemas import (
-    Action,
     ActionCategory,
     ActionType,
-    Alternative,
-    APTrace,
-    Decision,
-    Escalation,
-    TraceContext,
 )
 from aap.verification import VerificationResult, verify_trace
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -586,7 +585,7 @@ class TestTraceVerification:
         choose_response()
 
         traces = get_trace_store()
-        result = verify_trace(traces[0], sample_card)
+        verify_trace(traces[0], sample_card)  # Verify it runs without error
 
         # Verify the decision structure is complete
         assert traces[0]["decision"]["confidence"] == 0.9

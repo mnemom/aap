@@ -23,12 +23,12 @@ from collections import Counter
 from typing import Any
 
 from aap.verification.constants import (
+    MAX_CHAR_FEATURES,
     MAX_TFIDF_FEATURES,
     MIN_WORD_LENGTH,
-    TFIDF_WORD_WEIGHT,
     TFIDF_CHAR_WEIGHT,
     TFIDF_META_WEIGHT,
-    MAX_CHAR_FEATURES,
+    TFIDF_WORD_WEIGHT,
 )
 
 logger = logging.getLogger(__name__)

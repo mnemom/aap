@@ -68,6 +68,18 @@ from aap.schemas import (
     Values,
 )
 
+# Tracing decorators
+from aap.tracing import (
+    AlignmentViolationError,
+    TraceConfig,
+    TracedResult,
+    TraceHandler,
+    clear_trace_store,
+    get_trace_store,
+    mcp_traced,
+    trace_decision,
+)
+
 # Verification result models
 from aap.verification import (
     CoherenceResult,
@@ -86,18 +98,6 @@ from aap.verification import (
     check_coherence,
     detect_drift,
     verify_trace,
-)
-
-# Tracing decorators
-from aap.tracing import (
-    AlignmentViolationError,
-    TraceConfig,
-    TracedResult,
-    TraceHandler,
-    clear_trace_store,
-    get_trace_store,
-    mcp_traced,
-    trace_decision,
 )
 
 __all__ = [

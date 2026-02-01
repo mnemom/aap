@@ -16,18 +16,18 @@ Run with: python main.py
 
 import json
 import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-import uuid
 
 # Add the src directory to the path for local development
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from aap import (
-    AlignmentCard,
-    APTrace,
     Action,
+    AlignmentCard,
     Alternative,
+    APTrace,
     Decision,
     Escalation,
     verify_trace,
@@ -433,7 +433,7 @@ def main():
     print("    - Verifies against the alignment card")
     print()
     print("Generated files:")
-    print(f"  - server-alignment-card.json (MCP server alignment)")
+    print("  - server-alignment-card.json (MCP server alignment)")
     print(f"  - tool-invocation-traces.json ({len(traces)} AP-Traces)")
     print("=" * 70)
 

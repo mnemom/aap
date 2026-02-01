@@ -16,11 +16,11 @@ import json
 from datetime import datetime, timezone
 
 from aap import (
+    Action,
     # Schema models
     AlignmentCard,
-    APTrace,
-    Action,
     Alternative,
+    APTrace,
     AuditCommitment,
     AutonomyEnvelope,
     Decision,
@@ -330,14 +330,14 @@ def main():
     print(f"\n    Drift alerts: {len(alerts)}")
 
     for alert in alerts:
-        print(f"\n    DRIFT DETECTED:")
+        print("\n    DRIFT DETECTED:")
         print(f"    Direction: {alert.analysis.drift_direction.value}")
         print(f"    Similarity score: {alert.analysis.similarity_score}")
         print(f"    Sustained for: {alert.analysis.sustained_traces} traces")
         print(f"    Affected traces: {alert.trace_ids}")
 
         if alert.analysis.specific_indicators:
-            print(f"    Indicators:")
+            print("    Indicators:")
             for ind in alert.analysis.specific_indicators:
                 print(f"      - {ind.indicator}: {ind.baseline} → {ind.current}")
                 print(f"        {ind.description}")

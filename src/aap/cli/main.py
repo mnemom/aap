@@ -18,6 +18,7 @@ from typing import Any
 
 import click
 
+
 # ANSI color codes for output formatting
 class Colors:
     GREEN = "\033[92m"
@@ -473,9 +474,9 @@ def check_coherence_cmd(
     click.echo(bold("\n--- Coherence Check ---\n"))
 
     if result.compatible:
-        click.echo(success(f"Compatible: Yes"))
+        click.echo(success("Compatible: Yes"))
     else:
-        click.echo(error(f"Compatible: No"))
+        click.echo(error("Compatible: No"))
 
     click.echo(f"Score: {Colors.CYAN}{result.score:.2f}{Colors.RESET}")
 

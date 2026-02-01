@@ -52,12 +52,8 @@ from aap.verification.divergence import (
 )
 from aap.verification.features import (
     FeatureExtractor,
-    cosine_similarity,
     compute_similarity_with_tfidf,
-)
-from aap.verification.ssm import (
-    SSMAnalyzer,
-    compute_trace_card_similarity,
+    cosine_similarity,
 )
 from aap.verification.models import (
     CoherenceResult,
@@ -73,6 +69,10 @@ from aap.verification.models import (
     Violation,
     ViolationType,
     Warning,
+)
+from aap.verification.ssm import (
+    SSMAnalyzer,
+    compute_trace_card_similarity,
 )
 
 __all__ = [
