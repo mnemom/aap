@@ -33,9 +33,15 @@ This document defines the complete implementation plan for Agent Alignment Proto
 | **Braid Extraction** | Ariadne | COMPLETE | 2026-01-31 | 4 modules extracted: features.py (262 lines), api.py (533 lines), models.py (254 lines), constants.py (48 lines) |
 | **Pydantic Schemas** | Ariadne | COMPLETE | 2026-01-31 | alignment_card.py (306 lines), ap_trace.py (280 lines), value_coherence.py (337 lines) |
 | **Python SDK Core** | Ariadne | COMPLETE | 2026-01-31 | 2370 total lines, verify_trace/check_coherence/detect_drift all working, pip install works |
-| Schemas (JSON) | Ariadne | PENDING | - | Generate from Pydantic models |
+| Schemas (JSON) | Ariadne | COMPLETE | 2026-01-31 | Generated from Pydantic: alignment-card (474 lines, 14 defs), ap-trace (525 lines, 11 defs), value-coherence (544 lines, 14 defs) |
 | README.md | Ember | COMPLETE | 2026-01-31 | Full README with badges, quick start, component diagram, limitations, status table, API reference |
 | Blog Post | Ember | COMPLETE | 2026-01-31 | "The Missing Layer in the Agent Protocol Stack" - ~1800 words, scenario-driven, technically grounded, honest about limitations |
+| QUICKSTART.md | Ember | COMPLETE | 2026-01-31 | Full 5-step guide: card creation, tracing, verification, coherence, drift detection. Includes complete working example and common patterns (decorators, batch verification) |
+| simple-agent example | Ember | COMPLETE | 2026-01-31 | Working example: creates card, makes recommendation (deprioritizes sponsored), verifies compliance, demonstrates forbidden action violation |
+| alignment-failure example | Ember | COMPLETE | 2026-01-31 | Critical example: user-agent vs vendor-agent value conflict, coherence check failure, drift detection over 5 traces, individual violation detection |
+| **SECURITY.md** | Vigil | COMPLETE | 2026-01-31 | 1154 lines, threat model (3 adversary classes), trust boundaries, security properties (provides/doesn't), card/trace/handshake/verification/drift security, crypto requirements, implementation/operational security, 4 red team scenarios, defense in depth |
+| HN submission draft | Ember | COMPLETE | 2026-01-31 | 3 title options, Show HN text, anticipated Q&A, timing recommendations |
+| AAIF proposal | Ember | COMPLETE | 2026-01-31 | Formal contribution proposal: problem statement, solution, design philosophy, contribution terms, governance |
 
 ---
 
