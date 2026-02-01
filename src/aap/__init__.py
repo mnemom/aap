@@ -26,6 +26,13 @@ Quick Start:
     for alert in alerts:
         print(f"DRIFT: {alert.analysis.drift_direction}")
 
+    # Instrument your agent with automatic tracing
+    from aap import trace_decision, TracedResult
+
+    @trace_decision(card_path="alignment-card.json")
+    def recommend_product(query: str) -> Product:
+        return find_best_product(query)
+
 See docs/SPEC.md for the full protocol specification.
 """
 
@@ -81,6 +88,18 @@ from aap.verification import (
     verify_trace,
 )
 
+# Tracing decorators
+from aap.tracing import (
+    AlignmentViolationError,
+    TraceConfig,
+    TracedResult,
+    TraceHandler,
+    clear_trace_store,
+    get_trace_store,
+    mcp_traced,
+    trace_decision,
+)
+
 __all__ = [
     # Version
     "__version__",
@@ -88,6 +107,15 @@ __all__ = [
     "verify_trace",
     "check_coherence",
     "detect_drift",
+    # Tracing Decorators
+    "trace_decision",
+    "mcp_traced",
+    "TracedResult",
+    "TraceConfig",
+    "TraceHandler",
+    "AlignmentViolationError",
+    "get_trace_store",
+    "clear_trace_store",
     # Verification Results
     "VerificationResult",
     "Violation",

@@ -37,7 +37,11 @@ classifiers = [
 dependencies = [
     "pydantic>=2.0",
     "jsonschema>=4.0",
+    "click>=8.0",
 ]
+
+[project.scripts]
+aap = "aap.cli.main:main"
 
 [project.optional-dependencies]
 dev = [
