@@ -1,7 +1,11 @@
 # Agent Alignment Protocol (AAP)
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Spec Version](https://img.shields.io/badge/spec-v0.1.0-green.svg)](docs/SPEC.md)
+[![CI](https://github.com/alexgarden/aap/actions/workflows/ci.yml/badge.svg)](https://github.com/alexgarden/aap/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/alexgarden/aap/branch/main/graph/badge.svg)](https://codecov.io/gh/alexgarden/aap)
+[![PyPI](https://img.shields.io/pypi/v/agent-alignment-protocol.svg)](https://pypi.org/project/agent-alignment-protocol/)
+[![npm](https://img.shields.io/npm/v/agent-alignment-protocol.svg)](https://www.npmjs.com/package/agent-alignment-protocol)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Spec](https://img.shields.io/badge/spec-v0.1.0-green.svg)](docs/SPEC.md)
 
 **A transparency protocol for autonomous agents.**
 

@@ -7,7 +7,7 @@ name = "aap"
 version = "0.1.0"
 description = "Agent Alignment Protocol - The missing alignment layer for the agent protocol stack"
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [
     { name = "Alex Garden", email = "alex@example.com" }
@@ -25,7 +25,7 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -43,6 +43,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-cov>=4.0",
     "mypy>=1.8",
     "ruff>=0.2",
     "pre-commit>=3.6",
