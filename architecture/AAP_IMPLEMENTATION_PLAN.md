@@ -44,6 +44,12 @@ This document defines the complete implementation plan for Agent Alignment Proto
 | AAIF proposal | Ember | COMPLETE | 2026-01-31 | Formal contribution proposal: problem statement, solution, design philosophy, contribution terms, governance |
 | **TypeScript SDK** | Ariadne | COMPLETE | 2026-01-31 | 1597 lines, full parity with Python: verifyTrace/checkCoherence/detectDrift, all schema types, CJS+ESM+DTS outputs |
 | **CALIBRATION.md** | Vigil | COMPLETE | 2026-01-31 | 689 lines, corpus stats (~50 convos, ~2500 msgs), feature extraction (60/30/10 TF-IDF), threshold derivation (0.30 sim, 3 turns), cross-validation (0.84 precision, 0.81 F1), recalibration guidance, limitations |
+| **Video Script** | Vigil | COMPLETE | 2026-01-31 | ~600 lines, 12-15 min educational walkthrough. Uses Moltbook as real-world framing (non-judgmental). Covers: reading AP-Traces, what verification checks/doesn't check, 4 failure patterns, limitations given equal weight to capabilities |
+| **a2a-migration.md** | Ember | COMPLETE | 2026-01-31 | 467 lines, step-by-step A2A extension guide, value coherence handshake patterns, non-AAP agent handling, migration checklist |
+| **a2a-integration example** | Ember | COMPLETE | 2026-01-31 | 469 lines, working demo: user-agent vs vendor-agents, value conflict detection (upselling), delegation traces, 5 generated artifacts |
+| **Test Suite** | Ariadne | COMPLETE | 2026-02-01 | 137 tests, 96% coverage. test_schemas.py (92 tests), test_verification.py (31 tests), test_features.py (32 tests), test_vectors.py (12 tests). Test vectors: 2 valid traces, 3 invalid traces, 2 drift cases. Comprehensive coverage of all 3 API entry points, all violation types, all drift directions. |
+| **mcp-migration.md** | Ember | COMPLETE | 2026-02-01 | 767 lines, step-by-step MCP server extension guide, tool category mapping (bounded/escalate/forbidden), AP-Trace generation patterns, alignment resource exposure, client-side verification, migration checklist |
+| **mcp-integration example** | Ember | COMPLETE | 2026-02-01 | 442 lines main.py + 226 lines README, working demo: simulated filesystem server, 3 tool categories (read=bounded, write=escalate, delete=forbidden), 4 AP-Traces generated, verification against alignment card, 2 generated artifacts |
 
 ---
 

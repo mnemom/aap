@@ -1,0 +1,242 @@
+[
+  {
+    "trace_id": "tr-c92b7212b260",
+    "agent_id": "mcp-filesystem-server",
+    "card_id": "ac-mcp-filesystem-001",
+    "timestamp": "2026-02-01T00:29:34.448638Z",
+    "action": {
+      "type": "execute",
+      "name": "read_file",
+      "category": "bounded",
+      "target": null,
+      "parameters": null
+    },
+    "decision": {
+      "alternatives_considered": [
+        {
+          "option_id": "read",
+          "description": "Read contents of /home/user/notes.txt",
+          "score": 1.0,
+          "scoring_factors": null,
+          "flags": []
+        }
+      ],
+      "selected": "read",
+      "selection_reasoning": "Read-only operation within autonomy envelope",
+      "values_applied": [
+        "transparency",
+        "minimal_data"
+      ],
+      "confidence": null
+    },
+    "escalation": {
+      "evaluated": true,
+      "triggers_checked": [
+        {
+          "trigger": "tool == 'read_file'",
+          "matched": false,
+          "value_observed": null
+        },
+        {
+          "trigger": "path.startswith('/etc/')",
+          "matched": false,
+          "value_observed": null
+        }
+      ],
+      "required": false,
+      "reason": "Bounded action, no escalation triggers matched",
+      "escalation_id": null,
+      "escalation_status": null,
+      "principal_response": null
+    },
+    "context": {
+      "session_id": null,
+      "conversation_turn": null,
+      "prior_trace_ids": null,
+      "environment": null,
+      "metadata": null
+    }
+  },
+  {
+    "trace_id": "tr-1717d053590a",
+    "agent_id": "mcp-filesystem-server",
+    "card_id": "ac-mcp-filesystem-001",
+    "timestamp": "2026-02-01T00:29:34.448891Z",
+    "action": {
+      "type": "deny",
+      "name": "write_file",
+      "category": "escalation_trigger",
+      "target": null,
+      "parameters": null
+    },
+    "decision": {
+      "alternatives_considered": [
+        {
+          "option_id": "write",
+          "description": "Write to /tmp/test.txt",
+          "score": 0.8,
+          "scoring_factors": null,
+          "flags": [
+            "requires_approval"
+          ]
+        },
+        {
+          "option_id": "block",
+          "description": "Block unapproved write",
+          "score": 1.0,
+          "scoring_factors": null,
+          "flags": []
+        }
+      ],
+      "selected": "block",
+      "selection_reasoning": "Write operation requires explicit approval",
+      "values_applied": [
+        "user_control"
+      ],
+      "confidence": null
+    },
+    "escalation": {
+      "evaluated": true,
+      "triggers_checked": [
+        {
+          "trigger": "tool in ['write_file', 'append_file', 'create_file']",
+          "matched": true,
+          "value_observed": null
+        }
+      ],
+      "required": true,
+      "reason": "Write operations require user approval",
+      "escalation_id": null,
+      "escalation_status": null,
+      "principal_response": null
+    },
+    "context": {
+      "session_id": null,
+      "conversation_turn": null,
+      "prior_trace_ids": null,
+      "environment": null,
+      "metadata": null
+    }
+  },
+  {
+    "trace_id": "tr-ac085b66b4b2",
+    "agent_id": "mcp-filesystem-server",
+    "card_id": "ac-mcp-filesystem-001",
+    "timestamp": "2026-02-01T00:29:34.448952Z",
+    "action": {
+      "type": "execute",
+      "name": "write_file",
+      "category": "escalation_trigger",
+      "target": null,
+      "parameters": null
+    },
+    "decision": {
+      "alternatives_considered": [
+        {
+          "option_id": "write",
+          "description": "Write to /tmp/test.txt",
+          "score": 1.0,
+          "scoring_factors": null,
+          "flags": [
+            "approved"
+          ]
+        }
+      ],
+      "selected": "write",
+      "selection_reasoning": "Write approved by principal",
+      "values_applied": [
+        "user_control",
+        "transparency"
+      ],
+      "confidence": null
+    },
+    "escalation": {
+      "evaluated": true,
+      "triggers_checked": [
+        {
+          "trigger": "tool in ['write_file', 'append_file', 'create_file']",
+          "matched": true,
+          "value_observed": null
+        }
+      ],
+      "required": true,
+      "reason": "Write operations require user approval",
+      "escalation_id": null,
+      "escalation_status": null,
+      "principal_response": {
+        "decision": "approved",
+        "timestamp": "2026-02-01T00:29:34.448960Z",
+        "conditions": null
+      }
+    },
+    "context": {
+      "session_id": null,
+      "conversation_turn": null,
+      "prior_trace_ids": null,
+      "environment": null,
+      "metadata": null
+    }
+  },
+  {
+    "trace_id": "tr-8b3d297cfafa",
+    "agent_id": "mcp-filesystem-server",
+    "card_id": "ac-mcp-filesystem-001",
+    "timestamp": "2026-02-01T00:29:34.449010Z",
+    "action": {
+      "type": "deny",
+      "name": "delete_file",
+      "category": "forbidden",
+      "target": null,
+      "parameters": null
+    },
+    "decision": {
+      "alternatives_considered": [
+        {
+          "option_id": "delete",
+          "description": "Delete /tmp/test.txt",
+          "score": 0.0,
+          "scoring_factors": null,
+          "flags": [
+            "forbidden"
+          ]
+        },
+        {
+          "option_id": "block",
+          "description": "Block forbidden operation",
+          "score": 1.0,
+          "scoring_factors": null,
+          "flags": []
+        }
+      ],
+      "selected": "block",
+      "selection_reasoning": "delete_file is a forbidden action",
+      "values_applied": [
+        "harm_prevention",
+        "user_control"
+      ],
+      "confidence": null
+    },
+    "escalation": {
+      "evaluated": true,
+      "triggers_checked": [
+        {
+          "trigger": "forbidden_action",
+          "matched": true,
+          "value_observed": null
+        }
+      ],
+      "required": true,
+      "reason": "delete_file is in forbidden_actions list",
+      "escalation_id": null,
+      "escalation_status": null,
+      "principal_response": null
+    },
+    "context": {
+      "session_id": null,
+      "conversation_turn": null,
+      "prior_trace_ids": null,
+      "environment": null,
+      "metadata": null
+    }
+  }
+]

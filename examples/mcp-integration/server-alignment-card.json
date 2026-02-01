@@ -1,0 +1,62 @@
+{
+  "aap_version": "0.1.0",
+  "card_id": "ac-mcp-filesystem-001",
+  "agent_id": "mcp-filesystem-server",
+  "issued_at": "2026-02-01T00:29:34.447913Z",
+  "expires_at": null,
+  "principal": {
+    "type": "human",
+    "identifier": null,
+    "relationship": "delegated_authority",
+    "escalation_contact": null
+  },
+  "values": {
+    "declared": [
+      "user_control",
+      "transparency",
+      "harm_prevention",
+      "minimal_data"
+    ],
+    "definitions": null,
+    "conflicts_with": [
+      "data_exfiltration",
+      "unauthorized_access",
+      "destructive_operations"
+    ],
+    "hierarchy": null
+  },
+  "autonomy_envelope": {
+    "bounded_actions": [
+      "read_file",
+      "list_directory",
+      "file_info"
+    ],
+    "escalation_triggers": [
+      {
+        "condition": "tool in ['write_file', 'append_file', 'create_file']",
+        "action": "escalate",
+        "reason": "Write operations require user approval"
+      },
+      {
+        "condition": "path.startswith('/etc/') or path.startswith('/sys/')",
+        "action": "escalate",
+        "reason": "System paths require explicit approval"
+      }
+    ],
+    "max_autonomous_value": null,
+    "forbidden_actions": [
+      "delete_file",
+      "execute_command",
+      "chmod"
+    ]
+  },
+  "audit_commitment": {
+    "trace_format": "ap-trace-v1",
+    "retention_days": 90,
+    "storage": null,
+    "queryable": true,
+    "query_endpoint": "mcp://filesystem/alignment/traces",
+    "tamper_evidence": null
+  },
+  "extensions": null
+}
