@@ -281,7 +281,7 @@ No server required — runs entirely client-side via WebAssembly.
 | Specification | ✅ Complete |
 | JSON Schemas | ✅ Complete |
 | Python SDK | ✅ Complete |
-| TypeScript SDK | 🔄 Beta |
+| TypeScript SDK | ✅ Complete |
 | Verification Engine | ✅ Complete (with similarity scoring) |
 | SSM Visualization | ✅ Complete |
 | Interactive Playground | ✅ Complete |
