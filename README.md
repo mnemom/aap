@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/mnemom/aap/actions/workflows/ci.yml/badge.svg)](https://github.com/mnemom/aap/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/mnemom/aap/actions/workflows/codeql.yml/badge.svg)](https://github.com/mnemom/aap/actions/workflows/codeql.yml)
-[![codecov](https://codecov.io/gh/mnemom/aap/graph/badge.svg?token=GSTPL4S34T)](https://codecov.io/gh/mnemom/aap)
+[![codecov](https://codecov.io/gh/mnemom/aap/graph/badge.svg?token=9KCOCI5SC5)](https://codecov.io/gh/mnemom/aap)
 [![PyPI](https://img.shields.io/pypi/v/agent-alignment-protocol.svg)](https://pypi.org/project/agent-alignment-protocol/)
 [![npm](https://img.shields.io/npm/v/agent-alignment-protocol.svg)](https://www.npmjs.com/package/agent-alignment-protocol)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
