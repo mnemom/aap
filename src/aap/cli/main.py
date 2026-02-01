@@ -121,11 +121,17 @@ def main() -> None:
     type=str,
     help="Agent identifier (default: auto-generated UUID)",
 )
+@click.option(
+    "--card-id",
+    type=str,
+    help="Card identifier (default: auto-generated UUID)",
+)
 def init_cmd(
     values: str | None,
     interactive: bool,
     output: str,
     agent_id: str | None,
+    card_id: str | None,
 ) -> None:
     """Create a new Alignment Card.
 
@@ -143,7 +149,7 @@ def init_cmd(
         sys.exit(1)
 
     if interactive:
-        card_dict = _create_card_interactive(agent_id)
+        card_dict = _create_card_interactive(agent_id, card_id)
     else:
         value_list = [v.strip() for v in values.split(",") if v.strip()]
         if not value_list:
@@ -159,7 +165,7 @@ def init_cmd(
                 )
             )
 
-        card_dict = _create_card_from_values(value_list, agent_id)
+        card_dict = _create_card_from_values(value_list, agent_id, card_id)
 
     # Validate card by parsing with Pydantic
     try:
@@ -185,12 +191,13 @@ def init_cmd(
 def _create_card_from_values(
     value_list: list[str],
     agent_id: str | None = None,
+    card_id: str | None = None,
 ) -> dict[str, Any]:
     """Create a minimal Alignment Card from a list of values."""
     now = datetime.now(timezone.utc)
     return {
         "aap_version": "0.1.0",
-        "card_id": f"ac-{uuid.uuid4().hex[:12]}",
+        "card_id": card_id or f"ac-{uuid.uuid4().hex[:12]}",
         "agent_id": agent_id or f"agent-{uuid.uuid4().hex[:8]}",
         "issued_at": now.isoformat(),
         "principal": {
@@ -201,7 +208,7 @@ def _create_card_from_values(
             "declared": value_list,
         },
         "autonomy_envelope": {
-            "bounded_actions": ["search", "recommend", "respond"],
+            "bounded_actions": ["search", "recommend", "compare", "summarize", "respond"],
             "escalation_triggers": [
                 {
                     "condition": 'action_type == "purchase"',
@@ -223,7 +230,7 @@ def _create_card_from_values(
     }
 
 
-def _create_card_interactive(agent_id: str | None = None) -> dict[str, Any]:
+def _create_card_interactive(agent_id: str | None = None, card_id: str | None = None) -> dict[str, Any]:
     """Create an Alignment Card through interactive prompts."""
     click.echo(bold("\nAAP Alignment Card Creator\n"))
 
@@ -285,7 +292,7 @@ def _create_card_interactive(agent_id: str | None = None) -> dict[str, Any]:
     now = datetime.now(timezone.utc)
     return {
         "aap_version": "0.1.0",
-        "card_id": f"ac-{uuid.uuid4().hex[:12]}",
+        "card_id": card_id or f"ac-{uuid.uuid4().hex[:12]}",
         "agent_id": agent_id or f"agent-{uuid.uuid4().hex[:8]}",
         "issued_at": now.isoformat(),
         "principal": {
