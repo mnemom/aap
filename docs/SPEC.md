@@ -312,10 +312,21 @@ value := string | number | boolean | null
 
 Examples:
 - `purchase_value > 100`
-- `action_type == "delete" and target_type == "user_data"`
-- `contains(recipients, "external_domain")`
+- `action_type == "delete"`
+- `shares_personal_data` (boolean field check)
 
-Implementations MAY support additional operators but MUST support the minimal set.
+**Minimal Required Set** (MUST support):
+- Comparison operators: `>`, `<`, `>=`, `<=`, `==`, `!=`
+- String literal comparison: `field == "value"`
+- Numeric comparison: `field > 100`
+- Boolean field check: `field_name` (evaluates to true if field is truthy)
+
+**Optional Extensions** (MAY support):
+- Logical expressions: `condition and condition`, `condition or condition`
+- `contains(field, value)` — substring or element containment
+- `matches(field, pattern)` — regex matching
+
+Implementations MAY support additional operators beyond the minimal set.
 
 ### 4.7 Audit Commitment Block
 

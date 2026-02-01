@@ -274,13 +274,15 @@ When trust boundaries are violated, AAP's guarantees degrade:
 
 **Requirements:**
 
-1. Cards MUST be signed using Ed25519 (EdDSA over Curve25519)
-2. The signing key MUST be unique per agent
+1. Cards SHOULD be signed using Ed25519 (EdDSA over Curve25519) for production deployments
+2. If signing is implemented, the signing key MUST be unique per agent
 3. The signing key's private component MUST be stored securely (HSM recommended for production)
 4. Cards MUST include:
    - `card_id`: Globally unique identifier (UUID v4 or equivalent)
    - `issued_at`: RFC 3339 timestamp of creation
-   - `signature`: Base64-encoded Ed25519 signature over canonical JSON
+   - `signature`: Base64-encoded Ed25519 signature over canonical JSON (OPTIONAL in v0.1.0)
+
+> **Note:** The v0.1.0 SDK focuses on verification logic. Cryptographic signing is a recommended production enhancement. See SPEC.md Section 9.2 for alignment.
 
 **Signature Calculation:**
 
@@ -391,10 +393,12 @@ Access-Control-Allow-Origin: *
 **Requirements:**
 
 1. Each trace MUST have a unique `trace_id`
-2. Traces MUST include `sequence_number` (monotonically increasing per agent)
+2. Traces SHOULD include `sequence_number` (monotonically increasing per agent) for gap detection
 3. Traces MUST include `timestamp` (RFC 3339)
-4. Traces SHOULD be signed individually
+4. Traces SHOULD be signed individually for production deployments
 5. Traces MUST reference the `card_id` they were generated under
+
+> **Note:** The v0.1.0 SDK does not enforce `sequence_number`. Gap detection is a recommended production enhancement for high-assurance deployments.
 
 **Trace Signature:**
 
@@ -742,7 +746,7 @@ def adaptive_threshold(
 
 | Purpose | Algorithm | Key Size | Notes |
 |---------|-----------|----------|-------|
-| Signatures | Ed25519 | 256-bit | MUST use |
+| Signatures | Ed25519 | 256-bit | SHOULD use (MUST if signing is implemented) |
 | Hashing | SHA-256 | 256-bit | For content digests |
 | Randomness | CSPRNG | 256-bit | For nonces, IDs |
 | Transport | TLS 1.3 | Per suite | MUST use |

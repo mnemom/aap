@@ -215,7 +215,7 @@ DEFAULT_SIMILARITY_THRESHOLD = 0.30
 DEFAULT_SUSTAINED_TURNS_THRESHOLD = 3
 NEAR_BOUNDARY_THRESHOLD = 0.35
 CONFLICT_PENALTY_MULTIPLIER = 0.5
-MIN_COHERENCE_FOR_PROCEED = 0.5
+MIN_COHERENCE_FOR_PROCEED = 0.70
 
 # Enums
 class ViolationType(str, Enum):
@@ -453,7 +453,8 @@ def check_coherence(my_card: dict, their_card: dict, task_values: list = None) -
     # Compute coherence score
     total_required = len(required_values) or 1
     matched_count = len(set(matched) & required_values) if task_values else len(matched)
-    conflict_penalty = CONFLICT_PENALTY_MULTIPLIER * (len(conflicts) / total_required)
+    # Clamp penalty to 1.0 to prevent negative multiplier
+    conflict_penalty = min(1.0, CONFLICT_PENALTY_MULTIPLIER * (len(conflicts) / total_required))
 
     score = (matched_count / total_required) * (1 - conflict_penalty)
     score = max(0.0, min(1.0, score))
@@ -558,9 +559,9 @@ def _evaluate_condition(condition: str, trace: dict) -> bool:
         field_name, op, value = match.groups()
         value = float(value)
 
-        actual = trace.get("context", {}).get(field_name)
+        actual = (trace.get("context") or {}).get(field_name)
         if actual is None:
-            actual = trace.get("action", {}).get("parameters", {}).get(field_name)
+            actual = (trace.get("action") or {}).get("parameters", {}).get(field_name)
         if actual is None:
             return False
 
@@ -584,7 +585,7 @@ def _evaluate_condition(condition: str, trace: dict) -> bool:
 
     # Handle boolean fields
     if re.match(r'^\\w+$', condition):
-        return bool(trace.get("context", {}).get(condition))
+        return bool((trace.get("context") or {}).get(condition))
 
     return False
 
@@ -597,9 +598,9 @@ def _extract_card_features(card: dict) -> dict:
     for value in card.get("values", {}).get("declared", []):
         features[f"value:{value}"] = 1.0
 
-    # Bounded actions
+    # Bounded actions (aligned with SDK: action_name:{action})
     for action in card.get("autonomy_envelope", {}).get("bounded_actions", []):
-        features[f"action:{action}"] = 1.0
+        features[f"action_name:{action}"] = 1.0
 
     # Forbidden actions (negative weight)
     for action in card.get("autonomy_envelope", {}).get("forbidden_actions", []):
@@ -616,10 +617,19 @@ def _extract_trace_features(trace: dict) -> dict:
     for value in trace.get("decision", {}).get("values_applied", []):
         features[f"value:{value}"] = 1.0
 
-    # Action
-    action_name = trace.get("action", {}).get("name", "")
+    # Action type (aligned with SDK: action:{type})
+    action = trace.get("action", {})
+    action_type = action.get("type", "unknown")
+    features[f"action:{action_type}"] = 1.0
+
+    # Action name (aligned with SDK: action_name:{name})
+    action_name = action.get("name", "")
     if action_name:
-        features[f"action:{action_name}"] = 1.0
+        features[f"action_name:{action_name}"] = 1.0
+
+    # Action category
+    category = action.get("category", "unknown")
+    features[f"category:{category}"] = 1.0
 
     # Escalation
     if trace.get("escalation", {}).get("required"):

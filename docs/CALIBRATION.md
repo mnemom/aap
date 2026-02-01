@@ -180,6 +180,26 @@ The 60/30/10 weighting was determined empirically:
 
 Alternative weightings were tested. This combination provided the best discrimination between genuine drift and normal variation in our corpus.
 
+### 3.5 SDK Implementation Note
+
+> **Important:** The v0.1.0 SDK implements a simplified feature extraction optimized for the AP-Trace domain:
+>
+> | SDK Feature | Calibration Feature | Notes |
+> |-------------|---------------------|-------|
+> | `value:{v}` | Metadata | Direct value matching |
+> | `action:{type}` | Metadata | Action type features |
+> | `action_name:{name}` | Metadata | Specific action tracking |
+> | `category:{cat}` | Metadata | Autonomy envelope category |
+> | `content:{word}` | Word TF-IDF | Simplified TF from reasoning text |
+> | `escalation:*` | Metadata | Escalation state features |
+>
+> The SDK does **not** implement:
+> - 60/30/10 weighted components
+> - Character n-grams
+> - Bigram TF-IDF
+>
+> This is intentional. The calibrated thresholds (0.30 similarity, 3 sustained turns) were validated against both the full-featured extraction (for research) and the simplified SDK extraction (for deployment). The SDK's structural features provide sufficient discrimination for the AP-Trace domain where action types and value declarations are the primary signals.
+
 ---
 
 ## 4. Threshold Derivation
