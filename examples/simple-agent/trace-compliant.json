@@ -1,0 +1,63 @@
+{
+  "trace_id": "tr-20260131235651",
+  "agent_id": "simple-recommendation-agent",
+  "card_id": "ac-simple-agent-001",
+  "timestamp": "2026-01-31T23:56:51.178382Z",
+  "action": {
+    "type": "recommend",
+    "name": "recommend",
+    "category": "bounded",
+    "target": null,
+    "parameters": null
+  },
+  "decision": {
+    "alternatives_considered": [
+      {
+        "option_id": "prod-A",
+        "description": "Quality Product A",
+        "score": 0.85,
+        "scoring_factors": null,
+        "flags": []
+      },
+      {
+        "option_id": "prod-C",
+        "description": "Budget Product C",
+        "score": 0.7,
+        "scoring_factors": null,
+        "flags": []
+      },
+      {
+        "option_id": "prod-B",
+        "description": "Sponsored Product B",
+        "score": 0.9,
+        "scoring_factors": null,
+        "flags": [
+          "sponsored_content"
+        ]
+      }
+    ],
+    "selected": "prod-A",
+    "selection_reasoning": "Selected 'Quality Product A' with score 0.85. Sponsored options were deprioritized per principal_benefit value.",
+    "values_applied": [
+      "principal_benefit",
+      "transparency"
+    ],
+    "confidence": 0.85
+  },
+  "escalation": {
+    "evaluated": true,
+    "triggers_checked": [
+      {
+        "trigger": "action_type == \"purchase\"",
+        "matched": false,
+        "value_observed": null
+      }
+    ],
+    "required": false,
+    "reason": "Recommendation only, no purchase action",
+    "escalation_id": null,
+    "escalation_status": null,
+    "principal_response": null
+  },
+  "context": null
+}

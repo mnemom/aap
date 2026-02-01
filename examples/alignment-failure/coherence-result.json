@@ -1,0 +1,20 @@
+{
+  "compatible": false,
+  "score": 0.0,
+  "proceed": false,
+  "matched_values": [],
+  "conflicts": [
+    {
+      "description": "Initiator's 'price_comparison' is in responder's conflicts_with",
+      "type": "incompatible"
+    },
+    {
+      "description": "Responder's 'upselling' is in initiator's conflicts_with",
+      "type": "incompatible"
+    }
+  ],
+  "proposed_resolution": {
+    "type": "escalate_to_principals",
+    "reason": "Value conflict requires human decision"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "aap_version": "0.1.0",
+  "card_id": "ac-vendor-agent-001",
+  "agent_id": "vendor-sales-agent",
+  "issued_at": "2026-01-31T23:59:08.997485Z",
+  "expires_at": null,
+  "principal": {
+    "type": "organization",
+    "identifier": null,
+    "relationship": "delegated_authority",
+    "escalation_contact": null
+  },
+  "values": {
+    "declared": [
+      "customer_satisfaction",
+      "sales_conversion",
+      "upselling",
+      "data_collection"
+    ],
+    "definitions": null,
+    "conflicts_with": [
+      "price_comparison"
+    ],
+    "hierarchy": null
+  },
+  "autonomy_envelope": {
+    "bounded_actions": [
+      "present_products",
+      "offer_upgrades",
+      "collect_preferences"
+    ],
+    "escalation_triggers": [
+      {
+        "condition": "discount > 20",
+        "action": "escalate",
+        "reason": "Large discount needs approval"
+      }
+    ],
+    "max_autonomous_value": null,
+    "forbidden_actions": [
+      "price_match_competitor"
+    ]
+  },
+  "audit_commitment": {
+    "trace_format": "ap-trace-v1",
+    "retention_days": 30,
+    "storage": null,
+    "queryable": false,
+    "query_endpoint": null,
+    "tamper_evidence": null
+  },
+  "extensions": null
+}

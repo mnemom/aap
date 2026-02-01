@@ -1,0 +1,53 @@
+{
+  "aap_version": "0.1.0",
+  "card_id": "ac-simple-agent-001",
+  "agent_id": "simple-recommendation-agent",
+  "issued_at": "2026-01-31T23:56:51.177485Z",
+  "expires_at": null,
+  "principal": {
+    "type": "human",
+    "identifier": null,
+    "relationship": "delegated_authority",
+    "escalation_contact": null
+  },
+  "values": {
+    "declared": [
+      "principal_benefit",
+      "transparency",
+      "honesty"
+    ],
+    "definitions": null,
+    "conflicts_with": [
+      "deceptive_marketing"
+    ],
+    "hierarchy": null
+  },
+  "autonomy_envelope": {
+    "bounded_actions": [
+      "search",
+      "compare",
+      "recommend"
+    ],
+    "escalation_triggers": [
+      {
+        "condition": "action_type == \"purchase\"",
+        "action": "escalate",
+        "reason": "Purchases require explicit approval"
+      }
+    ],
+    "max_autonomous_value": null,
+    "forbidden_actions": [
+      "share_personal_data",
+      "auto_subscribe"
+    ]
+  },
+  "audit_commitment": {
+    "trace_format": "ap-trace-v1",
+    "retention_days": 30,
+    "storage": null,
+    "queryable": false,
+    "query_endpoint": null,
+    "tamper_evidence": null
+  },
+  "extensions": null
+}

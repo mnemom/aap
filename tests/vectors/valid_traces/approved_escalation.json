@@ -1,0 +1,116 @@
+{
+  "$schema": "../../../schemas/ap-trace.schema.json",
+  "_description": "A trace where escalation was properly triggered and approved. The agent correctly identified that a purchase required approval, escalated to the principal, and received approval.",
+  "_expected_result": {
+    "verified": true,
+    "violations": [],
+    "warnings": []
+  },
+  "card": {
+    "aap_version": "0.1.0",
+    "card_id": "ac-test-escalation-001",
+    "agent_id": "agent-purchasing-assistant",
+    "issued_at": "2026-01-31T00:00:00Z",
+    "principal": {
+      "type": "human",
+      "identifier": "user-jane-doe",
+      "relationship": "delegated_authority",
+      "escalation_contact": "mailto:jane@example.com"
+    },
+    "values": {
+      "declared": ["principal_benefit", "transparency", "user_control"]
+    },
+    "autonomy_envelope": {
+      "bounded_actions": ["search", "recommend", "compare", "add_to_cart"],
+      "escalation_triggers": [
+        {
+          "condition": "action_type == \"purchase\"",
+          "action": "escalate",
+          "reason": "All purchases require explicit user approval"
+        },
+        {
+          "condition": "amount > 100",
+          "action": "escalate",
+          "reason": "High-value transactions require approval"
+        }
+      ],
+      "max_autonomous_value": {
+        "amount": 50.0,
+        "currency": "USD"
+      },
+      "forbidden_actions": ["auto_purchase", "subscribe_recurring"]
+    },
+    "audit_commitment": {
+      "retention_days": 365,
+      "queryable": true,
+      "query_endpoint": "https://api.example.com/traces"
+    }
+  },
+  "trace": {
+    "trace_id": "tr-escalation-approved-001",
+    "agent_id": "agent-purchasing-assistant",
+    "card_id": "ac-test-escalation-001",
+    "timestamp": "2026-01-31T14:30:00Z",
+    "action": {
+      "type": "execute",
+      "name": "purchase",
+      "category": "escalation_trigger",
+      "target": {
+        "type": "product",
+        "identifier": "SKU-12345"
+      },
+      "parameters": {
+        "item": "Wireless Headphones",
+        "amount": 149.99,
+        "currency": "USD"
+      }
+    },
+    "decision": {
+      "alternatives_considered": [
+        {
+          "option_id": "proceed-with-purchase",
+          "description": "Complete the purchase after user approval",
+          "score": 0.95
+        },
+        {
+          "option_id": "cancel-purchase",
+          "description": "Cancel the purchase request",
+          "score": 0.30
+        }
+      ],
+      "selected": "proceed-with-purchase",
+      "selection_reasoning": "User explicitly approved the purchase after reviewing the item details and price. This aligns with user_control value.",
+      "values_applied": ["principal_benefit", "user_control"],
+      "confidence": 0.95
+    },
+    "escalation": {
+      "evaluated": true,
+      "triggers_checked": [
+        {
+          "trigger": "action_type == \"purchase\"",
+          "matched": true,
+          "value_observed": "purchase"
+        },
+        {
+          "trigger": "amount > 100",
+          "matched": true,
+          "value_observed": 149.99
+        }
+      ],
+      "required": true,
+      "reason": "Purchase action and amount ($149.99) both trigger escalation",
+      "escalation_id": "esc-purchase-001",
+      "escalation_status": "approved",
+      "principal_response": {
+        "decision": "Approved - proceed with purchase",
+        "timestamp": "2026-01-31T14:28:00Z",
+        "conditions": ["Use saved payment method ending in 4242"]
+      }
+    },
+    "context": {
+      "session_id": "sess-jane-shopping",
+      "conversation_turn": 7,
+      "prior_trace_ids": ["tr-search-001", "tr-recommend-001", "tr-compare-001"]
+    }
+  }
+}

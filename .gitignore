@@ -68,3 +68,7 @@ Thumbs.db
 .env.*
 *.pem
 *.key
+
+# Internal planning (not for public repo)
+architecture/
+gtm/
