@@ -72,3 +72,10 @@ Thumbs.db
 # Internal planning (not for public repo)
 architecture/
 gtm/
+
+# Test artifacts
+*.json
+!docs/**/*.json
+!examples/**/*.json
+!schemas/**/*.json
+traces/
