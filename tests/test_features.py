@@ -13,18 +13,14 @@ Design principles:
 
 from __future__ import annotations
 
-import math
-from typing import Any
-
 import pytest
 
 from aap.verification.features import (
-    FeatureExtractor,
     STOPWORDS,
+    FeatureExtractor,
     compute_similarity_with_tfidf,
     cosine_similarity,
 )
-
 
 # ===========================================================================
 # FeatureExtractor Tests

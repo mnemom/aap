@@ -98,7 +98,7 @@ class Values(BaseModel):
     )
 
     @model_validator(mode="after")
-    def custom_values_must_be_defined(self) -> "Values":
+    def custom_values_must_be_defined(self) -> Values:
         """Non-standard values must have definitions."""
         standard_values = {
             "principal_benefit", "transparency", "minimal_data",
@@ -208,7 +208,7 @@ class AuditCommitment(BaseModel):
     )
 
     @model_validator(mode="after")
-    def queryable_requires_endpoint(self) -> "AuditCommitment":
+    def queryable_requires_endpoint(self) -> AuditCommitment:
         """If queryable is true, query_endpoint is required."""
         if self.queryable and not self.query_endpoint:
             raise ValueError("query_endpoint is required when queryable is true")
@@ -283,7 +283,7 @@ class AlignmentCard(BaseModel):
         return self.model_dump(mode="json", exclude_none=True)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "AlignmentCard":
+    def from_dict(cls, data: dict[str, Any]) -> AlignmentCard:
         """Create from dictionary."""
         return cls.model_validate(data)
 

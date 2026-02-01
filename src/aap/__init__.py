@@ -32,10 +32,33 @@ See docs/SPEC.md for the full protocol specification.
 __version__ = "0.1.0"
 
 # Core verification API
-from aap.verification import (
-    check_coherence,
-    detect_drift,
-    verify_trace,
+# Schema models
+from aap.schemas import (
+    # AP-Trace
+    Action,
+    ActionCategory,
+    ActionType,
+    # Alignment Card
+    AlignmentCard,
+    # Value Coherence Handshake
+    AlignmentCardRequest,
+    AlignmentCardResponse,
+    Alternative,
+    APTrace,
+    AuditCommitment,
+    AutonomyEnvelope,
+    CoherenceResultMessage,
+    Decision,
+    Escalation,
+    EscalationTrigger,
+    Principal,
+    PrincipalType,
+    ProposedCollaboration,
+    RelationshipType,
+    TraceContext,
+    TriggerAction,
+    ValueCoherenceCheck,
+    Values,
 )
 
 # Verification result models
@@ -53,35 +76,9 @@ from aap.verification import (
     Violation,
     ViolationType,
     Warning,
-)
-
-# Schema models
-from aap.schemas import (
-    # Alignment Card
-    AlignmentCard,
-    AuditCommitment,
-    AutonomyEnvelope,
-    EscalationTrigger,
-    Principal,
-    PrincipalType,
-    RelationshipType,
-    TriggerAction,
-    Values,
-    # AP-Trace
-    Action,
-    ActionCategory,
-    ActionType,
-    Alternative,
-    APTrace,
-    Decision,
-    Escalation,
-    TraceContext,
-    # Value Coherence Handshake
-    AlignmentCardRequest,
-    AlignmentCardResponse,
-    CoherenceResultMessage,
-    ProposedCollaboration,
-    ValueCoherenceCheck,
+    check_coherence,
+    detect_drift,
+    verify_trace,
 )
 
 __all__ = [

@@ -14,39 +14,36 @@ Design principles:
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
 from aap.schemas import (
-    # Alignment Card
-    AlignmentCard,
-    AuditCommitment,
-    AutonomyEnvelope,
-    EscalationTrigger,
-    Principal,
-    PrincipalType,
-    RelationshipType,
-    TriggerAction,
-    Values,
     # AP-Trace
     Action,
     ActionCategory,
     ActionType,
-    Alternative,
-    APTrace,
-    Decision,
-    Escalation,
-    TraceContext,
+    # Alignment Card
+    AlignmentCard,
     # Value Coherence
     AlignmentCardRequest,
     AlignmentCardResponse,
+    Alternative,
+    APTrace,
+    AuditCommitment,
+    AutonomyEnvelope,
     CoherenceResultMessage,
+    Decision,
+    Escalation,
+    EscalationTrigger,
+    Principal,
+    PrincipalType,
     ProposedCollaboration,
+    RelationshipType,
+    TriggerAction,
     ValueCoherenceCheck,
+    Values,
 )
-
 
 # ===========================================================================
 # AlignmentCard Schema Tests
@@ -696,7 +693,7 @@ class TestSchemaIntegration:
         minimal_trace: dict,
     ):
         """Trace action is within card's bounded actions."""
-        card = AlignmentCard.model_validate(minimal_alignment_card)
+        _card = AlignmentCard.model_validate(minimal_alignment_card)  # noqa: F841
         trace = APTrace.model_validate(minimal_trace)
 
         # The action name might not be in bounded_actions (depends on category)

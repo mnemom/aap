@@ -107,7 +107,7 @@ class Decision(BaseModel):
     )
 
     @model_validator(mode="after")
-    def selected_must_be_in_alternatives(self) -> "Decision":
+    def selected_must_be_in_alternatives(self) -> Decision:
         """Selected option must be one of the alternatives."""
         option_ids = [alt.option_id for alt in self.alternatives_considered]
         if self.selected not in option_ids:
@@ -260,7 +260,7 @@ class APTrace(BaseModel):
         return self.model_dump(mode="json", exclude_none=True)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "APTrace":
+    def from_dict(cls, data: dict[str, Any]) -> APTrace:
         """Create from dictionary."""
         return cls.model_validate(data)
 

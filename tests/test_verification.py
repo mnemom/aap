@@ -18,9 +18,6 @@ Design principles:
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Any
-
-import pytest
 
 from aap import (
     check_coherence,
@@ -30,15 +27,12 @@ from aap import (
 from aap.verification.constants import (
     DEFAULT_SIMILARITY_THRESHOLD,
     DEFAULT_SUSTAINED_TURNS_THRESHOLD,
-    MIN_COHERENCE_FOR_PROCEED,
-    NEAR_BOUNDARY_THRESHOLD,
 )
 from aap.verification.models import (
     DriftDirection,
     Severity,
     ViolationType,
 )
-
 
 # ===========================================================================
 # verify_trace Tests
@@ -813,7 +807,7 @@ class TestDetectDriftEdgeCases:
                 },
             })
 
-        alerts = detect_drift(minimal_alignment_card, traces)
+        _alerts = detect_drift(minimal_alignment_card, traces)  # noqa: F841
 
         # Streak was broken by recovery, so may not reach threshold
         # (depends on similarity computation details)
@@ -842,7 +836,7 @@ class TestVerificationIntegration:
                 violations_count += 1
 
         # Check for drift
-        alerts = detect_drift(minimal_alignment_card, drifting_trace_sequence)
+        _alerts = detect_drift(minimal_alignment_card, drifting_trace_sequence)  # noqa: F841
 
         # If many traces fail verification, drift should be detected
         if violations_count >= DEFAULT_SUSTAINED_TURNS_THRESHOLD:

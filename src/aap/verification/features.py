@@ -43,7 +43,7 @@ STOPWORDS: frozenset[str] = frozenset({
     "against", "along", "among", "around", "before", "behind",
     "below", "beneath", "beside", "between", "beyond", "during",
     # Conjunctions
-    "and", "but", "or", "nor", "for", "yet", "so",
+    "and", "but", "or", "nor", "yet", "so",
     "both", "either", "neither", "whether", "although", "because",
     "since", "unless", "while", "whereas", "if", "then", "else",
     # Adverbs

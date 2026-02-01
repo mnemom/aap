@@ -30,7 +30,6 @@ from aap.verification.models import (
     DriftAnalysis,
     DriftDirection,
     DriftIndicator,
-    Severity,
     ValueAlignment,
     ValueConflict,
     VerificationMetadata,

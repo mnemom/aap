@@ -20,9 +20,8 @@ from typing import Any
 
 import pytest
 
-from aap import check_coherence, detect_drift, verify_trace
+from aap import detect_drift, verify_trace
 from aap.verification.models import ViolationType
-
 
 VECTORS_DIR = Path(__file__).parent / "vectors"
 
