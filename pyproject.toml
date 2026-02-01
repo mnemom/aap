@@ -59,11 +59,11 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/alexgarden/aap"
-Documentation = "https://github.com/alexgarden/aap#readme"
-Repository = "https://github.com/alexgarden/aap.git"
-Issues = "https://github.com/alexgarden/aap/issues"
-Changelog = "https://github.com/alexgarden/aap/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/mnemom/aap"
+Documentation = "https://github.com/mnemom/aap#readme"
+Repository = "https://github.com/mnemom/aap.git"
+Issues = "https://github.com/mnemom/aap/issues"
+Changelog = "https://github.com/mnemom/aap/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.sdist]
 include = [

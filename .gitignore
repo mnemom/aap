@@ -79,3 +79,6 @@ gtm/
 !examples/**/*.json
 !schemas/**/*.json
 traces/
+
+# Internal reviews (not for public repo)
+reviews/

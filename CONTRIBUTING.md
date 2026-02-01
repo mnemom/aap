@@ -6,7 +6,7 @@ Thank you for your interest in contributing to the Agent Alignment Protocol.
 
 ```bash
 # Clone the repository
-git clone https://github.com/alexgarden/aap.git
+git clone https://github.com/mnemom/aap.git
 cd aap
 
 # Create virtual environment
@@ -51,4 +51,4 @@ mypy src
 
 ## Reporting Issues
 
-Please use [GitHub Issues](https://github.com/alexgarden/aap/issues) for bug reports and feature requests.
+Please use [GitHub Issues](https://github.com/mnemom/aap/issues) for bug reports and feature requests.
