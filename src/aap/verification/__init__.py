@@ -46,6 +46,19 @@ from aap.verification.constants import (
     MIN_COHERENCE_FOR_PROCEED,
     NEAR_BOUNDARY_THRESHOLD,
 )
+from aap.verification.divergence import (
+    DivergenceDetector,
+    detect_divergence,
+)
+from aap.verification.features import (
+    FeatureExtractor,
+    cosine_similarity,
+    compute_similarity_with_tfidf,
+)
+from aap.verification.ssm import (
+    SSMAnalyzer,
+    compute_trace_card_similarity,
+)
 from aap.verification.models import (
     CoherenceResult,
     DriftAlert,
@@ -67,6 +80,15 @@ __all__ = [
     "verify_trace",
     "check_coherence",
     "detect_drift",
+    # SSM and Divergence (Phase 1 Braid extraction)
+    "SSMAnalyzer",
+    "compute_trace_card_similarity",
+    "DivergenceDetector",
+    "detect_divergence",
+    # Feature extraction
+    "FeatureExtractor",
+    "cosine_similarity",
+    "compute_similarity_with_tfidf",
     # Result models
     "VerificationResult",
     "Violation",

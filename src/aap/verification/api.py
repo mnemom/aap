@@ -294,6 +294,9 @@ def detect_drift(
     trace's behavior and the declared alignment. Alerts when sustained
     low similarity is detected (consecutive traces below threshold).
 
+    Uses SSM-based similarity computation extracted from Braid for
+    calibrated drift detection with 60/30/10 TF-IDF weighting.
+
     See SPEC Section 8 and Appendix B.2 for algorithm specification.
 
     Args:
@@ -305,66 +308,14 @@ def detect_drift(
     Returns:
         List of DriftAlert objects for detected drift events
     """
-    if len(traces) < sustained_threshold:
-        return []
+    # Delegate to DivergenceDetector (Braid-extracted implementation)
+    from aap.verification.divergence import DivergenceDetector
 
-    extractor = FeatureExtractor()
-    card_features = extractor.extract_card_features(card)
-
-    alerts: list[DriftAlert] = []
-    low_similarity_streak: list[tuple[dict, float]] = []
-
-    # Track metrics for drift direction inference
-    escalation_rates: list[float] = []
-    value_usage: dict[str, int] = {}
-
-    for trace in traces:
-        trace_features = extractor.extract_trace_features(trace)
-        similarity = cosine_similarity(trace_features, card_features)
-
-        # Track escalation rate
-        escalation = trace.get("escalation", {})
-        escalation_rates.append(1.0 if escalation.get("required") else 0.0)
-
-        # Track value usage
-        for value in trace.get("decision", {}).get("values_applied", []):
-            value_usage[value] = value_usage.get(value, 0) + 1
-
-        if similarity < similarity_threshold:
-            low_similarity_streak.append((trace, similarity))
-        else:
-            # Reset streak on recovery
-            low_similarity_streak = []
-
-        # Check if we've hit the threshold for alerting
-        if len(low_similarity_streak) >= sustained_threshold:
-            latest_trace, latest_similarity = low_similarity_streak[-1]
-
-            # Infer drift direction
-            direction = _infer_drift_direction(
-                low_similarity_streak, card, escalation_rates, value_usage
-            )
-
-            # Build specific indicators
-            indicators = _build_drift_indicators(
-                low_similarity_streak, card, escalation_rates
-            )
-
-            alert = DriftAlert(
-                agent_id=latest_trace.get("agent_id", ""),
-                card_id=card.get("card_id", ""),
-                analysis=DriftAnalysis(
-                    similarity_score=round(latest_similarity, 4),
-                    sustained_traces=len(low_similarity_streak),
-                    threshold=similarity_threshold,
-                    drift_direction=direction,
-                    specific_indicators=indicators,
-                ),
-                trace_ids=[t[0].get("trace_id", "") for t in low_similarity_streak],
-            )
-            alerts.append(alert)
-
-    return alerts
+    detector = DivergenceDetector(
+        similarity_threshold=similarity_threshold,
+        sustained_turns_threshold=sustained_threshold,
+    )
+    return detector.detect(card, traces)
 
 
 def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:

@@ -42,6 +42,15 @@ MIN_WORD_LENGTH: int = 3
 # Maximum features to extract from TF-IDF vectorization
 MAX_TFIDF_FEATURES: int = 500
 
+# Maximum character n-gram features
+MAX_CHAR_FEATURES: int = 300
+
+# TF-IDF Similarity Weighting (calibrated from Braid empirical analysis)
+# Combined: 60% word TF-IDF + 30% char TF-IDF + 10% metadata
+TFIDF_WORD_WEIGHT: float = 0.60
+TFIDF_CHAR_WEIGHT: float = 0.30
+TFIDF_META_WEIGHT: float = 0.10
+
 
 # Version
 # -------

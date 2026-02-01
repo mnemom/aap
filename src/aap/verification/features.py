@@ -8,6 +8,11 @@ Feature categories:
 - Structural: action types, categories, escalation patterns
 - Value: declared and applied values
 - Content: TF-IDF from reasoning text (when available)
+
+Similarity weighting (calibrated from Braid):
+- 60% word-level TF-IDF (unigrams + bigrams)
+- 30% character-level TF-IDF (3-5 grams)
+- 10% metadata features (structural similarity)
 """
 
 from __future__ import annotations
@@ -17,7 +22,14 @@ import math
 from collections import Counter
 from typing import Any
 
-from aap.verification.constants import MAX_TFIDF_FEATURES, MIN_WORD_LENGTH
+from aap.verification.constants import (
+    MAX_TFIDF_FEATURES,
+    MIN_WORD_LENGTH,
+    TFIDF_WORD_WEIGHT,
+    TFIDF_CHAR_WEIGHT,
+    TFIDF_META_WEIGHT,
+    MAX_CHAR_FEATURES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +88,140 @@ class FeatureExtractor:
     - `value:` - declared or applied values
     - `escalation:` - escalation-related features
     - `content:` - TF-IDF content features (from reasoning text)
+
+    Also provides similarity computation with calibrated 60/30/10 weighting:
+    - 60% word-level TF-IDF (unigrams + bigrams)
+    - 30% character-level TF-IDF (3-5 grams)
+    - 10% metadata/structural features
     """
+
+    def __init__(self) -> None:
+        """Initialize the feature extractor."""
+        self._word_vectorizer: Any | None = None
+        self._char_vectorizer: Any | None = None
+
+    # ------------------------------------------------------------------
+    # Similarity Computation (60/30/10 weighting)
+    # ------------------------------------------------------------------
+
+    def compute_similarity(self, text_a: str, text_b: str) -> float:
+        """Compute similarity between two texts using 60/30/10 weighting.
+
+        Uses TF-IDF (word + char) when sklearn is available; otherwise
+        falls back to token-overlap cosine similarity.
+
+        Weights: 60% word TF-IDF + 30% char TF-IDF + 10% reserved for
+        metadata (returns 0 for metadata component when not provided).
+
+        Args:
+            text_a: First text to compare
+            text_b: Second text to compare
+
+        Returns:
+            Similarity score in [0.0, 1.0]
+        """
+        if not text_a or not text_b:
+            return 0.0
+
+        if _HAS_SKLEARN:
+            return self._sklearn_combined_similarity(text_a, text_b)
+        return self._legacy_similarity(text_a, text_b)
+
+    def compute_similarity_with_metadata(
+        self,
+        text_a: str,
+        text_b: str,
+        meta_a: dict[str, float] | None = None,
+        meta_b: dict[str, float] | None = None,
+    ) -> float:
+        """Compute similarity with full 60/30/10 weighting including metadata.
+
+        Combined: 60% word TF-IDF + 30% char TF-IDF + 10% metadata cosine.
+
+        Args:
+            text_a: First text to compare
+            text_b: Second text to compare
+            meta_a: Metadata features for first text (sparse dict)
+            meta_b: Metadata features for second text (sparse dict)
+
+        Returns:
+            Similarity score in [0.0, 1.0]
+        """
+        if not text_a or not text_b:
+            return 0.0
+
+        if _HAS_SKLEARN:
+            word_sim, char_sim = self._sklearn_similarity_components(text_a, text_b)
+        else:
+            word_sim = self._legacy_similarity(text_a, text_b)
+            char_sim = word_sim  # Fallback: same score for both components
+
+        meta_sim = 0.0
+        if meta_a and meta_b:
+            meta_sim = cosine_similarity(meta_a, meta_b)
+
+        combined = (
+            TFIDF_WORD_WEIGHT * word_sim
+            + TFIDF_CHAR_WEIGHT * char_sim
+            + TFIDF_META_WEIGHT * meta_sim
+        )
+        return round(combined, 4)
+
+    def _sklearn_combined_similarity(self, text_a: str, text_b: str) -> float:
+        """Combined word + char TF-IDF similarity (sklearn path).
+
+        Returns 60% word + 30% char, leaving 10% for metadata (0 here).
+        """
+        word_sim, char_sim = self._sklearn_similarity_components(text_a, text_b)
+        # 60% word + 30% char + 10% metadata (0 when no metadata)
+        return round(TFIDF_WORD_WEIGHT * word_sim + TFIDF_CHAR_WEIGHT * char_sim, 4)
+
+    def _sklearn_similarity_components(
+        self, text_a: str, text_b: str
+    ) -> tuple[float, float]:
+        """Return (word_similarity, char_similarity) via sklearn TF-IDF.
+
+        Word-level: unigrams + bigrams, sublinear TF, max 500 features
+        Char-level: 3-5 grams, word boundary aware, max 300 features
+        """
+        corpus = [text_a, text_b]
+
+        # Word-level TF-IDF with bigrams
+        word_vec = TfidfVectorizer(
+            analyzer="word",
+            ngram_range=(1, 2),
+            max_features=MAX_TFIDF_FEATURES,
+            sublinear_tf=True,
+        )
+        try:
+            word_matrix = word_vec.fit_transform(corpus)
+            word_sim = float(sklearn_cosine(word_matrix[0:1], word_matrix[1:2])[0][0])
+        except ValueError:
+            word_sim = 0.0
+
+        # Character n-gram TF-IDF (3-5 grams, word boundary aware)
+        char_vec = TfidfVectorizer(
+            analyzer="char_wb",
+            ngram_range=(3, 5),
+            max_features=MAX_CHAR_FEATURES,
+        )
+        try:
+            char_matrix = char_vec.fit_transform(corpus)
+            char_sim = float(sklearn_cosine(char_matrix[0:1], char_matrix[1:2])[0][0])
+        except ValueError:
+            char_sim = 0.0
+
+        return word_sim, char_sim
+
+    def _legacy_similarity(self, text_a: str, text_b: str) -> float:
+        """Token-overlap cosine similarity (stdlib only fallback)."""
+        features_a = self._extract_content_features(text_a)
+        features_b = self._extract_content_features(text_b)
+        return cosine_similarity(features_a, features_b)
+
+    # ------------------------------------------------------------------
+    # Feature Extraction
+    # ------------------------------------------------------------------
 
     def extract_trace_features(self, trace: dict[str, Any]) -> dict[str, float]:
         """Extract features from an AP-Trace.
@@ -226,15 +371,26 @@ def cosine_similarity(a: dict[str, float], b: dict[str, float]) -> float:
     return round(dot_product / (mag_a * mag_b), 4)
 
 
-def compute_similarity_with_tfidf(text_a: str, text_b: str) -> float:
-    """Compute similarity between two texts using TF-IDF.
+def compute_similarity_with_tfidf(
+    text_a: str,
+    text_b: str,
+    meta_a: dict[str, float] | None = None,
+    meta_b: dict[str, float] | None = None,
+) -> float:
+    """Compute similarity between two texts using calibrated 60/30/10 TF-IDF weighting.
 
-    Uses sklearn's TfidfVectorizer when available, falls back to
-    simple token overlap otherwise.
+    Uses sklearn's TfidfVectorizer when available with:
+    - 60% word-level TF-IDF (unigrams + bigrams)
+    - 30% character-level TF-IDF (3-5 grams)
+    - 10% metadata features (if provided)
+
+    Falls back to simple token overlap if sklearn unavailable.
 
     Args:
         text_a: First text
         text_b: Second text
+        meta_a: Optional metadata features for first text
+        meta_b: Optional metadata features for second text
 
     Returns:
         Similarity score in [0.0, 1.0]
@@ -242,21 +398,8 @@ def compute_similarity_with_tfidf(text_a: str, text_b: str) -> float:
     if not text_a or not text_b:
         return 0.0
 
-    if _HAS_SKLEARN:
-        try:
-            vectorizer = TfidfVectorizer(
-                analyzer="word",
-                ngram_range=(1, 2),
-                max_features=MAX_TFIDF_FEATURES,
-                sublinear_tf=True,
-            )
-            matrix = vectorizer.fit_transform([text_a, text_b])
-            return float(sklearn_cosine(matrix[0:1], matrix[1:2])[0][0])
-        except ValueError:
-            return 0.0
-
-    # Fallback: simple token overlap
     extractor = FeatureExtractor()
-    features_a = extractor._extract_content_features(text_a)
-    features_b = extractor._extract_content_features(text_b)
-    return cosine_similarity(features_a, features_b)
+
+    if meta_a is not None or meta_b is not None:
+        return extractor.compute_similarity_with_metadata(text_a, text_b, meta_a, meta_b)
+    return extractor.compute_similarity(text_a, text_b)
