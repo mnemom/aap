@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AAP Playground - Agent Alignment Protocol Verification</title>
+    <meta name="description" content="Interactive verification playground for Agent Alignment Protocol. Test Alignment Cards, AP-Traces, and drift detection in your browser.">
+
+    <!-- AI Browser Hints: Semantic metadata for agent understanding -->
+    <meta name="ai:purpose" content="alignment-verification-tool">
+    <meta name="ai:capabilities" content="verify_trace,check_coherence,detect_drift">
+    <meta name="ai:input-format" content="json">
+    <meta name="ai:output-format" content="json">
+
+    <!-- Open Graph for sharing -->
+    <meta property="og:title" content="AAP Playground">
+    <meta property="og:description" content="Verify agent alignment in your browser">
+    <meta property="og:type" content="website">
+
+    <!-- JSON-LD Structured Data for AI browsers and search engines -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "AAP Playground",
+        "description": "Interactive verification playground for Agent Alignment Protocol",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "featureList": [
+            "Verify AP-Trace against Alignment Card",
+            "Check value coherence between agents",
+            "Detect behavioral drift over time",
+            "Adjustable similarity thresholds",
+            "Pre-loaded examples for learning"
+        ],
+        "softwareHelp": {
+            "@type": "WebPage",
+            "url": "https://github.com/anthropic/aap/docs/QUICKSTART.md"
+        }
+    }
+    </script>
+
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Pyodide for Python-in-browser -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+</head>
+<body>
+    <!-- Skip link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header role="banner">
+        <div class="header-content">
+            <h1>
+                <span class="logo">AAP</span>
+                <span class="title">Playground</span>
+            </h1>
+            <p class="tagline">Agent Alignment Protocol Verification</p>
+        </div>
+        <nav aria-label="Main navigation">
+            <a href="https://github.com/anthropic/aap" target="_blank" rel="noopener">GitHub</a>
+            <a href="../SPEC.md" target="_blank">Spec</a>
+            <a href="../QUICKSTART.md" target="_blank">Quickstart</a>
+            <a href="../LIMITS.md" target="_blank">Limits</a>
+        </nav>
+    </header>
+
+    <main id="main-content" role="main">
+        <!-- Loading State -->
+        <div id="loading-overlay" class="loading-overlay" aria-live="polite" aria-busy="true">
+            <div class="loading-content">
+                <div class="spinner" aria-hidden="true"></div>
+                <p id="loading-status">Loading Python runtime...</p>
+            </div>
+        </div>
+
+        <!-- Mode Selector -->
+        <section class="mode-selector" aria-label="Verification mode selection">
+            <div class="mode-tabs" role="tablist">
+                <button role="tab"
+                        id="tab-verify"
+                        aria-selected="true"
+                        aria-controls="panel-verify"
+                        class="mode-tab active"
+                        data-mode="verify">
+                    <span class="tab-icon" aria-hidden="true">&#x2713;</span>
+                    Verify Trace
+                </button>
+                <button role="tab"
+                        id="tab-coherence"
+                        aria-selected="false"
+                        aria-controls="panel-coherence"
+                        class="mode-tab"
+                        data-mode="coherence">
+                    <span class="tab-icon" aria-hidden="true">&#x21C4;</span>
+                    Check Coherence
+                </button>
+                <button role="tab"
+                        id="tab-drift"
+                        aria-selected="false"
+                        aria-controls="panel-drift"
+                        class="mode-tab"
+                        data-mode="drift">
+                    <span class="tab-icon" aria-hidden="true">&#x21DD;</span>
+                    Detect Drift
+                </button>
+            </div>
+        </section>
+
+        <!-- Verify Trace Panel -->
+        <section id="panel-verify"
+                 role="tabpanel"
+                 aria-labelledby="tab-verify"
+                 class="mode-panel active"
+                 data-ai-function="verify_trace">
+            <div class="panel-grid">
+                <div class="input-section">
+                    <div class="input-card">
+                        <div class="input-header">
+                            <h2>Alignment Card</h2>
+                            <select id="card-examples" aria-label="Load example Alignment Card">
+                                <option value="">Load example...</option>
+                                <option value="minimal">Minimal Card</option>
+                                <option value="full">Full Card</option>
+                                <option value="restrictive">Restrictive Card</option>
+                            </select>
+                        </div>
+                        <label for="card-input" class="sr-only">Alignment Card JSON</label>
+                        <textarea id="card-input"
+                                  class="json-input"
+                                  placeholder="Paste Alignment Card JSON..."
+                                  spellcheck="false"
+                                  aria-describedby="card-input-hint"></textarea>
+                        <p id="card-input-hint" class="input-hint">
+                            The agent's declared alignment posture
+                        </p>
+                    </div>
+
+                    <div class="input-card">
+                        <div class="input-header">
+                            <h2>AP-Trace</h2>
+                            <select id="trace-examples" aria-label="Load example AP-Trace">
+                                <option value="">Load example...</option>
+                                <option value="compliant">Compliant Trace</option>
+                                <option value="forbidden">Forbidden Action</option>
+                                <option value="undeclared">Undeclared Value</option>
+                                <option value="missed-escalation">Missed Escalation</option>
+                            </select>
+                        </div>
+                        <label for="trace-input" class="sr-only">AP-Trace JSON</label>
+                        <textarea id="trace-input"
+                                  class="json-input"
+                                  placeholder="Paste AP-Trace JSON..."
+                                  spellcheck="false"
+                                  aria-describedby="trace-input-hint"></textarea>
+                        <p id="trace-input-hint" class="input-hint">
+                            The audit record of an agent decision
+                        </p>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button id="verify-btn" class="primary-btn" disabled>
+                        <span class="btn-icon" aria-hidden="true">&#x25B6;</span>
+                        Verify
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Check Coherence Panel -->
+        <section id="panel-coherence"
+                 role="tabpanel"
+                 aria-labelledby="tab-coherence"
+                 class="mode-panel"
+                 hidden
+                 data-ai-function="check_coherence">
+            <div class="panel-grid">
+                <div class="input-section">
+                    <div class="input-card">
+                        <div class="input-header">
+                            <h2>My Card</h2>
+                            <select id="my-card-examples" aria-label="Load example card">
+                                <option value="">Load example...</option>
+                                <option value="privacy-focused">Privacy-Focused</option>
+                                <option value="data-driven">Data-Driven</option>
+                                <option value="balanced">Balanced</option>
+                            </select>
+                        </div>
+                        <label for="my-card-input" class="sr-only">My Alignment Card JSON</label>
+                        <textarea id="my-card-input"
+                                  class="json-input"
+                                  placeholder="Paste initiator's Alignment Card..."
+                                  spellcheck="false"></textarea>
+                    </div>
+
+                    <div class="input-card">
+                        <div class="input-header">
+                            <h2>Their Card</h2>
+                            <select id="their-card-examples" aria-label="Load example card">
+                                <option value="">Load example...</option>
+                                <option value="privacy-focused">Privacy-Focused</option>
+                                <option value="data-driven">Data-Driven</option>
+                                <option value="balanced">Balanced</option>
+                            </select>
+                        </div>
+                        <label for="their-card-input" class="sr-only">Their Alignment Card JSON</label>
+                        <textarea id="their-card-input"
+                                  class="json-input"
+                                  placeholder="Paste responder's Alignment Card..."
+                                  spellcheck="false"></textarea>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button id="coherence-btn" class="primary-btn" disabled>
+                        <span class="btn-icon" aria-hidden="true">&#x25B6;</span>
+                        Check Coherence
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Detect Drift Panel -->
+        <section id="panel-drift"
+                 role="tabpanel"
+                 aria-labelledby="tab-drift"
+                 class="mode-panel"
+                 hidden
+                 data-ai-function="detect_drift">
+            <div class="panel-grid">
+                <div class="input-section">
+                    <div class="input-card">
+                        <div class="input-header">
+                            <h2>Alignment Card</h2>
+                            <select id="drift-card-examples" aria-label="Load example card">
+                                <option value="">Load example...</option>
+                                <option value="minimal">Minimal Card</option>
+                            </select>
+                        </div>
+                        <label for="drift-card-input" class="sr-only">Alignment Card JSON</label>
+                        <textarea id="drift-card-input"
+                                  class="json-input"
+                                  placeholder="Paste Alignment Card..."
+                                  spellcheck="false"></textarea>
+                    </div>
+
+                    <div class="input-card">
+                        <div class="input-header">
+                            <h2>Trace Sequence</h2>
+                            <select id="drift-traces-examples" aria-label="Load example traces">
+                                <option value="">Load example...</option>
+                                <option value="aligned">Aligned Sequence (no drift)</option>
+                                <option value="value-drift">Value Drift</option>
+                                <option value="autonomy-expansion">Autonomy Expansion</option>
+                            </select>
+                        </div>
+                        <label for="drift-traces-input" class="sr-only">AP-Trace sequence JSON array</label>
+                        <textarea id="drift-traces-input"
+                                  class="json-input"
+                                  placeholder="Paste array of AP-Traces (chronological)..."
+                                  spellcheck="false"></textarea>
+                    </div>
+                </div>
+
+                <div class="threshold-controls">
+                    <div class="threshold-control">
+                        <label for="similarity-threshold">
+                            Similarity Threshold: <output id="similarity-value">0.30</output>
+                        </label>
+                        <input type="range"
+                               id="similarity-threshold"
+                               min="0.1"
+                               max="0.9"
+                               step="0.05"
+                               value="0.30"
+                               aria-describedby="similarity-hint">
+                        <p id="similarity-hint" class="threshold-hint">
+                            Alert when similarity drops below this value (default: 0.30)
+                        </p>
+                    </div>
+
+                    <div class="threshold-control">
+                        <label for="sustained-threshold">
+                            Sustained Turns: <output id="sustained-value">3</output>
+                        </label>
+                        <input type="range"
+                               id="sustained-threshold"
+                               min="2"
+                               max="10"
+                               step="1"
+                               value="3"
+                               aria-describedby="sustained-hint">
+                        <p id="sustained-hint" class="threshold-hint">
+                            Alert after N consecutive low-similarity traces (default: 3)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button id="drift-btn" class="primary-btn" disabled>
+                        <span class="btn-icon" aria-hidden="true">&#x25B6;</span>
+                        Detect Drift
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="results-section" aria-live="polite" hidden>
+            <div class="results-header">
+                <h2>Results</h2>
+                <div class="results-actions">
+                    <button id="copy-results" class="secondary-btn" aria-label="Copy results to clipboard">
+                        Copy JSON
+                    </button>
+                    <button id="clear-results" class="secondary-btn" aria-label="Clear results">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Badge -->
+            <div id="result-status" class="result-status" role="status"></div>
+
+            <!-- Human-readable summary -->
+            <div id="result-summary" class="result-summary"></div>
+
+            <!-- Machine-readable JSON output -->
+            <details class="result-details">
+                <summary>Full JSON Response</summary>
+                <pre id="result-json" class="result-json" data-ai-output="true"></pre>
+            </details>
+        </section>
+
+        <!-- AI Browser API Documentation (hidden but machine-readable) -->
+        <aside id="ai-api-docs" class="ai-api-docs" aria-hidden="true" hidden>
+            <h2>API for AI Browsers</h2>
+            <p>This playground exposes a JavaScript API for programmatic access:</p>
+            <pre>
+// Verify a trace against a card
+const result = await window.AAP.verifyTrace(traceJson, cardJson);
+
+// Check coherence between two cards
+const result = await window.AAP.checkCoherence(myCardJson, theirCardJson);
+
+// Detect drift in a trace sequence
+const result = await window.AAP.detectDrift(cardJson, tracesJson, {
+    similarityThreshold: 0.3,
+    sustainedThreshold: 3
+});
+
+// URL Parameters (for AI browser navigation):
+// ?mode=verify|coherence|drift
+// ?card=base64_encoded_json
+// ?trace=base64_encoded_json
+// ?auto=true (auto-run on load)
+            </pre>
+        </aside>
+    </main>
+
+    <footer role="contentinfo">
+        <p>
+            Agent Alignment Protocol &middot;
+            <a href="../LIMITS.md">What AAP Does NOT Guarantee</a> &middot;
+            Client-side only &mdash; no data leaves your browser
+        </p>
+        <p class="version">
+            AAP v0.1.0 &middot; Pyodide Runtime
+        </p>
+    </footer>
+
+    <script src="playground.js" type="module"></script>
+</body>
+</html>

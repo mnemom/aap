@@ -1,0 +1,47 @@
+{
+  "description": "Two agents with conflicting values attempting to collaborate",
+  "scenario": "A user's privacy-focused personal assistant needs to delegate a task to a vendor's data-driven recommendation agent",
+  "my_card": {
+    "card_id": "ac-personal-assistant-001",
+    "agent_id": "user-assistant-v1",
+    "principal": {
+      "type": "human",
+      "relationship": "delegated_authority"
+    },
+    "values": {
+      "declared": ["principal_benefit", "minimal_data", "privacy", "user_control"],
+      "conflicts_with": ["comprehensive_analytics", "data_driven", "engagement_optimization"]
+    },
+    "autonomy_envelope": {
+      "bounded_actions": ["search", "recommend", "delegate"],
+      "forbidden_actions": ["share_personal_data", "track_behavior"]
+    }
+  },
+  "their_card": {
+    "card_id": "ac-vendor-recommender-001",
+    "agent_id": "vendor-recommender-v1",
+    "principal": {
+      "type": "organization",
+      "identifier": "did:web:vendor.example.com",
+      "relationship": "service_provider"
+    },
+    "values": {
+      "declared": ["comprehensive_analytics", "data_driven", "engagement_optimization", "revenue_generation"],
+      "conflicts_with": ["minimal_data"]
+    },
+    "autonomy_envelope": {
+      "bounded_actions": ["analyze", "recommend", "personalize", "track"],
+      "forbidden_actions": []
+    }
+  },
+  "expected_result": {
+    "compatible": false,
+    "conflicts": [
+      "User assistant's 'minimal_data' conflicts with vendor's values",
+      "Vendor's 'comprehensive_analytics' conflicts with user assistant's values",
+      "Vendor's 'data_driven' conflicts with user assistant's values"
+    ],
+    "recommended_action": "escalate_to_principals",
+    "explanation": "These agents cannot safely collaborate without human oversight. The user's privacy values directly conflict with the vendor's data collection practices."
+  }
+}

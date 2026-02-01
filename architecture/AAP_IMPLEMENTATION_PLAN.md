@@ -50,6 +50,7 @@ This document defines the complete implementation plan for Agent Alignment Proto
 | **Test Suite** | Ariadne | COMPLETE | 2026-02-01 | 137 tests, 96% coverage. test_schemas.py (92 tests), test_verification.py (31 tests), test_features.py (32 tests), test_vectors.py (12 tests). Test vectors: 2 valid traces, 3 invalid traces, 2 drift cases. Comprehensive coverage of all 3 API entry points, all violation types, all drift directions. |
 | **mcp-migration.md** | Ember | COMPLETE | 2026-02-01 | 767 lines, step-by-step MCP server extension guide, tool category mapping (bounded/escalate/forbidden), AP-Trace generation patterns, alignment resource exposure, client-side verification, migration checklist |
 | **mcp-integration example** | Ember | COMPLETE | 2026-02-01 | 442 lines main.py + 226 lines README, working demo: simulated filesystem server, 3 tool categories (read=bounded, write=escalate, delete=forbidden), 4 AP-Traces generated, verification against alignment card, 2 generated artifacts |
+| **Interactive Playground** | Ariadne | COMPLETE | 2026-02-01 | 2699 lines (index.html, styles.css, playground.js), Pyodide-based Python-in-browser verification, all 3 modes (verify_trace, check_coherence, detect_drift), live threshold sliders, pre-loaded examples, cross-browser compatible (Chrome/Firefox/Safari), dark mode, WCAG 2.1 AA accessible, JSON-LD structured data for AI browsers, window.AAP global API for programmatic access |
 
 ---
 
