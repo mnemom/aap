@@ -5,7 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/agent-alignment-protocol.svg)](https://pypi.org/project/agent-alignment-protocol/)
 [![npm](https://img.shields.io/npm/v/agent-alignment-protocol.svg)](https://www.npmjs.com/package/agent-alignment-protocol)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Spec](https://img.shields.io/badge/spec-v0.1.0-green.svg)](docs/SPEC.md)
+[![Spec](https://img.shields.io/badge/spec-v0.1.1-green.svg)](docs/SPEC.md)
 
 **A transparency protocol for autonomous agents.**
 
@@ -39,9 +39,8 @@ def recommend_product(user_preferences):
 ```bash
 # Verify behavior matches declaration
 aap verify --card alignment-card.json --trace logs/trace.json
-# ✓ 47/47 decisions within declared envelope
-# ⚠ 3 decisions near boundary (logged)
-# ✗ 0 boundary violations
+# ✓ Verified [similarity: 0.82]
+# Checks: autonomy, escalation, values, forbidden, behavioral_similarity
 ```
 
 ## Why AAP?
@@ -221,13 +220,16 @@ from aap import verify_trace, detect_drift
 
 # Single trace verification
 result = verify_trace(trace, card)
+print(f"Verified: {result.verified}, Similarity: {result.similarity_score:.2f}")
 if not result.verified:
     print(f"Violations: {result.violations}")
+if result.warnings:
+    print(f"Warnings: {result.warnings}")
 
 # Drift detection over time
 alerts = detect_drift(card, recent_traces)
 for alert in alerts:
-    print(f"Drift detected: {alert.drift_direction}")
+    print(f"Drift detected: {alert.analysis.drift_direction}")
 ```
 
 **Verification checks:**
@@ -235,6 +237,20 @@ for alert in alerts:
 - Escalation compliance (required escalations were performed)
 - Value consistency (applied values match declared values)
 - Forbidden action compliance (no forbidden actions taken)
+- Behavioral similarity (semantic alignment using SSM analysis)
+
+**Similarity scoring:** Each verification returns a `similarity_score` (0.0-1.0) measuring semantic similarity between the trace and declared alignment. If a trace passes structural checks but has `similarity_score < 0.50`, a `low_behavioral_similarity` warning is generated.
+
+## Try It
+
+**[Interactive Playground](docs/playground/)** — Verify traces in your browser with SSM visualization.
+
+- Paste your Alignment Card and AP-Trace
+- See verification results with similarity scoring
+- Visualize behavioral patterns with SSM heatmaps
+- Adjust thresholds in real-time
+
+No server required — runs entirely client-side via WebAssembly.
 
 ## Documentation
 
@@ -257,7 +273,7 @@ for alert in alerts:
 
 ## Status
 
-**Current Version**: 0.1.0 (Draft)
+**Current Version**: 0.1.1 (Draft)
 
 | Component | Status |
 |-----------|--------|
@@ -265,7 +281,8 @@ for alert in alerts:
 | JSON Schemas | ✅ Complete |
 | Python SDK | ✅ Complete |
 | TypeScript SDK | 🔄 Beta |
-| Verification Engine | ✅ Complete |
+| Verification Engine | ✅ Complete (with similarity scoring) |
+| SSM Visualization | ✅ Complete |
 | Interactive Playground | ✅ Complete |
 
 ## API Reference
@@ -273,9 +290,9 @@ for alert in alerts:
 ```python
 # Core API
 from aap import (
-    verify_trace,      # Verify single trace against card
-    check_coherence,   # Check value compatibility between agents
-    detect_drift,      # Detect behavioral drift over time
+    verify_trace,      # Verify single trace against card → VerificationResult
+    check_coherence,   # Check value compatibility between agents → CoherenceResult
+    detect_drift,      # Detect behavioral drift over time → list[DriftAlert]
     trace_decision,    # Decorator for automatic AP-Trace generation
     mcp_traced,        # Decorator for MCP tool tracing
 )
@@ -284,16 +301,16 @@ from aap import (
 from aap import (
     AlignmentCard,
     APTrace,
-    VerificationResult,
-    CoherenceResult,
-    DriftAlert,
+    VerificationResult,  # .verified, .similarity_score, .violations, .warnings
+    CoherenceResult,     # .compatible, .score, .value_alignment
+    DriftAlert,          # .analysis.similarity_score, .analysis.drift_direction
 )
 
 # CLI
 # aap init [--values VALUES] [--output FILE]
-# aap verify --card CARD --trace TRACE
+# aap verify --card CARD --trace TRACE        → Shows [similarity: X.XX]
 # aap check-coherence --my-card MINE --their-card THEIRS
-# aap drift --card CARD --traces TRACES_DIR
+# aap drift --card CARD --traces TRACES_DIR   → Uses SSM analysis
 ```
 
 ## Contributing

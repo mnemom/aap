@@ -129,6 +129,7 @@ from aap import verify_trace
 result = verify_trace(trace_dict, card_dict)
 
 print(f"Verified: {result.verified}")
+print(f"Similarity: {result.similarity_score:.2f}")
 
 if not result.verified:
     for violation in result.violations:
@@ -141,12 +142,22 @@ for warning in result.warnings:
 
 # Example output for a compliant trace:
 # Verified: True
+# Similarity: 0.82
+#
+# Example output for a low-similarity trace (structural pass, behavioral warning):
+# Verified: True
+# Similarity: 0.38
+# WARNING: low_behavioral_similarity
+#   Trace passes structural checks but behavioral similarity (0.38) is below threshold (0.5)
 #
 # Example output for a violation:
 # Verified: False
+# Similarity: 0.15
 # VIOLATION [HIGH]: unbounded_action
 #   Action 'delete_account' not in bounded_actions: ['search', 'compare', 'recommend', 'add_to_cart']
 ```
+
+**Similarity scoring:** The `similarity_score` (0.0-1.0) measures how semantically similar the trace's behavior is to the declared alignment. A trace can pass all structural checks but still receive a `low_behavioral_similarity` warning if `similarity_score < 0.50`.
 
 ## Step 4: Check Coherence Before Agent Coordination
 
@@ -277,19 +288,23 @@ trace_dict = trace.model_dump()
 # 3. Verify
 result = verify_trace(trace_dict, card_dict)
 print(f"Trace verified: {result.verified}")
+print(f"Similarity score: {result.similarity_score:.2f}")
 print(f"Violations: {len(result.violations)}")
 print(f"Warnings: {len(result.warnings)}")
 
 # Output:
 # Trace verified: True
+# Similarity score: 0.71
 # Violations: 0
 # Warnings: 0
 ```
 
 ## What's Next?
 
+- **[Interactive Playground](playground/)** — Try verification in your browser with SSM visualization
 - **[SPEC.md](SPEC.md)** — Full protocol specification for implementers
 - **[LIMITS.md](LIMITS.md)** — What AAP can and cannot guarantee (read this)
+- **[CALIBRATION.md](CALIBRATION.md)** — How similarity thresholds were derived
 - **[a2a-migration.md](a2a-migration.md)** — Adding AAP to existing A2A agents
 - **[mcp-migration.md](mcp-migration.md)** — Adding alignment to MCP tools
 - **[Examples](../examples/)** — Complete working examples
@@ -344,6 +359,8 @@ def verify_session(card_dict: dict, traces: list[dict]) -> dict:
     """Verify all traces from a session and summarize results."""
     results = [verify_trace(t, card_dict) for t in traces]
 
+    similarities = [r.similarity_score for r in results]
+
     return {
         "total": len(results),
         "verified": sum(1 for r in results if r.verified),
@@ -352,6 +369,10 @@ def verify_session(card_dict: dict, traces: list[dict]) -> dict:
         "violation_types": list(set(
             v.type for r in results for v in r.violations
         )),
+        # Similarity statistics
+        "mean_similarity": sum(similarities) / len(similarities) if similarities else 0,
+        "min_similarity": min(similarities) if similarities else 0,
+        "low_similarity_count": sum(1 for s in similarities if s < 0.50),
     }
 ```
 

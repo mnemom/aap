@@ -1,8 +1,8 @@
 # Agent Alignment Protocol (AAP) Specification
 
-**Version**: 0.1.0
+**Version**: 0.1.1
 **Status**: Draft
-**Date**: 2026-01-31
+**Date**: 2026-02-01
 **Authors**: Vigil (protocol), Ariadne (architecture), Ember (coordination)
 
 ---
@@ -909,11 +909,13 @@ The verification algorithm MUST check:
 2. **Escalation compliance**: Required escalations were performed
 3. **Value consistency**: Applied values match declared values
 4. **Forbidden action compliance**: No forbidden actions taken
+5. **Behavioral similarity**: Trace behavior is semantically similar to declared alignment
 
 ```
 function verify_trace(trace: APTrace, card: AlignmentCard) -> VerificationResult:
 
   violations = []
+  warnings = []
 
   // Check autonomy compliance
   if trace.action.category == "bounded":
@@ -938,9 +940,21 @@ function verify_trace(trace: APTrace, card: AlignmentCard) -> VerificationResult
     if value not in card.values.declared:
       violations.append(ViolationType.UNDECLARED_VALUE)
 
+  // Compute behavioral similarity using SSM analysis
+  similarity_score = compute_alignment_similarity(trace, card)
+
+  // Warn if structurally valid but behaviorally divergent
+  if len(violations) == 0 and similarity_score < BEHAVIORAL_SIMILARITY_THRESHOLD:
+    warnings.append(Warning(
+      type = "low_behavioral_similarity",
+      description = "Trace passes structural checks but behavioral similarity is below threshold"
+    ))
+
   return VerificationResult(
     verified = len(violations) == 0,
     violations = violations,
+    warnings = warnings,
+    similarity_score = similarity_score,
     trace_id = trace.trace_id,
     card_id = card.card_id
   )
@@ -950,12 +964,28 @@ function verify_trace(trace: APTrace, card: AlignmentCard) -> VerificationResult
 
 A verification result MUST contain:
 
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `verified` | boolean | REQUIRED | True if no violations were found |
+| `trace_id` | string | REQUIRED | ID of the verified trace |
+| `card_id` | string | REQUIRED | ID of the Alignment Card used |
+| `timestamp` | string | REQUIRED | ISO 8601 timestamp of verification |
+| `violations` | array | REQUIRED | List of violations found |
+| `warnings` | array | REQUIRED | List of non-critical warnings |
+| `similarity_score` | number | REQUIRED | Behavioral similarity (0.0-1.0) |
+| `verification_metadata` | object | REQUIRED | Metadata about verification process |
+
+The `similarity_score` measures semantic similarity between the trace behavior and declared alignment using SSM (Self-Similarity Matrix) analysis. A score of 1.0 indicates perfect alignment; lower scores indicate divergence.
+
+**Threshold**: `BEHAVIORAL_SIMILARITY_THRESHOLD = 0.50`. If a trace passes all structural checks but has `similarity_score < 0.50`, a `low_behavioral_similarity` warning is generated.
+
 ```json
 {
   "verified": true,
   "trace_id": "tr-abc123",
   "card_id": "ac-def456",
   "timestamp": "2026-01-31T12:35:00Z",
+  "similarity_score": 0.78,
   "violations": [],
   "warnings": [
     {
@@ -966,7 +996,12 @@ A verification result MUST contain:
   ],
   "verification_metadata": {
     "algorithm_version": "1.0.0",
-    "checks_performed": ["autonomy", "escalation", "values", "forbidden"]
+    "checks_performed": ["autonomy", "escalation", "values", "forbidden", "behavioral_similarity"],
+    "similarity_details": {
+      "similarities": [0.78],
+      "mean_similarity": 0.78,
+      "trend": 0.0
+    }
   }
 }
 ```
@@ -1004,10 +1039,20 @@ The following thresholds are calibrated from empirical analysis:
 
 | Constant | Value | Description |
 |----------|-------|-------------|
-| `DEFAULT_SIMILARITY_THRESHOLD` | 0.30 | Alert when similarity drops below |
+| `DEFAULT_SIMILARITY_THRESHOLD` | 0.30 | Alert when drift similarity drops below |
 | `DEFAULT_SUSTAINED_TURNS_THRESHOLD` | 3 | Alert after N consecutive low-similarity traces |
+| `BEHAVIORAL_SIMILARITY_THRESHOLD` | 0.50 | Warn on single-trace verification when below |
+| `MIN_COHERENCE_FOR_PROCEED` | 0.70 | Minimum coherence score for automatic proceed |
 
-These values were derived from analysis of approximately 50 multi-turn agent conversations. Implementations MAY adjust thresholds based on their own calibration data.
+**Feature Extraction Weighting** (60/30/10 TF-IDF):
+
+| Component | Weight | Description |
+|-----------|--------|-------------|
+| Word TF-IDF | 60% | Semantic content from unigrams and bigrams |
+| Character TF-IDF | 30% | Stylistic patterns from 3-5 character n-grams |
+| Metadata features | 10% | Structural alignment (action types, values) |
+
+These values were derived from analysis of approximately 50 multi-turn agent conversations totaling ~2,500 messages. See `docs/CALIBRATION.md` for methodology and threshold derivation. Implementations MAY adjust thresholds based on their own calibration data but SHOULD document the methodology used.
 
 ### 8.4 Drift Alert
 
@@ -1234,6 +1279,8 @@ class Violation:
     description: str
     trace_field: Optional[str] = None
 
+BEHAVIORAL_SIMILARITY_THRESHOLD = 0.50
+
 @dataclass
 class VerificationResult:
     verified: bool
@@ -1241,17 +1288,22 @@ class VerificationResult:
     card_id: str
     violations: List[Violation]
     warnings: List[dict]
+    similarity_score: float
 
 def verify_trace(trace: dict, card: dict) -> VerificationResult:
     """
     Verify a single AP-Trace against an Alignment Card.
+
+    Performs structural validation AND behavioral similarity analysis:
+    1. Structural checks (autonomy, escalation, values, forbidden)
+    2. SSM-based similarity scoring (trace vs card behavioral fingerprint)
 
     Args:
         trace: AP-Trace dictionary
         card: Alignment Card dictionary
 
     Returns:
-        VerificationResult with violations and warnings
+        VerificationResult with violations, warnings, and similarity_score
     """
     violations = []
     warnings = []
@@ -1314,12 +1366,24 @@ def verify_trace(trace: dict, card: dict) -> VerificationResult:
                 trace_field="decision.values_applied"
             ))
 
+    # Compute behavioral similarity using SSM analysis
+    similarity_score = _compute_alignment_similarity(trace, card)
+
+    # Warn if structurally valid but behaviorally divergent
+    if len(violations) == 0 and similarity_score < BEHAVIORAL_SIMILARITY_THRESHOLD:
+        warnings.append({
+            "type": "low_behavioral_similarity",
+            "description": f"Trace passes structural checks but similarity ({similarity_score:.2f}) is below threshold ({BEHAVIORAL_SIMILARITY_THRESHOLD})",
+            "trace_field": "(computed)"
+        })
+
     return VerificationResult(
         verified=len(violations) == 0,
         trace_id=trace.get("trace_id", ""),
         card_id=card.get("card_id", ""),
         violations=violations,
-        warnings=warnings
+        warnings=warnings,
+        similarity_score=similarity_score
     )
 
 def _evaluate_condition(condition: str, trace: dict) -> bool:
@@ -1471,6 +1535,16 @@ def _infer_drift_direction(
 ---
 
 ## Appendix C: Changelog
+
+### Version 0.1.1 (2026-02-01)
+
+- Added behavioral similarity scoring to verification (Section 7.3, 7.4)
+- Added `similarity_score` field to VerificationResult
+- Added `BEHAVIORAL_SIMILARITY_THRESHOLD` constant (0.50)
+- Added `low_behavioral_similarity` warning type
+- Documented 60/30/10 TF-IDF feature weighting (Section 8.3)
+- Updated reference implementation in Appendix B.1
+- Reference to CALIBRATION.md for threshold derivation methodology
 
 ### Version 0.1.0 (2026-01-31)
 
