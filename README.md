@@ -1,6 +1,7 @@
 # Agent Alignment Protocol (AAP)
 
 [![CI](https://github.com/alexgarden/aap/actions/workflows/ci.yml/badge.svg)](https://github.com/alexgarden/aap/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/alexgarden/aap/actions/workflows/codeql.yml/badge.svg)](https://github.com/alexgarden/aap/actions/workflows/codeql.yml)
 [![codecov](https://codecov.io/gh/alexgarden/aap/graph/badge.svg?token=GSTPL4S34T)](https://codecov.io/gh/alexgarden/aap)
 [![PyPI](https://img.shields.io/pypi/v/agent-alignment-protocol.svg)](https://pypi.org/project/agent-alignment-protocol/)
 [![npm](https://img.shields.io/npm/v/agent-alignment-protocol.svg)](https://www.npmjs.com/package/agent-alignment-protocol)
