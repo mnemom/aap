@@ -80,7 +80,7 @@ STANDARD_VALUE_DESCRIPTIONS = {
 
 
 @click.group()
-@click.version_option(message="%(prog)s %(version)s")
+@click.version_option(package_name="agent-alignment-protocol", message="%(prog)s %(version)s")
 def main() -> None:
     """AAP — Agent Alignment Protocol CLI.
 
