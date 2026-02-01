@@ -61,6 +61,10 @@ jobs:
         working-directory: typescript
         run: npm run typecheck
 
+      - name: Run tests
+        working-directory: typescript
+        run: npm test
+
       - name: Build
         working-directory: typescript
         run: npm run build
