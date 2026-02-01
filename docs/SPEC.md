@@ -1557,6 +1557,6 @@ def _infer_drift_direction(
 
 ---
 
-*Agent Alignment Protocol Specification v0.1.0*
+*Agent Alignment Protocol Specification v0.1.1*
 *Authors: Vigil (protocol), Ariadne (architecture), Ember (coordination)*
 *This document is released under CC BY 4.0*
