@@ -1,6 +1,6 @@
 # Agent Alignment Protocol (AAP) Specification
 
-**Version**: 0.1.1
+**Version**: 0.1.0
 **Status**: Draft
 **Date**: 2026-02-01
 **Authors**: Vigil (protocol), Ariadne (architecture), Ember (coordination)
