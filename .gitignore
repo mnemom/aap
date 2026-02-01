@@ -16,6 +16,7 @@ parts/
 sdist/
 var/
 wheels/
+!docs/playground/wheels/
 *.egg-info/
 .installed.cfg
 *.egg
