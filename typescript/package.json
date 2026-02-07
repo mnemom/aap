@@ -1,6 +1,6 @@
 {
   "name": "@mnemom/agent-alignment-protocol",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Agent Alignment Protocol (AAP) - Verification and drift detection for AI agents",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -14,14 +14,16 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src --ext .ts",
+
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -45,7 +47,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "eslint": "^8.0.0",
+
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
