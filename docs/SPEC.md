@@ -1027,11 +1027,15 @@ Drift detection identifies when an agent's behavior deviates from its declared a
 
 ### 8.2 Detection Methodology
 
-Drift detection uses Self-Similarity Matrix (SSM) analysis to measure behavioral consistency:
+Drift detection uses trace-to-card similarity to measure behavioral consistency:
 
-1. **Feature extraction**: Extract features from each trace (action types, values applied, escalation patterns)
-2. **Similarity computation**: Compute pairwise similarity between recent traces and declared alignment
+1. **Feature extraction**: Extract structural features from each trace (action types, values applied, escalation patterns, confidence)
+2. **Similarity computation**: Compute cosine similarity between trace features and card features
 3. **Divergence tracking**: Track similarity over time, alert on sustained divergence
+
+**Important (v1.1.0):** Drift detection uses only structural features — not content features from reasoning text. Alignment Cards declare structural constraints (values, bounded actions, principal relationship) but contain no reasoning text. Including content tokens from trace reasoning dilutes cosine similarity without adding alignment signal. See `docs/CALIBRATION.md` Section 3.5 for rationale.
+
+Content features (TF-IDF from reasoning text) remain available for text-to-text comparison (e.g., SSM pairwise similarity between traces).
 
 ### 8.3 Calibration Constants
 
@@ -1044,7 +1048,18 @@ The following thresholds are calibrated from empirical analysis:
 | `BEHAVIORAL_SIMILARITY_THRESHOLD` | 0.50 | Warn on single-trace verification when below |
 | `MIN_COHERENCE_FOR_PROCEED` | 0.70 | Minimum coherence score for automatic proceed |
 
-**Feature Extraction Weighting** (60/30/10 TF-IDF):
+**Feature Extraction for Drift Detection** (structural only):
+
+| Feature | Source | Weight |
+|---------|--------|--------|
+| `value:{v}` | Declared values (card) / Applied values (trace) | 1.0 |
+| `action_name:{name}` | Bounded actions (card) / Action name (trace) | 1.0 |
+| `action:{type}` | Action type (trace only) | 1.0 |
+| `category:{cat}` | Principal type/relationship (card) / Action category (trace) | 1.0 |
+| `escalation:*` | Escalation triggers (card) / Escalation state (trace) | 1.0 |
+| `confidence` | Decision confidence (trace only) | 0.0-1.0 |
+
+**60/30/10 TF-IDF Weighting** (for text-to-text similarity, NOT drift detection):
 
 | Component | Weight | Description |
 |-----------|--------|-------------|

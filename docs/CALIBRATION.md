@@ -183,7 +183,7 @@ Alternative weightings were tested. This combination provided the best discrimin
 
 ### 3.5 SDK Implementation Note
 
-> **Important:** The v0.1.0 SDK implements a simplified feature extraction optimized for the AP-Trace domain:
+> **Important:** As of v1.1.0, the SDK uses purely structural feature extraction for drift detection (trace-to-card similarity):
 >
 > | SDK Feature | Calibration Feature | Notes |
 > |-------------|---------------------|-------|
@@ -191,15 +191,19 @@ Alternative weightings were tested. This combination provided the best discrimin
 > | `action:{type}` | Metadata | Action type features |
 > | `action_name:{name}` | Metadata | Specific action tracking |
 > | `category:{cat}` | Metadata | Autonomy envelope category |
-> | `content:{word}` | Word TF-IDF | Simplified TF from reasoning text |
 > | `escalation:*` | Metadata | Escalation state features |
+> | `confidence` | Metadata | Decision confidence |
+> | `flag:{flag}` | Metadata | Alternative flags (TS SDK) |
 >
-> The SDK does **not** implement:
+> The SDK does **not** include in trace-to-card drift detection:
+> - Content features from reasoning text (`content:*` tokens)
 > - 60/30/10 weighted components
 > - Character n-grams
 > - Bigram TF-IDF
 >
-> This is intentional. The calibrated thresholds (0.30 similarity, 3 sustained turns) were validated against both the full-featured extraction (for research) and the simplified SDK extraction (for deployment). The SDK's structural features provide sufficient discrimination for the AP-Trace domain where action types and value declarations are the primary signals.
+> **Rationale for excluding content features (v1.1.0):** Alignment Cards contain only structural declarations (values, bounded actions, principal relationship). They contain no reasoning text. Including `content:*` tokens from trace reasoning inflates the trace vector's magnitude without increasing the dot product with card features, systematically depressing cosine similarity. In production, this caused every well-aligned trace to score below the 0.30 threshold, generating false drift alerts. Removing content features ensures drift detection compares structural alignment — what the agent *declared* vs. what it *did* — not whether reasoning text resembles card metadata.
+>
+> Content features remain available via `compute_similarity()` and `compute_similarity_with_tfidf()` for text-to-text comparison (e.g., SSM computation).
 
 ---
 

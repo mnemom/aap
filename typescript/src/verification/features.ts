@@ -98,18 +98,12 @@ export function extractTraceFeatures(trace: APTrace): FeatureVector {
     }
   }
 
-  // Content features from reasoning
-  const reasoningTokens = tokenize(trace.decision.selection_reasoning);
-  for (const token of reasoningTokens) {
-    features[`content:${token}`] = (features[`content:${token}`] ?? 0) + 0.5;
-  }
+  // Note: Content features from reasoning/alternatives are deliberately excluded.
+  // Card features are purely structural, so content tokens dilute cosine
+  // similarity without adding alignment signal. See CALIBRATION.md Section 3.5.
 
-  // Alternative features
+  // Flag features from alternatives (structural, not content)
   for (const alt of trace.decision.alternatives_considered) {
-    const altTokens = tokenize(alt.description);
-    for (const token of altTokens) {
-      features[`content:${token}`] = (features[`content:${token}`] ?? 0) + 0.25;
-    }
     if (alt.flags) {
       for (const flag of alt.flags) {
         features[`flag:${flag}`] = 1.0;

@@ -121,8 +121,8 @@ class TestTraceFeatureExtraction:
         assert "confidence" in features
         assert features["confidence"] == 0.75
 
-    def test_content_features_from_reasoning(self, extractor: FeatureExtractor):
-        """Selection reasoning should produce content features."""
+    def test_no_content_features_from_reasoning(self, extractor: FeatureExtractor):
+        """Reasoning text should NOT produce content features (excluded from drift detection)."""
         trace = {
             "action": {"type": "recommend", "category": "bounded"},
             "decision": {
@@ -133,10 +133,10 @@ class TestTraceFeatureExtraction:
 
         features = extractor.extract_trace_features(trace)
 
-        # Should have content features (words >= 3 chars, not stopwords)
+        # Content features are deliberately excluded from trace features
+        # to prevent diluting cosine similarity in drift detection
         content_features = [k for k in features if k.startswith("content:")]
-        assert len(content_features) > 0
-        assert "content:recommendation" in features or "content:privacy" in features
+        assert len(content_features) == 0
 
     def test_missing_fields_handled(self, extractor: FeatureExtractor):
         """Missing fields should not crash extraction."""

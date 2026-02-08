@@ -4,12 +4,18 @@ Extracts feature vectors from AP-Traces and Alignment Cards for
 similarity computation. Adapted from Braid's SIF feature extraction,
 optimized for the AAP domain.
 
-Feature categories:
+Feature categories (for drift detection):
 - Structural: action types, categories, escalation patterns
 - Value: declared and applied values
-- Content: TF-IDF from reasoning text (when available)
 
-Similarity weighting (calibrated from Braid):
+Content features (TF-IDF from reasoning text) are available via
+compute_similarity() for text-to-text comparison but are deliberately
+excluded from trace-to-card drift detection. Card features are purely
+structural (values, actions, principal), so including content tokens
+from trace reasoning text dilutes cosine similarity without adding
+meaningful alignment signal. See CALIBRATION.md Section 3.5.
+
+Similarity weighting for text comparison (calibrated from Braid):
 - 60% word-level TF-IDF (unigrams + bigrams)
 - 30% character-level TF-IDF (3-5 grams)
 - 10% metadata features (structural similarity)
@@ -87,9 +93,12 @@ class FeatureExtractor:
     - `category:` - action category features
     - `value:` - declared or applied values
     - `escalation:` - escalation-related features
-    - `content:` - TF-IDF content features (from reasoning text)
 
-    Also provides similarity computation with calibrated 60/30/10 weighting:
+    Content features from reasoning text are deliberately excluded from
+    trace feature extraction (used only for text-to-text similarity).
+
+    Also provides text similarity computation with calibrated 60/30/10
+    weighting:
     - 60% word-level TF-IDF (unigrams + bigrams)
     - 30% character-level TF-IDF (3-5 grams)
     - 10% metadata/structural features
@@ -268,12 +277,10 @@ class FeatureExtractor:
         if confidence is not None:
             features["confidence"] = float(confidence)
 
-        # Content features from reasoning text
-        reasoning = decision.get("selection_reasoning", "")
-        if reasoning:
-            content_features = self._extract_content_features(reasoning)
-            for key, weight in content_features.items():
-                features[f"content:{key}"] = weight
+        # Note: Content features from reasoning text are deliberately excluded.
+        # Card features are purely structural, so content tokens from reasoning
+        # dilute cosine similarity without adding alignment signal.
+        # See CALIBRATION.md Section 3.5 for rationale.
 
         return features
 

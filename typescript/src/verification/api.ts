@@ -370,8 +370,8 @@ export function detectDrift(
       lowSimilarityStreak = [];
     }
 
-    // Check if we've hit the threshold for alerting
-    if (lowSimilarityStreak.length >= sustainedThreshold) {
+    // Check if we've hit the threshold for alerting (== not >= to fire once)
+    if (lowSimilarityStreak.length === sustainedThreshold) {
       const latest = lowSimilarityStreak[lowSimilarityStreak.length - 1];
 
       // Infer drift direction

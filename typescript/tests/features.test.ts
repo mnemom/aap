@@ -173,21 +173,22 @@ describe("extractTraceFeatures", () => {
     });
   });
 
-  describe("content features", () => {
-    it("should extract content from selection_reasoning", () => {
+  describe("content features excluded", () => {
+    it("should NOT extract content from selection_reasoning", () => {
       const features = extractTraceFeatures(minimalTrace);
 
-      // Should have content tokens from reasoning
+      // Content features are deliberately excluded from trace features
+      // to prevent diluting cosine similarity in drift detection
       const contentKeys = Object.keys(features).filter((k) => k.startsWith("content:"));
-      expect(contentKeys.length).toBeGreaterThan(0);
+      expect(contentKeys.length).toBe(0);
     });
 
-    it("should extract content from alternative descriptions", () => {
+    it("should NOT extract content from alternative descriptions", () => {
       const features = extractTraceFeatures(minimalTrace);
 
-      // Should tokenize alternative descriptions
+      // Only flag: features should come from alternatives, not content:
       const contentKeys = Object.keys(features).filter((k) => k.startsWith("content:"));
-      expect(contentKeys.length).toBeGreaterThan(0);
+      expect(contentKeys.length).toBe(0);
     });
   });
 
