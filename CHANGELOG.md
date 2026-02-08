@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-02-08
+
+### Changed
+- Hardened publish workflow with version validation and CI gate
+- Publish now verifies git tag matches pyproject.toml and package.json versions
+- Publish now runs full test suite (Python + TypeScript) before releasing
+
+## [0.1.5] - 2026-02-08
+
+### Changed
+- **ALGORITHM_VERSION bumped to 1.2.0** — trace-to-trace drift detection
+- Drift detection now compares traces to a baseline centroid (first N traces) instead of to the card, eliminating false positives from asymmetric card/trace feature spaces
+- Fixed TypeScript SDK category namespace collision (`category:` used for both principal.type and action.category)
+- TypeScript SDK now uses `principal_type:` and `relationship:` prefixes matching Python SDK
+
+## [0.1.2] - 2026-02-08
+
+### Changed
+- Improved npm package: added README and LICENSE to published package
+- Removed broken eslint configuration
+
 ## [0.1.1] - 2026-02-07
 
 ### Changed
