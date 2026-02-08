@@ -67,9 +67,9 @@ export function extractCardFeatures(card: AlignmentCard): FeatureVector {
     }
   }
 
-  // Category features
-  features[`category:${card.principal.type}`] = 1.0;
-  features[`category:${card.principal.relationship}`] = 1.0;
+  // Principal features (matching Python SDK naming)
+  features[`principal_type:${card.principal.type}`] = 1.0;
+  features[`relationship:${card.principal.relationship}`] = 1.0;
 
   return features;
 }
@@ -112,6 +112,30 @@ export function extractTraceFeatures(trace: APTrace): FeatureVector {
   }
 
   return features;
+}
+
+/**
+ * Compute the centroid (element-wise mean) of multiple feature vectors.
+ *
+ * Used by drift detection to build a baseline from the first N traces,
+ * enabling trace-to-trace comparison instead of trace-to-card comparison.
+ *
+ * @param vectors - Array of feature vectors to average
+ * @returns Centroid feature vector
+ */
+export function computeCentroid(vectors: FeatureVector[]): FeatureVector {
+  if (vectors.length === 0) return {};
+  const centroid: FeatureVector = {};
+  for (const vec of vectors) {
+    for (const [key, value] of Object.entries(vec)) {
+      centroid[key] = (centroid[key] ?? 0) + value;
+    }
+  }
+  const n = vectors.length;
+  for (const key of Object.keys(centroid)) {
+    centroid[key] /= n;
+  }
+  return centroid;
 }
 
 /**

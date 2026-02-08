@@ -124,6 +124,7 @@ export {
 } from "./schemas/ap-trace";
 
 export {
+  computeCentroid,
   extractCardFeatures,
   extractTraceFeatures,
   cosineSimilarity,

@@ -69,16 +69,16 @@ describe("extractCardFeatures", () => {
   });
 
   describe("principal features", () => {
-    it("should extract principal type as category", () => {
+    it("should extract principal type", () => {
       const features = extractCardFeatures(minimalAlignmentCard);
 
-      expect(features["category:human"]).toBeDefined();
+      expect(features["principal_type:human"]).toBeDefined();
     });
 
-    it("should extract relationship type as category", () => {
+    it("should extract relationship type", () => {
       const features = extractCardFeatures(minimalAlignmentCard);
 
-      expect(features["category:delegated_authority"]).toBeDefined();
+      expect(features["relationship:delegated_authority"]).toBeDefined();
     });
   });
 

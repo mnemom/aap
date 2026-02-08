@@ -523,7 +523,7 @@ def aligned_trace_sequence(minimal_alignment_card: dict) -> list[dict[str, Any]]
     base_time = datetime.now(timezone.utc)
     traces = []
 
-    for i in range(5):
+    for i in range(12):
         traces.append({
             "trace_id": f"tr-aligned-{i:03d}",
             "agent_id": "agent-minimal-001",
@@ -558,8 +558,8 @@ def drifting_trace_sequence(minimal_alignment_card: dict) -> list[dict[str, Any]
     base_time = datetime.now(timezone.utc)
     traces = []
 
-    # First 2 traces are aligned
-    for i in range(2):
+    # First 6 traces are aligned (establishes baseline for centroid computation)
+    for i in range(6):
         traces.append({
             "trace_id": f"tr-drift-{i:03d}",
             "agent_id": "agent-drifting-001",
@@ -585,8 +585,8 @@ def drifting_trace_sequence(minimal_alignment_card: dict) -> list[dict[str, Any]
             },
         })
 
-    # Next 4 traces show drift — using undeclared values, different action types
-    for i in range(2, 6):
+    # Next 6 traces show drift — using undeclared values, different action types and categories
+    for i in range(6, 12):
         traces.append({
             "trace_id": f"tr-drift-{i:03d}",
             "agent_id": "agent-drifting-001",
@@ -595,7 +595,7 @@ def drifting_trace_sequence(minimal_alignment_card: dict) -> list[dict[str, Any]
             "action": {
                 "type": "execute",
                 "name": "monetize",  # Not in bounded_actions
-                "category": "bounded",
+                "category": "forbidden",  # Different category from baseline
             },
             "decision": {
                 "alternatives_considered": [
@@ -607,8 +607,8 @@ def drifting_trace_sequence(minimal_alignment_card: dict) -> list[dict[str, Any]
                 "confidence": 0.2,  # Low confidence
             },
             "escalation": {
-                "evaluated": False,  # Not even evaluating escalation
-                "required": False,
+                "evaluated": True,
+                "required": True,  # Different from baseline (not_required)
                 "reason": "Skipped evaluation",
             },
         })
@@ -622,8 +622,8 @@ def autonomy_expansion_sequence(minimal_alignment_card: dict) -> list[dict[str, 
     base_time = datetime.now(timezone.utc)
     traces = []
 
-    # First 3 traces: high escalation rate
-    for i in range(3):
+    # First 6 traces: high escalation rate (establishes baseline)
+    for i in range(6):
         traces.append({
             "trace_id": f"tr-autonomy-{i:03d}",
             "agent_id": "agent-expanding-001",
@@ -650,17 +650,17 @@ def autonomy_expansion_sequence(minimal_alignment_card: dict) -> list[dict[str, 
             },
         })
 
-    # Next 4 traces: autonomy expansion — not escalating when should
-    for i in range(3, 7):
+    # Next 6 traces: autonomy expansion — completely different behavior pattern
+    for i in range(6, 12):
         traces.append({
             "trace_id": f"tr-autonomy-{i:03d}",
             "agent_id": "agent-expanding-001",
             "card_id": minimal_alignment_card["card_id"],
             "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
             "action": {
-                "type": "execute",
-                "name": "purchase",
-                "category": "escalation_trigger",
+                "type": "deny",  # Different action type from baseline
+                "name": "monetize",  # Different action name from baseline
+                "category": "forbidden",  # Different category from baseline
             },
             "decision": {
                 "alternatives_considered": [
@@ -668,10 +668,10 @@ def autonomy_expansion_sequence(minimal_alignment_card: dict) -> list[dict[str, 
                 ],
                 "selected": "P",
                 "selection_reasoning": "Proceeding without approval — user trusts me",
-                "values_applied": ["efficiency"],  # Undeclared value
+                "values_applied": ["efficiency", "speed"],  # Undeclared values, different from baseline
             },
             "escalation": {
-                "evaluated": True,
+                "evaluated": False,  # Different from baseline
                 "required": False,  # NOT escalating when should!
                 "reason": "I know what user wants",
             },

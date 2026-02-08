@@ -20,8 +20,8 @@ import {
 import type { AlignmentCard } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
 import {
+  computeCentroid,
   cosineSimilarity,
-  extractCardFeatures,
   extractTraceFeatures,
 } from "./features";
 import {
@@ -319,14 +319,19 @@ export function checkCoherence(
 /**
  * Detect behavioral drift from declared alignment.
  *
- * Analyzes traces chronologically, computing similarity between each
- * trace's behavior and the declared alignment. Alerts when sustained
- * low similarity is detected (consecutive traces below threshold).
+ * Computes a baseline centroid from the first N traces, then compares
+ * subsequent traces against this centroid using cosine similarity.
+ * Trace-to-trace comparison provides symmetric feature spaces, yielding
+ * meaningful similarity scores (unlike trace-to-card which is structurally
+ * depressed due to asymmetric features).
+ *
+ * Alerts when sustained low similarity is detected (consecutive traces
+ * below threshold).
  *
  * @see SPEC Section 8 and Appendix B.2 for algorithm specification.
  *
- * @param card - Alignment Card to compare against
- * @param traces - List of AP-Traces in chronological order
+ * @param card - Alignment Card (used for card_id and direction inference)
+ * @param traces - List of AP-Traces (sorted chronologically internally)
  * @param similarityThreshold - Alert when similarity drops below (default: 0.30)
  * @param sustainedThreshold - Alert after N consecutive low-similarity traces (default: 3)
  * @returns List of DriftAlert objects for detected drift events
@@ -337,11 +342,27 @@ export function detectDrift(
   similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
   sustainedThreshold = DEFAULT_SUSTAINED_TURNS_THRESHOLD
 ): DriftAlert[] {
-  if (traces.length < sustainedThreshold) {
+  // Sort traces chronologically
+  const sorted = [...traces].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  // Compute baseline window size
+  const baselineSize = Math.max(
+    sustainedThreshold,
+    Math.min(10, Math.floor(sorted.length / 4))
+  );
+
+  // Need enough traces for baseline + sustained threshold
+  if (sorted.length < baselineSize + sustainedThreshold) {
     return [];
   }
 
-  const cardFeatures = extractCardFeatures(card);
+  // Extract features for baseline traces and compute centroid
+  const baselineFeatures = sorted
+    .slice(0, baselineSize)
+    .map((t) => extractTraceFeatures(t));
+  const baselineCentroid = computeCentroid(baselineFeatures);
 
   const alerts: DriftAlert[] = [];
   let lowSimilarityStreak: Array<{ trace: APTrace; similarity: number }> = [];
@@ -350,9 +371,20 @@ export function detectDrift(
   const escalationRates: number[] = [];
   const valueUsage: Record<string, number> = {};
 
-  for (const trace of traces) {
+  // Include baseline traces in escalation/value tracking
+  for (const trace of sorted.slice(0, baselineSize)) {
+    const escalation = trace.escalation;
+    escalationRates.push(escalation?.required ? 1.0 : 0.0);
+    for (const value of trace.decision.values_applied ?? []) {
+      valueUsage[value] = (valueUsage[value] ?? 0) + 1;
+    }
+  }
+
+  // Iterate from after baseline to end
+  for (let i = baselineSize; i < sorted.length; i++) {
+    const trace = sorted[i];
     const traceFeatures = extractTraceFeatures(trace);
-    const similarity = cosineSimilarity(traceFeatures, cardFeatures);
+    const similarity = cosineSimilarity(traceFeatures, baselineCentroid);
 
     // Track escalation rate
     const escalation = trace.escalation;

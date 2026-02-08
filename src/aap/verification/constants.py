@@ -58,4 +58,4 @@ TFIDF_META_WEIGHT: float = 0.10
 
 # Version
 # -------
-ALGORITHM_VERSION: str = "1.1.0"
+ALGORITHM_VERSION: str = "1.2.0"

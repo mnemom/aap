@@ -351,6 +351,18 @@ class FeatureExtractor:
         return features
 
 
+def compute_centroid(vectors: list[dict[str, float]]) -> dict[str, float]:
+    """Compute the centroid (element-wise average) of sparse feature vectors."""
+    if not vectors:
+        return {}
+    centroid: dict[str, float] = {}
+    for vec in vectors:
+        for key, value in vec.items():
+            centroid[key] = centroid.get(key, 0.0) + value
+    n = len(vectors)
+    return {k: v / n for k, v in centroid.items()}
+
+
 def cosine_similarity(a: dict[str, float], b: dict[str, float]) -> float:
     """Compute cosine similarity between two sparse feature vectors.
 

@@ -23,7 +23,7 @@ from aap.verification.constants import (
     DEFAULT_SIMILARITY_THRESHOLD,
     DEFAULT_SUSTAINED_TURNS_THRESHOLD,
 )
-from aap.verification.features import FeatureExtractor, cosine_similarity
+from aap.verification.features import FeatureExtractor, compute_centroid, cosine_similarity
 from aap.verification.models import (
     DriftAlert,
     DriftAnalysis,
@@ -68,22 +68,38 @@ class DivergenceDetector:
         """Detect divergence alerts for a sequence of traces.
 
         Analyzes traces chronologically, computing similarity between each
-        trace's behavior and the declared alignment. Generates alerts for
-        sustained divergence (consecutive traces below threshold).
+        trace and a baseline centroid computed from the first N traces.
+        Generates alerts for sustained divergence (consecutive traces below
+        threshold).
 
         Args:
             card: Alignment Card dict per SPEC Section 4
-            traces: List of AP-Trace dicts in chronological order
+            traces: List of AP-Trace dicts (sorted chronologically internally)
 
         Returns:
             List of DriftAlert objects for detected divergences
         """
-        if not traces or len(traces) < self.sustained_turns_threshold:
+        if not traces:
             return []
 
-        # Extract card features once
-        card_features = self._feature_extractor.extract_card_features(card)
+        # Sort traces chronologically
+        sorted_traces = sorted(traces, key=lambda t: t.get("timestamp", ""))
+
+        # Compute baseline window size
+        baseline_size = max(self.sustained_turns_threshold, min(10, len(sorted_traces) // 4))
+
+        # Need enough traces for baseline + sustained threshold
+        if len(sorted_traces) < baseline_size + self.sustained_turns_threshold:
+            return []
+
         card_id = card.get("card_id", "")
+
+        # Extract features for baseline traces and compute centroid
+        baseline_features = [
+            self._feature_extractor.extract_trace_features(t)
+            for t in sorted_traces[:baseline_size]
+        ]
+        baseline_centroid = compute_centroid(baseline_features)
 
         alerts: list[DriftAlert] = []
         low_similarity_streak: list[tuple[dict, float]] = []
@@ -92,10 +108,18 @@ class DivergenceDetector:
         escalation_rates: list[float] = []
         value_usage: dict[str, int] = defaultdict(int)
 
-        for trace in traces:
-            # Compute similarity to card
+        # Include baseline traces in escalation/value tracking
+        for trace in sorted_traces[:baseline_size]:
+            escalation = trace.get("escalation", {})
+            escalation_rates.append(1.0 if escalation.get("required") else 0.0)
+            for value in trace.get("decision", {}).get("values_applied", []):
+                value_usage[value] += 1
+
+        # Iterate from after baseline to end
+        for trace in sorted_traces[baseline_size:]:
+            # Compute similarity to baseline centroid
             trace_features = self._feature_extractor.extract_trace_features(trace)
-            similarity = cosine_similarity(trace_features, card_features)
+            similarity = cosine_similarity(trace_features, baseline_centroid)
 
             # Track escalation rate
             escalation = trace.get("escalation", {})

@@ -52,6 +52,7 @@ from aap.verification.divergence import (
 )
 from aap.verification.features import (
     FeatureExtractor,
+    compute_centroid,
     compute_similarity_with_tfidf,
     cosine_similarity,
 )
@@ -87,6 +88,7 @@ __all__ = [
     "detect_divergence",
     # Feature extraction
     "FeatureExtractor",
+    "compute_centroid",
     "cosine_similarity",
     "compute_similarity_with_tfidf",
     # Result models

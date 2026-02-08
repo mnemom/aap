@@ -1027,13 +1027,17 @@ Drift detection identifies when an agent's behavior deviates from its declared a
 
 ### 8.2 Detection Methodology
 
-Drift detection uses trace-to-card similarity to measure behavioral consistency:
+Drift detection uses trace-to-baseline-centroid similarity to measure behavioral consistency (v1.2.0):
 
 1. **Feature extraction**: Extract structural features from each trace (action types, values applied, escalation patterns, confidence)
-2. **Similarity computation**: Compute cosine similarity between trace features and card features
-3. **Divergence tracking**: Track similarity over time, alert on sustained divergence
+2. **Chronological ordering**: Sort all traces by timestamp before processing
+3. **Baseline computation**: Compute a baseline centroid from the first N traces, where N = `max(sustained_threshold, min(10, len(traces) // 4))`
+4. **Similarity computation**: Compute cosine similarity between each subsequent trace's feature vector and the baseline centroid
+5. **Divergence tracking**: Track similarity over time, alert on sustained divergence
 
-**Important (v1.1.0):** Drift detection uses only structural features — not content features from reasoning text. Alignment Cards declare structural constraints (values, bounded actions, principal relationship) but contain no reasoning text. Including content tokens from trace reasoning dilutes cosine similarity without adding alignment signal. See `docs/CALIBRATION.md` Section 3.5 for rationale.
+The Alignment Card is still referenced for `card_id` in drift alerts and for inferring drift direction (Section 8.5), but is no longer used as the comparison target for similarity scoring.
+
+**Important (v1.1.0, updated v1.2.0):** Drift detection uses only structural features — not content features from reasoning text. Alignment Cards declare structural constraints (values, bounded actions, principal relationship) but contain no reasoning text. Including content tokens from trace reasoning dilutes cosine similarity without adding alignment signal. See `docs/CALIBRATION.md` Section 3.5 for rationale.
 
 Content features (TF-IDF from reasoning text) remain available for text-to-text comparison (e.g., SSM pairwise similarity between traces).
 
