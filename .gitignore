@@ -62,3 +62,12 @@ Thumbs.db
 .env.*
 *.pem
 *.key
+
+# Local working directories
+architecture/
+gtm/
+traces/
+
+# Claude Code
+.claude/
+.mcp.json
