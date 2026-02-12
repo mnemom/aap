@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-alignment-protocol"
-version = "0.1.6"
+version = "0.1.7"
 description = "Agent Alignment Protocol - The missing alignment layer for the agent protocol stack"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [
-    { name = "Alex Garden", email = "alex@example.com" }
+    { name = "Mnemom.ai", email = "dev@mnemom.ai" }
 ]
 keywords = [
     "ai",
