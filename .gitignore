@@ -71,3 +71,4 @@ traces/
 # Claude Code
 .claude/
 .mcp.json
+*.tgz

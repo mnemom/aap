@@ -176,7 +176,7 @@ For the complete limitations disclosure, see [Section 10 of the Specification](d
 pip install agent-alignment-protocol
 
 # TypeScript
-npm install agent-alignment-protocol
+npm install @mnemom/agent-alignment-protocol
 ```
 
 ## Integration
