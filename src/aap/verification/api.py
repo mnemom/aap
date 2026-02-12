@@ -39,6 +39,42 @@ from aap.verification.models import (
 )
 
 
+def action_matches_list(action_name: str, action_list: list[str]) -> bool:
+    """Check if a (possibly compound) action name matches any entry in a list.
+
+    Supports exact match, prefix match (before ':'), and compound name splitting.
+    Port of the TypeScript actionMatchesList() for SDK parity.
+
+    Args:
+        action_name: Action name, possibly compound (e.g. "exec, read")
+        action_list: List of allowed/forbidden action entries,
+                     possibly with colon descriptions (e.g. "exec: execute shell commands")
+
+    Returns:
+        True if the action name matches an entry in the list
+    """
+    components = action_name.split(", ") if ", " in action_name else [action_name]
+
+    return all(
+        _action_component_matches(component.strip(), action_list)
+        for component in components
+        if component.strip()
+    )
+
+
+def _action_component_matches(component: str, action_list: list[str]) -> bool:
+    """Check if a single action component matches any entry in the list."""
+    for entry in action_list:
+        if entry == component:
+            return True
+        colon_index = entry.find(":")
+        if colon_index > 0:
+            prefix = entry[:colon_index].strip()
+            if prefix == component:
+                return True
+    return False
+
+
 def verify_trace(
     trace: dict[str, Any],
     card: dict[str, Any],
@@ -103,7 +139,7 @@ def verify_trace(
 
     if action_category == "bounded":
         bounded_actions = envelope.get("bounded_actions", [])
-        if action_name and action_name not in bounded_actions:
+        if action_name and not action_matches_list(action_name, bounded_actions):
             violations.append(Violation.create(
                 ViolationType.UNBOUNDED_ACTION,
                 f"Action '{action_name}' not in bounded_actions: {bounded_actions}",
@@ -113,7 +149,7 @@ def verify_trace(
     # Check forbidden actions
     checks_performed.append("forbidden")
     forbidden_actions = envelope.get("forbidden_actions", [])
-    if action_name and action_name in forbidden_actions:
+    if action_name and action_matches_list(action_name, forbidden_actions):
         violations.append(Violation.create(
             ViolationType.FORBIDDEN_ACTION,
             f"Action '{action_name}' is in forbidden_actions",

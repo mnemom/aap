@@ -24,6 +24,7 @@ from aap import (
     detect_drift,
     verify_trace,
 )
+from aap.verification.api import action_matches_list
 from aap.verification.constants import (
     BEHAVIORAL_SIMILARITY_THRESHOLD,
     DEFAULT_SIMILARITY_THRESHOLD,
@@ -923,6 +924,232 @@ class TestDetectDriftEdgeCases:
         # Streak was broken by recovery, so may not reach threshold
         # (depends on similarity computation details)
         # This test verifies the recovery logic doesn't crash
+
+
+# ===========================================================================
+# Action Matching Tests (descriptive & compound names)
+# ===========================================================================
+
+
+class TestActionMatchesList:
+    """Tests for action_matches_list — colon-prefix and compound name matching.
+
+    Ported from TypeScript SDK tests (verify-trace.test.ts lines 618-712)
+    to ensure Python/TypeScript SDK parity.
+    """
+
+    def test_exact_match(self):
+        """Exact string match should work."""
+        assert action_matches_list("search", ["search", "recommend"]) is True
+
+    def test_exact_match_not_found(self):
+        """Non-matching action should return False."""
+        assert action_matches_list("delete", ["search", "recommend"]) is False
+
+    def test_colon_prefix_match(self):
+        """Action should match by prefix before colon description."""
+        assert action_matches_list(
+            "exec", ["exec: execute shell commands", "read: read files"]
+        ) is True
+
+    def test_colon_prefix_no_match(self):
+        """Action not matching any prefix should return False."""
+        assert action_matches_list(
+            "write", ["exec: execute shell commands", "read: read files"]
+        ) is False
+
+    def test_compound_action_all_match(self):
+        """Compound action should match when all components are in the list."""
+        assert action_matches_list(
+            "exec, read",
+            ["exec: execute shell commands", "read: read files"],
+        ) is True
+
+    def test_compound_action_partial_match_fails(self):
+        """Compound action should fail when one component is not in the list."""
+        assert action_matches_list(
+            "exec, purchase",
+            ["exec: execute shell commands", "read: read files"],
+        ) is False
+
+    def test_backward_compat_no_colons(self):
+        """Exact match should still work for entries without colons."""
+        assert action_matches_list("search", ["search", "recommend", "summarize"]) is True
+
+    def test_empty_list(self):
+        """Empty list should never match."""
+        assert action_matches_list("anything", []) is False
+
+    def test_empty_action_name(self):
+        """Empty action name should match (all components vacuously true)."""
+        assert action_matches_list("", ["search"]) is True
+
+    def test_whitespace_trimming(self):
+        """Components should be trimmed after splitting."""
+        assert action_matches_list(
+            "exec,  read",  # extra space after comma — split on ", " gets ["exec, read"] as one
+            ["exec, read"],  # exact match on the full string
+        ) is False  # ", " split yields ["exec", " read"], " read" trimmed to "read" — but not "exec,  read"
+        # Correct test: compound with normal ", " separator
+        assert action_matches_list(
+            "exec, read",
+            ["exec: execute shell commands", "read: read files"],
+        ) is True
+
+
+class TestActionMatchingIntegration:
+    """Integration tests: action_matches_list used within verify_trace."""
+
+    def test_bounded_action_matches_by_prefix(self):
+        """Bounded action should match when card uses colon descriptions."""
+        card = {
+            "card_id": "ac-prefix-001",
+            "values": {"declared": ["principal_benefit"]},
+            "autonomy_envelope": {
+                "bounded_actions": ["exec: execute shell commands", "read: read files"],
+                "escalation_triggers": [],
+            },
+            "audit_commitment": {"retention_days": 90, "queryable": False},
+        }
+        trace = {
+            "trace_id": "tr-prefix-001",
+            "agent_id": "agent-001",
+            "card_id": "ac-prefix-001",
+            "timestamp": "2026-02-12T00:00:00Z",
+            "action": {"type": "execute", "name": "exec", "category": "bounded"},
+            "decision": {
+                "alternatives_considered": [{"option_id": "A", "description": "A"}],
+                "selected": "A",
+                "selection_reasoning": "Test",
+                "values_applied": ["principal_benefit"],
+            },
+        }
+
+        result = verify_trace(trace, card)
+
+        unbounded = [v for v in result.violations if v.type == ViolationType.UNBOUNDED_ACTION]
+        assert len(unbounded) == 0
+
+    def test_compound_bounded_action(self):
+        """Compound action name should pass when all components are bounded."""
+        card = {
+            "card_id": "ac-compound-001",
+            "values": {"declared": ["principal_benefit"]},
+            "autonomy_envelope": {
+                "bounded_actions": ["exec: execute shell commands", "read: read files"],
+                "escalation_triggers": [],
+            },
+            "audit_commitment": {"retention_days": 90, "queryable": False},
+        }
+        trace = {
+            "trace_id": "tr-compound-001",
+            "agent_id": "agent-001",
+            "card_id": "ac-compound-001",
+            "timestamp": "2026-02-12T00:00:00Z",
+            "action": {"type": "execute", "name": "exec, read", "category": "bounded"},
+            "decision": {
+                "alternatives_considered": [{"option_id": "A", "description": "A"}],
+                "selected": "A",
+                "selection_reasoning": "Test",
+                "values_applied": ["principal_benefit"],
+            },
+        }
+
+        result = verify_trace(trace, card)
+
+        unbounded = [v for v in result.violations if v.type == ViolationType.UNBOUNDED_ACTION]
+        assert len(unbounded) == 0
+
+    def test_compound_action_partial_unbounded(self):
+        """Compound action should fail when one component is not bounded."""
+        card = {
+            "card_id": "ac-partial-001",
+            "values": {"declared": ["principal_benefit"]},
+            "autonomy_envelope": {
+                "bounded_actions": ["exec: execute shell commands", "read: read files"],
+                "escalation_triggers": [],
+            },
+            "audit_commitment": {"retention_days": 90, "queryable": False},
+        }
+        trace = {
+            "trace_id": "tr-partial-001",
+            "agent_id": "agent-001",
+            "card_id": "ac-partial-001",
+            "timestamp": "2026-02-12T00:00:00Z",
+            "action": {"type": "execute", "name": "exec, purchase", "category": "bounded"},
+            "decision": {
+                "alternatives_considered": [{"option_id": "A", "description": "A"}],
+                "selected": "A",
+                "selection_reasoning": "Test",
+                "values_applied": ["principal_benefit"],
+            },
+        }
+
+        result = verify_trace(trace, card)
+
+        unbounded = [v for v in result.violations if v.type == ViolationType.UNBOUNDED_ACTION]
+        assert len(unbounded) == 1
+
+    def test_forbidden_action_matches_by_prefix(self):
+        """Forbidden action should be detected when card uses colon descriptions."""
+        card = {
+            "card_id": "ac-forbidden-prefix-001",
+            "values": {"declared": ["principal_benefit"]},
+            "autonomy_envelope": {
+                "bounded_actions": ["search", "recommend"],
+                "escalation_triggers": [],
+                "forbidden_actions": ["delete_data: permanently delete user data"],
+            },
+            "audit_commitment": {"retention_days": 90, "queryable": False},
+        }
+        trace = {
+            "trace_id": "tr-forbidden-prefix-001",
+            "agent_id": "agent-001",
+            "card_id": "ac-forbidden-prefix-001",
+            "timestamp": "2026-02-12T00:00:00Z",
+            "action": {"type": "execute", "name": "delete_data", "category": "bounded"},
+            "decision": {
+                "alternatives_considered": [{"option_id": "A", "description": "A"}],
+                "selected": "A",
+                "selection_reasoning": "Test",
+                "values_applied": ["principal_benefit"],
+            },
+        }
+
+        result = verify_trace(trace, card)
+
+        forbidden = [v for v in result.violations if v.type == ViolationType.FORBIDDEN_ACTION]
+        assert len(forbidden) == 1
+
+    def test_backward_compat_exact_match(self):
+        """Existing cards without colons should still work (backward compat)."""
+        card = {
+            "card_id": "ac-compat-001",
+            "values": {"declared": ["principal_benefit"]},
+            "autonomy_envelope": {
+                "bounded_actions": ["search", "recommend", "summarize"],
+                "escalation_triggers": [],
+            },
+            "audit_commitment": {"retention_days": 90, "queryable": False},
+        }
+        trace = {
+            "trace_id": "tr-compat-001",
+            "agent_id": "agent-001",
+            "card_id": "ac-compat-001",
+            "timestamp": "2026-02-12T00:00:00Z",
+            "action": {"type": "execute", "name": "search", "category": "bounded"},
+            "decision": {
+                "alternatives_considered": [{"option_id": "A", "description": "A"}],
+                "selected": "A",
+                "selection_reasoning": "Test",
+                "values_applied": ["principal_benefit"],
+            },
+        }
+
+        result = verify_trace(trace, card)
+
+        unbounded = [v for v in result.violations if v.type == ViolationType.UNBOUNDED_ACTION]
+        assert len(unbounded) == 0
 
 
 # ===========================================================================

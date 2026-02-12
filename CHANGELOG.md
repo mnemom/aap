@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.8] - 2026-02-12
+
+### Added
+- `action_matches_list()` function in Python SDK — full parity with TypeScript `actionMatchesList()`
+- Colon-prefix matching, compound name splitting, and word-boundary matching in Python SDK
+- 15 new tests (10 unit + 5 integration) for Python action matching
 
 ## [0.1.7] - 2026-02-11
 

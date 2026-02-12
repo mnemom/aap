@@ -294,7 +294,7 @@ No server required — runs entirely client-side via WebAssembly.
 
 ## Status
 
-**Current Version**: 0.1.7
+**Current Version**: 0.1.8
 
 | Component | Status |
 |-----------|--------|
