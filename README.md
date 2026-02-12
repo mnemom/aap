@@ -240,6 +240,26 @@ for alert in alerts:
 - Forbidden action compliance (no forbidden actions taken)
 - Behavioral similarity (semantic alignment using SSM analysis)
 
+### Action Name Matching
+
+Bounded and forbidden action lists support flexible matching (v0.1.7+):
+
+```json
+{
+  "bounded_actions": [
+    "search",
+    "exec: execute shell commands",
+    "cron: manage scheduled patrol jobs"
+  ]
+}
+```
+
+- **Exact match**: `"search"` matches action name `"search"`
+- **Colon-prefix match**: `"exec: execute shell commands"` matches action name `"exec"`
+- **Compound actions**: action name `"exec, read"` matches when *each* component is in the bounded list
+
+This allows descriptive entries in alignment cards while keeping verification flexible.
+
 **Similarity scoring:** Each verification returns a `similarity_score` (0.0-1.0) measuring semantic similarity between the trace and declared alignment. If a trace passes structural checks but has `similarity_score < 0.50`, a `low_behavioral_similarity` warning is generated.
 
 ## Try It
@@ -274,7 +294,7 @@ No server required — runs entirely client-side via WebAssembly.
 
 ## Status
 
-**Current Version**: 0.1.1 (Draft)
+**Current Version**: 0.1.7
 
 | Component | Status |
 |-----------|--------|

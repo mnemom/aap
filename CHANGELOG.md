@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-02-11
+
+### Added
+- `actionMatchesList()` function in TypeScript SDK for flexible action name matching
+- Colon-prefix matching: `"exec: execute shell commands"` matches action name `"exec"`
+- Compound name splitting: `"exec, read"` validates each component independently
+- Word-boundary matching prevents false positives (e.g., `"execute"` no longer matches `"exec"`)
+
 ## [0.1.6] - 2026-02-08
 
 ### Changed
