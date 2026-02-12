@@ -37,6 +37,30 @@ import {
 } from "./models";
 
 /**
+ * Check if a (possibly compound) action name matches any entry in a list.
+ * Supports exact match, prefix match (before ':'), and compound name splitting.
+ */
+function actionMatchesList(actionName: string, list: string[]): boolean {
+  const components = actionName.includes(', ')
+    ? actionName.split(', ')
+    : [actionName];
+
+  return components.every(component => {
+    const trimmed = component.trim();
+    if (!trimmed) return true;
+    return list.some(entry => {
+      if (entry === trimmed) return true;
+      const colonIndex = entry.indexOf(':');
+      if (colonIndex > 0) {
+        const prefix = entry.substring(0, colonIndex).trim();
+        if (prefix === trimmed) return true;
+      }
+      return false;
+    });
+  });
+}
+
+/**
  * Verify a single AP-Trace against an Alignment Card.
  *
  * Performs the verification algorithm specified in SPEC Section 7.3:
@@ -102,7 +126,7 @@ export function verifyTrace(
 
   if (actionCategory === "bounded") {
     const boundedActions = envelope.bounded_actions ?? [];
-    if (actionName && !boundedActions.includes(actionName)) {
+    if (actionName && !actionMatchesList(actionName, boundedActions)) {
       violations.push(
         createViolation(
           "unbounded_action",
@@ -116,7 +140,7 @@ export function verifyTrace(
   // Check forbidden actions
   checksPerformed.push("forbidden");
   const forbiddenActions = envelope.forbidden_actions ?? [];
-  if (actionName && forbiddenActions.includes(actionName)) {
+  if (actionName && actionMatchesList(actionName, forbiddenActions)) {
     violations.push(
       createViolation(
         "forbidden_action",

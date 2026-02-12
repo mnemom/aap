@@ -613,6 +613,103 @@ describe("verifyTrace", () => {
       );
     });
   });
+
+  // ==========================================================================
+  // ACTION MATCHING (descriptive & compound names)
+  // ==========================================================================
+
+  describe("action matching with descriptive and compound names", () => {
+    it("should match action by prefix when bounded_action has colon description", () => {
+      const card: AlignmentCard = {
+        ...minimalAlignmentCard,
+        autonomy_envelope: {
+          bounded_actions: ["exec: execute shell commands", "read: read files"],
+          escalation_triggers: [],
+        },
+      };
+      const trace: APTrace = {
+        ...minimalTrace,
+        action: { ...minimalTrace.action, name: "exec", category: "bounded" },
+      };
+
+      const result = verifyTrace(trace, card);
+
+      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      expect(unboundedViolation).toBeUndefined();
+    });
+
+    it("should match compound action name when all components are in bounded_actions", () => {
+      const card: AlignmentCard = {
+        ...minimalAlignmentCard,
+        autonomy_envelope: {
+          bounded_actions: ["exec: execute shell commands", "read: read files"],
+          escalation_triggers: [],
+        },
+      };
+      const trace: APTrace = {
+        ...minimalTrace,
+        action: { ...minimalTrace.action, name: "exec, read", category: "bounded" },
+      };
+
+      const result = verifyTrace(trace, card);
+
+      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      expect(unboundedViolation).toBeUndefined();
+    });
+
+    it("should still support exact match for cards without colons (backward compat)", () => {
+      // minimalAlignmentCard has bounded_actions: ["search", "recommend", "summarize"]
+      const trace: APTrace = {
+        ...minimalTrace,
+        action: { ...minimalTrace.action, name: "search", category: "bounded" },
+      };
+
+      const result = verifyTrace(trace, minimalAlignmentCard);
+
+      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      expect(unboundedViolation).toBeUndefined();
+    });
+
+    it("should detect forbidden action matched by prefix", () => {
+      const card: AlignmentCard = {
+        ...minimalAlignmentCard,
+        autonomy_envelope: {
+          bounded_actions: ["search", "recommend"],
+          escalation_triggers: [],
+          forbidden_actions: ["delete_data: permanently delete user data"],
+        },
+      };
+      const trace: APTrace = {
+        ...minimalTrace,
+        card_id: card.card_id,
+        action: { ...minimalTrace.action, name: "delete_data", category: "bounded" },
+      };
+
+      const result = verifyTrace(trace, card);
+
+      const forbiddenViolation = result.violations.find((v) => v.type === "forbidden_action");
+      expect(forbiddenViolation).toBeDefined();
+    });
+
+    it("should fail compound action when one component is not bounded", () => {
+      const card: AlignmentCard = {
+        ...minimalAlignmentCard,
+        autonomy_envelope: {
+          bounded_actions: ["exec: execute shell commands", "read: read files"],
+          escalation_triggers: [],
+        },
+      };
+      const trace: APTrace = {
+        ...minimalTrace,
+        action: { ...minimalTrace.action, name: "exec, purchase", category: "bounded" },
+      };
+
+      const result = verifyTrace(trace, card);
+
+      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      expect(unboundedViolation).toBeDefined();
+    });
+  });
 });
 
 // ==========================================================================

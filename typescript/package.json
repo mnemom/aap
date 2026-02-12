@@ -1,6 +1,6 @@
 {
   "name": "@mnemom/agent-alignment-protocol",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Agent Alignment Protocol (AAP) - Verification and drift detection for AI agents",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -35,7 +35,7 @@
     "a2a",
     "mcp"
   ],
-  "author": "AAP Contributors",
+  "author": "Mnemom.ai",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
