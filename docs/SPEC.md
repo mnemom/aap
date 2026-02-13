@@ -1256,6 +1256,15 @@ This specification registers the following well-known URIs:
 - MCP (Model Context Protocol): https://modelcontextprotocol.io/
 - DID (Decentralized Identifiers): https://www.w3.org/TR/did-core/
 
+### 12.3 Standards and Regulatory References
+
+- [ISO/IEC 42001:2023] ISO/IEC, "Information technology — Artificial Intelligence Management System", 2023. https://www.iso.org/standard/42001
+- [ISO/IEC 42005:2025] ISO/IEC, "Information technology — Artificial intelligence — AI system impact assessment", 2025. https://www.iso.org/standard/42005
+- [IEEE 7001-2021] IEEE, "Standard for Transparency of Autonomous Systems", 2021. https://standards.ieee.org/ieee/7001/6929/
+- [IEEE 3152-2024] IEEE, "Standard for Transparent Human and Machine Agency Identification", 2024. https://standards.ieee.org/ieee/3152/11718/
+- [IMDA MGF] IMDA Singapore, "Model AI Governance Framework for Agentic AI", January 2026. https://www.imda.gov.sg/-/media/imda/files/about/emerging-tech-and-research/artificial-intelligence/mgf-for-agentic-ai.pdf
+- [EU AI Act] European Union, "Regulation (EU) 2024/1689 — Artificial Intelligence Act", Article 50 (Transparency obligations), enforcement August 2026. https://artificialintelligenceact.eu/article/50/
+
 ---
 
 ## Appendix A: JSON Schemas
