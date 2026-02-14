@@ -80,6 +80,13 @@ from aap.tracing import (
     trace_decision,
 )
 
+# EU AI Act compliance presets
+from aap.compliance import (
+    EU_COMPLIANCE_AUDIT_COMMITMENT,
+    EU_COMPLIANCE_EXTENSIONS,
+    EU_COMPLIANCE_VALUES,
+)
+
 # Verification result models
 from aap.verification import (
     CoherenceResult,
@@ -155,4 +162,8 @@ __all__ = [
     "ValueCoherenceCheck",
     "CoherenceResultMessage",
     "ProposedCollaboration",
+    # EU AI Act Compliance
+    "EU_COMPLIANCE_AUDIT_COMMITMENT",
+    "EU_COMPLIANCE_EXTENSIONS",
+    "EU_COMPLIANCE_VALUES",
 ]

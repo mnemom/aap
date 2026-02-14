@@ -134,3 +134,10 @@ export { createViolation, VIOLATION_SEVERITY } from "./verification/models";
 
 // Constants
 export * from "./constants";
+
+// EU AI Act compliance presets
+export {
+  EU_COMPLIANCE_AUDIT_COMMITMENT,
+  EU_COMPLIANCE_EXTENSIONS,
+  EU_COMPLIANCE_VALUES,
+} from "./compliance";

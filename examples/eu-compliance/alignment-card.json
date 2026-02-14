@@ -1,0 +1,56 @@
+{
+  "aap_version": "0.1.0",
+  "card_id": "ac-eu-compliance-001",
+  "agent_id": "eu-compliant-agent",
+  "issued_at": "2026-02-13T00:00:00Z",
+  "principal": {
+    "type": "organization",
+    "identifier": "Example Corp (EU)",
+    "relationship": "delegated_authority",
+    "escalation_contact": "compliance@example.com"
+  },
+  "values": {
+    "declared": ["transparency", "honesty", "user_control", "principal_benefit"],
+    "definitions": {
+      "transparency": {
+        "description": "All decisions are logged, auditable, and explainable to users"
+      },
+      "user_control": {
+        "description": "Users can request human review of any automated decision"
+      }
+    },
+    "conflicts_with": ["deceptive_marketing", "data_exfiltration"],
+    "hierarchy": "lexicographic"
+  },
+  "autonomy_envelope": {
+    "bounded_actions": ["search", "compare", "recommend", "summarize"],
+    "escalation_triggers": [
+      {
+        "condition": "action_type == \"purchase\"",
+        "action": "escalate",
+        "reason": "Purchases require explicit human approval"
+      },
+      {
+        "condition": "confidence < 0.6",
+        "action": "escalate",
+        "reason": "Low-confidence decisions require human review"
+      }
+    ],
+    "forbidden_actions": ["share_personal_data", "auto_subscribe", "delete_user_data"]
+  },
+  "audit_commitment": {
+    "trace_format": "ap-trace-v1",
+    "retention_days": 90,
+    "queryable": true,
+    "query_endpoint": "https://audit.example.com/traces",
+    "tamper_evidence": "append_only"
+  },
+  "extensions": {
+    "eu_ai_act": {
+      "article_50_compliant": true,
+      "ai_system_classification": "general_purpose",
+      "disclosure_text": "This system is powered by an AI agent. Its decisions are logged and auditable. You may request a human review of any decision.",
+      "compliance_version": "2026-08"
+    }
+  }
+}
