@@ -196,7 +196,7 @@ AAP extends the A2A Agent Card with an `alignment` block:
 }
 ```
 
-See [A2A Migration Guide](docs/a2a-migration.md).
+See [A2A Integration Guide](docs/A2A_INTEGRATION.md).
 
 ### With MCP Tools
 
@@ -288,7 +288,7 @@ No server required — runs entirely client-side via WebAssembly.
 | Example | Description |
 |---------|-------------|
 | [`simple-agent/`](examples/simple-agent/) | Minimal AAP implementation |
-| [`a2a-integration/`](examples/a2a-integration/) | A2A agent with AAP |
+| [`a2a-integration/`](examples/a2a-integration/) | A2A agent with AAP (Python + TypeScript) |
 | [`mcp-integration/`](examples/mcp-integration/) | MCP tools with alignment |
 | [`alignment-failure/`](examples/alignment-failure/) | Deliberate failure for testing |
 

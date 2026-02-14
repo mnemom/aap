@@ -29,13 +29,10 @@
     "aap_version": "0.1.0",
     "card_id": "ac-user-shopping-001",
     "agent_id": "user-shopping-assistant",
-    "issued_at": "2026-02-01T00:14:57.986244Z",
-    "expires_at": null,
+    "issued_at": "2026-02-14T22:49:52.907Z",
     "principal": {
       "type": "human",
-      "identifier": null,
-      "relationship": "delegated_authority",
-      "escalation_contact": null
+      "relationship": "delegated_authority"
     },
     "values": {
       "declared": [
@@ -44,13 +41,11 @@
         "minimal_data",
         "honesty"
       ],
-      "definitions": null,
       "conflicts_with": [
         "deceptive_marketing",
         "hidden_fees",
         "upselling"
-      ],
-      "hierarchy": null
+      ]
     },
     "autonomy_envelope": {
       "bounded_actions": [
@@ -67,7 +62,6 @@
           "reason": "Purchases require explicit user approval"
         }
       ],
-      "max_autonomous_value": null,
       "forbidden_actions": [
         "share_payment_info",
         "auto_subscribe",
@@ -77,11 +71,8 @@
     "audit_commitment": {
       "trace_format": "ap-trace-v1",
       "retention_days": 30,
-      "storage": null,
       "queryable": true,
-      "query_endpoint": "https://user-agent.example.com/api/traces",
-      "tamper_evidence": null
-    },
-    "extensions": null
+      "query_endpoint": "https://user-agent.example.com/api/traces"
+    }
   }
 }

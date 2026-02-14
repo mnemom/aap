@@ -305,7 +305,7 @@ print(f"Warnings: {len(result.warnings)}")
 - **[SPEC.md](SPEC.md)** — Full protocol specification for implementers
 - **[LIMITS.md](LIMITS.md)** — What AAP can and cannot guarantee (read this)
 - **[CALIBRATION.md](CALIBRATION.md)** — How similarity thresholds were derived
-- **[a2a-migration.md](a2a-migration.md)** — Adding AAP to existing A2A agents
+- **[A2A_INTEGRATION.md](A2A_INTEGRATION.md)** — Adding AAP to existing A2A agents
 - **[mcp-migration.md](mcp-migration.md)** — Adding alignment to MCP tools
 - **[Examples](../examples/)** — Complete working examples
 

@@ -1,14 +1,12 @@
 {
-  "trace_id": "tr-delegation-20260201001457",
+  "trace_id": "tr-delegation-1771109392910",
   "agent_id": "user-shopping-assistant",
   "card_id": "ac-user-shopping-001",
-  "timestamp": "2026-02-01T00:14:57.988310Z",
+  "timestamp": "2026-02-14T22:49:52.910Z",
   "action": {
     "type": "escalate",
     "name": "vendor-coordination",
-    "category": "escalation_trigger",
-    "target": null,
-    "parameters": null
+    "category": "escalation_trigger"
   },
   "decision": {
     "alternatives_considered": [
@@ -16,7 +14,6 @@
         "option_id": "delegate",
         "description": "Delegate to vendor-deals-agent",
         "score": 0.1327,
-        "scoring_factors": null,
         "flags": [
           "value_conflict"
         ]
@@ -24,13 +21,11 @@
       {
         "option_id": "reject",
         "description": "Do not delegate, handle internally",
-        "score": 0.8673,
-        "scoring_factors": null,
-        "flags": null
+        "score": 0.8673
       }
     ],
     "selected": "reject",
-    "selection_reasoning": "Coherence check with vendor-deals-agent: score=0.13, compatible=False. Conflicts: [\"Responder's 'upselling' is in initiator's conflicts_with\"]",
+    "selection_reasoning": "Coherence check with vendor-deals-agent: score=0.13, compatible=false. Conflicts: Responder's 'upselling' is in initiator's conflicts_with",
     "values_applied": [
       "principal_benefit",
       "transparency"
@@ -42,15 +37,10 @@
     "triggers_checked": [
       {
         "trigger": "delegate_to_vendor",
-        "matched": true,
-        "value_observed": null
+        "matched": true
       }
     ],
     "required": true,
-    "reason": "Escalated to principal due to value conflicts",
-    "escalation_id": null,
-    "escalation_status": null,
-    "principal_response": null
-  },
-  "context": null
+    "reason": "Escalated to principal due to value conflicts"
+  }
 }

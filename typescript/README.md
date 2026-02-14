@@ -196,7 +196,7 @@ AAP extends the A2A Agent Card with an `alignment` block:
 }
 ```
 
-See [A2A Migration Guide](docs/a2a-migration.md).
+See [A2A Integration Guide](docs/A2A_INTEGRATION.md).
 
 ### With MCP Tools
 

@@ -1,6 +1,6 @@
 # A2A Integration Example
 
-Demonstrates extending A2A Agent Cards with AAP alignment properties and using value coherence checks to decide whether to coordinate with other agents.
+Demonstrates extending A2A Agent Cards with AAP alignment properties and using value coherence checks to decide whether to coordinate with other agents. Available in both **Python** and **TypeScript**.
 
 ## What This Shows
 
@@ -12,10 +12,17 @@ Demonstrates extending A2A Agent Cards with AAP alignment properties and using v
 ## Quick Start
 
 ```bash
-# From the repository root
+# Python
 cd examples/a2a-integration
 python main.py
+
+# TypeScript
+cd examples/a2a-integration
+npm install
+npx tsx index.ts
 ```
+
+Both produce equivalent output.
 
 ## The Scenario
 
@@ -218,11 +225,11 @@ To use this pattern in your own A2A agents:
 4. Handle the result based on your escalation policy
 5. Record the delegation decision in an AP-Trace
 
-See the [A2A Migration Guide](../../docs/a2a-migration.md) for detailed implementation steps.
+See the [A2A Integration Guide](../../docs/A2A_INTEGRATION.md) for detailed implementation steps.
 
 ## Related Documentation
 
-- **[a2a-migration.md](../../docs/a2a-migration.md)** — Complete guide to adding AAP to A2A agents
+- **[A2A_INTEGRATION.md](../../docs/A2A_INTEGRATION.md)** — Complete guide to adding AAP to A2A agents
 - **[QUICKSTART.md](../../docs/QUICKSTART.md)** — Core AAP concepts and API
 - **[SPEC.md](../../docs/SPEC.md)** — Full protocol specification
 - **[simple-agent/](../simple-agent/)** — Basic AAP example without A2A

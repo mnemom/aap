@@ -29,13 +29,10 @@
     "aap_version": "0.1.0",
     "card_id": "ac-vendor-deals-001",
     "agent_id": "vendor-deals-agent",
-    "issued_at": "2026-02-01T00:14:57.986665Z",
-    "expires_at": null,
+    "issued_at": "2026-02-14T22:49:52.908Z",
     "principal": {
       "type": "organization",
-      "identifier": null,
-      "relationship": "delegated_authority",
-      "escalation_contact": null
+      "relationship": "delegated_authority"
     },
     "values": {
       "declared": [
@@ -44,11 +41,9 @@
         "upselling",
         "conversion"
       ],
-      "definitions": null,
       "conflicts_with": [
         "price_undercutting"
-      ],
-      "hierarchy": null
+      ]
     },
     "autonomy_envelope": {
       "bounded_actions": [
@@ -64,7 +59,6 @@
           "reason": "Large discounts require manager approval"
         }
       ],
-      "max_autonomous_value": null,
       "forbidden_actions": [
         "price_match_competitor"
       ]
@@ -72,11 +66,8 @@
     "audit_commitment": {
       "trace_format": "ap-trace-v1",
       "retention_days": 90,
-      "storage": null,
       "queryable": true,
-      "query_endpoint": "https://vendor.example.com/api/traces",
-      "tamper_evidence": null
-    },
-    "extensions": null
+      "query_endpoint": "https://vendor.example.com/api/traces"
+    }
   }
 }

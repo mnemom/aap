@@ -529,5 +529,5 @@ Defense in depth:
 - [LIMITS.md](LIMITS.md) — What AAP does NOT guarantee
 - [CALIBRATION.md](CALIBRATION.md) — Threshold derivation methodology
 - [QUICKSTART.md](QUICKSTART.md) — 5-minute integration guide
-- [a2a-migration.md](a2a-migration.md) — A2A integration guide
+- [A2A_INTEGRATION.md](A2A_INTEGRATION.md) — A2A integration guide
 - [mcp-migration.md](mcp-migration.md) — MCP integration guide

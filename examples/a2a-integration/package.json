@@ -1,0 +1,14 @@
+{
+  "name": "aap-a2a-integration-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@mnemom/agent-alignment-protocol": "^0.1.8"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  }
+}

@@ -759,7 +759,7 @@ Custom values MUST be defined in the alignment card's `definitions` block.
 
 - **[QUICKSTART.md](QUICKSTART.md)** — Core AAP concepts and API
 - **[SPEC.md](SPEC.md)** — Full protocol specification
-- **[a2a-migration.md](a2a-migration.md)** — Adding AAP to A2A agents
+- **[A2A_INTEGRATION.md](A2A_INTEGRATION.md)** — Adding AAP to A2A agents
 - **[examples/mcp-integration/](../examples/mcp-integration/)** — Working example code
 
 ---
