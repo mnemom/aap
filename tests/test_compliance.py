@@ -9,7 +9,6 @@ from aap.compliance import (
 )
 from aap.schemas import AlignmentCard, AuditCommitment, AutonomyEnvelope, Principal, Values
 
-
 # Standard AAP values that the presets should draw from
 STANDARD_VALUES = {
     "principal_benefit",

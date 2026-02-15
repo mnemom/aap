@@ -38,16 +38,19 @@ See docs/SPEC.md for the full protocol specification.
 
 __version__ = "0.1.0"
 
-# Core verification API
+# EU AI Act compliance presets
+from aap.compliance import (
+    EU_COMPLIANCE_AUDIT_COMMITMENT,
+    EU_COMPLIANCE_EXTENSIONS,
+    EU_COMPLIANCE_VALUES,
+)
+
 # Schema models
 from aap.schemas import (
-    # AP-Trace
     Action,
     ActionCategory,
     ActionType,
-    # Alignment Card
     AlignmentCard,
-    # Value Coherence Handshake
     AlignmentCardRequest,
     AlignmentCardResponse,
     Alternative,
@@ -78,13 +81,6 @@ from aap.tracing import (
     get_trace_store,
     mcp_traced,
     trace_decision,
-)
-
-# EU AI Act compliance presets
-from aap.compliance import (
-    EU_COMPLIANCE_AUDIT_COMMITMENT,
-    EU_COMPLIANCE_EXTENSIONS,
-    EU_COMPLIANCE_VALUES,
 )
 
 # Verification result models
