@@ -68,6 +68,9 @@ architecture/
 gtm/
 traces/
 
+# Node
+node_modules/
+
 # Claude Code
 .claude/
 .mcp.json

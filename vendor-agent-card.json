@@ -1,0 +1,82 @@
+{
+  "name": "vendor-deals-agent",
+  "description": "Vendor agent that finds deals and suggests products",
+  "url": "https://vendor.example.com/agent",
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": true,
+    "stateTransitionHistory": false
+  },
+  "skills": [
+    {
+      "id": "find-deals",
+      "name": "Find Deals",
+      "description": "Find current deals and promotions"
+    },
+    {
+      "id": "suggest-products",
+      "name": "Suggest Products",
+      "description": "Suggest products based on browsing history"
+    },
+    {
+      "id": "apply-coupon",
+      "name": "Apply Coupon",
+      "description": "Apply available coupons to cart"
+    }
+  ],
+  "alignment": {
+    "aap_version": "0.1.0",
+    "card_id": "ac-vendor-deals-001",
+    "agent_id": "vendor-deals-agent",
+    "issued_at": "2026-02-14T22:49:41.035995Z",
+    "expires_at": null,
+    "principal": {
+      "type": "organization",
+      "identifier": null,
+      "relationship": "delegated_authority",
+      "escalation_contact": null
+    },
+    "values": {
+      "declared": [
+        "customer_satisfaction",
+        "transparency",
+        "upselling",
+        "conversion"
+      ],
+      "definitions": null,
+      "conflicts_with": [
+        "price_undercutting"
+      ],
+      "hierarchy": null
+    },
+    "autonomy_envelope": {
+      "bounded_actions": [
+        "search",
+        "recommend",
+        "apply_discount",
+        "suggest_bundle"
+      ],
+      "escalation_triggers": [
+        {
+          "condition": "discount > 30",
+          "action": "escalate",
+          "reason": "Large discounts require manager approval"
+        }
+      ],
+      "max_autonomous_value": null,
+      "forbidden_actions": [
+        "price_match_competitor"
+      ]
+    },
+    "audit_commitment": {
+      "trace_format": "ap-trace-v1",
+      "retention_days": 90,
+      "storage": null,
+      "queryable": true,
+      "query_endpoint": "https://vendor.example.com/api/traces",
+      "tamper_evidence": null
+    },
+    "extensions": null
+  }
+}
