@@ -5,14 +5,12 @@ Mirrors the TypeScript check-fleet-coherence.test.ts test suite.
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
 import pytest
 
-from aap import check_fleet_coherence, check_coherence
+from aap import check_coherence, check_fleet_coherence
 from aap.verification.constants import OUTLIER_STD_DEV_THRESHOLD
-
 
 # ============================================================================
 # HELPERS

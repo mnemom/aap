@@ -8,7 +8,6 @@ a compliance summary.
 Run with: python main.py
 """
 
-import json
 from datetime import datetime, timezone
 
 from aap import (
@@ -142,21 +141,21 @@ def print_compliance_summary(card: dict, result) -> None:
 
     eu = card.get("extensions", {}).get("eu_ai_act", {})
 
-    print(f"\n  Art. 50(1) — User Disclosure:")
+    print("\n  Art. 50(1) — User Disclosure:")
     print(f"    Agent ID:       {card['agent_id']}")
     print(f"    Principal:      {card['principal']['identifier']}")
     print(f"    Disclosure:     {eu.get('disclosure_text', 'NOT SET')}")
 
-    print(f"\n  Art. 50(2) — Machine-Readable Marking:")
+    print("\n  Art. 50(2) — Machine-Readable Marking:")
     print(f"    Trace format:   {card['audit_commitment']['trace_format']}")
     print(f"    AAP version:    {card['aap_version']}")
 
-    print(f"\n  Art. 50(3) — Decision Transparency:")
+    print("\n  Art. 50(3) — Decision Transparency:")
     print(f"    Verified:       {result.verified}")
     print(f"    Violations:     {len(result.violations)}")
     print(f"    Warnings:       {len(result.warnings)}")
 
-    print(f"\n  Art. 50(4) — Audit Trail:")
+    print("\n  Art. 50(4) — Audit Trail:")
     print(f"    Retention:      {card['audit_commitment']['retention_days']} days")
     print(f"    Queryable:      {card['audit_commitment']['queryable']}")
     print(f"    Tamper evidence:{card['audit_commitment']['tamper_evidence']}")
