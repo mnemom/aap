@@ -10,18 +10,16 @@ See SPEC.md Sections 7, 6.4, and 8 for protocol specification.
 
 from __future__ import annotations
 
+import math
 import re
 import time
+from collections import defaultdict
 from datetime import datetime
 from typing import Any
-
-import math
-from collections import defaultdict
 
 from aap.verification.constants import (
     ALGORITHM_VERSION,
     BEHAVIORAL_SIMILARITY_THRESHOLD,
-    CLUSTER_COMPATIBILITY_THRESHOLD,
     CONFLICT_PENALTY_MULTIPLIER,
     DEFAULT_SIMILARITY_THRESHOLD,
     DEFAULT_SUSTAINED_TURNS_THRESHOLD,
