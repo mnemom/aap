@@ -38,6 +38,15 @@ MIN_COHERENCE_FOR_PROCEED: float = 0.70
 CONFLICT_PENALTY_MULTIPLIER: float = 0.50
 
 
+# Fleet Coherence
+# ----------------
+# Standard deviations below fleet mean to flag an agent as outlier
+OUTLIER_STD_DEV_THRESHOLD: float = 1.0
+
+# Minimum pairwise score to consider agents compatible for cluster analysis
+CLUSTER_COMPATIBILITY_THRESHOLD: float = 0.70
+
+
 # Feature Extraction
 # ------------------
 # Minimum word length for content features (filters noise)

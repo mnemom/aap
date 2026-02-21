@@ -15,22 +15,33 @@ import time
 from datetime import datetime
 from typing import Any
 
+import math
+from collections import defaultdict
+
 from aap.verification.constants import (
     ALGORITHM_VERSION,
     BEHAVIORAL_SIMILARITY_THRESHOLD,
+    CLUSTER_COMPATIBILITY_THRESHOLD,
     CONFLICT_PENALTY_MULTIPLIER,
     DEFAULT_SIMILARITY_THRESHOLD,
     DEFAULT_SUSTAINED_TURNS_THRESHOLD,
     MIN_COHERENCE_FOR_PROCEED,
     NEAR_BOUNDARY_THRESHOLD,
+    OUTLIER_STD_DEV_THRESHOLD,
 )
 from aap.verification.models import (
+    AgentCoherenceSummary,
     CoherenceResult,
     DriftAlert,
     DriftDirection,
     DriftIndicator,
+    FleetCluster,
+    FleetCoherenceResult,
+    FleetOutlier,
+    PairwiseEntry,
     ValueAlignment,
     ValueConflict,
+    ValueDivergence,
     VerificationMetadata,
     VerificationResult,
     Violation,
@@ -331,6 +342,227 @@ def check_coherence(
         proceed=proceed,
         conditions=[],
         proposed_resolution=proposed_resolution,
+    )
+
+
+def check_fleet_coherence(
+    cards: list[dict[str, Any]],
+    task_values: list[str] | None = None,
+) -> FleetCoherenceResult:
+    """Check fleet-level value coherence across N agents.
+
+    Computes all C(n,2) pairwise coherence scores, then derives:
+    - Fleet score: mean of all pairwise scores
+    - Outlier detection: agents >1 std dev below fleet mean
+    - Cluster analysis: connected components at compatibility threshold
+    - Divergence report: values where agents disagree
+
+    Args:
+        cards: List of dicts with "agent_id" and "card" keys
+        task_values: Optional list of values required for the task
+
+    Returns:
+        FleetCoherenceResult with full analysis
+
+    Raises:
+        ValueError: If fewer than 2 agents provided
+    """
+    if len(cards) < 2:
+        raise ValueError("Fleet coherence requires at least 2 agents")
+
+    agent_ids = [c["agent_id"] for c in cards]
+
+    # Step 1: Compute all pairwise coherence scores
+    pairwise_matrix: list[PairwiseEntry] = []
+    for i in range(len(cards)):
+        for j in range(i + 1, len(cards)):
+            result = check_coherence(cards[i]["card"], cards[j]["card"], task_values)
+            pairwise_matrix.append(PairwiseEntry(
+                agent_a=cards[i]["agent_id"],
+                agent_b=cards[j]["agent_id"],
+                result=result,
+            ))
+
+    # Step 2: Fleet score (mean of all pairwise scores) + min/max
+    all_scores = [p.result.score for p in pairwise_matrix]
+    fleet_score = sum(all_scores) / len(all_scores)
+    min_pair_score = min(all_scores)
+    max_pair_score = max(all_scores)
+
+    # Step 3: Per-agent summaries
+    agent_scores: dict[str, list[float]] = defaultdict(list)
+    agent_compatible: dict[str, int] = defaultdict(int)
+    agent_conflict: dict[str, int] = defaultdict(int)
+
+    for pair in pairwise_matrix:
+        agent_scores[pair.agent_a].append(pair.result.score)
+        agent_scores[pair.agent_b].append(pair.result.score)
+        if pair.result.compatible:
+            agent_compatible[pair.agent_a] += 1
+            agent_compatible[pair.agent_b] += 1
+        if len(pair.result.value_alignment.conflicts) > 0:
+            agent_conflict[pair.agent_a] += 1
+            agent_conflict[pair.agent_b] += 1
+
+    agent_means: dict[str, float] = {}
+    for aid in agent_ids:
+        scores = agent_scores[aid]
+        agent_means[aid] = sum(scores) / len(scores) if scores else 0.0
+
+    # Step 4: Outlier detection
+    mean_values = list(agent_means.values())
+    fleet_mean_of_means = sum(mean_values) / len(mean_values)
+    variance = sum((v - fleet_mean_of_means) ** 2 for v in mean_values) / len(mean_values)
+    stddev = math.sqrt(variance)
+
+    outliers: list[FleetOutlier] = []
+    if stddev > 0 and len(agent_ids) >= 3:
+        for aid in agent_ids:
+            agent_mean = agent_means[aid]
+            deviation = (fleet_mean_of_means - agent_mean) / stddev
+            if deviation >= OUTLIER_STD_DEV_THRESHOLD:
+                primary_conflicts: set[str] = set()
+                for pair in pairwise_matrix:
+                    if pair.agent_a == aid or pair.agent_b == aid:
+                        for conflict in pair.result.value_alignment.conflicts:
+                            if conflict.initiator_value != "(conflicts_with)":
+                                primary_conflicts.add(conflict.initiator_value)
+                            if conflict.responder_value != "(conflicts_with)":
+                                primary_conflicts.add(conflict.responder_value)
+                outliers.append(FleetOutlier(
+                    agent_id=aid,
+                    agent_mean_score=round(agent_mean, 4),
+                    fleet_mean_score=round(fleet_mean_of_means, 4),
+                    deviation=round(deviation, 4),
+                    primary_conflicts=sorted(primary_conflicts),
+                ))
+
+    # Step 5: Cluster analysis (connected components at compatibility threshold)
+    adjacency: dict[str, set[str]] = {aid: set() for aid in agent_ids}
+    for pair in pairwise_matrix:
+        if pair.result.compatible:
+            adjacency[pair.agent_a].add(pair.agent_b)
+            adjacency[pair.agent_b].add(pair.agent_a)
+
+    visited: set[str] = set()
+    clusters: list[FleetCluster] = []
+    cluster_id = 0
+
+    for aid in agent_ids:
+        if aid in visited:
+            continue
+        component: list[str] = []
+        queue = [aid]
+        visited.add(aid)
+        while queue:
+            current = queue.pop(0)
+            component.append(current)
+            for neighbor in adjacency[current]:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+
+        # Compute internal coherence
+        internal_sum = 0.0
+        internal_count = 0
+        for ci in range(len(component)):
+            for cj in range(ci + 1, len(component)):
+                for pair in pairwise_matrix:
+                    if ((pair.agent_a == component[ci] and pair.agent_b == component[cj]) or
+                            (pair.agent_a == component[cj] and pair.agent_b == component[ci])):
+                        internal_sum += pair.result.score
+                        internal_count += 1
+                        break
+        internal_coherence = internal_sum / internal_count if internal_count > 0 else 1.0
+
+        # Find shared values
+        cluster_cards_list = [c for c in cards if c["agent_id"] in component]
+        shared: set[str] | None = None
+        for entry in cluster_cards_list:
+            declared = set(entry["card"].get("values", {}).get("declared", []))
+            shared = declared if shared is None else shared & declared
+        shared_values = sorted(shared or set())
+
+        # Find distinguishing values
+        other_values: set[str] = set()
+        for entry in cards:
+            if entry["agent_id"] not in component:
+                for v in entry["card"].get("values", {}).get("declared", []):
+                    other_values.add(v)
+        distinguishing = [v for v in shared_values if v not in other_values]
+
+        clusters.append(FleetCluster(
+            cluster_id=cluster_id,
+            agent_ids=component,
+            internal_coherence=round(internal_coherence, 4),
+            shared_values=shared_values,
+            distinguishing_values=distinguishing,
+        ))
+        cluster_id += 1
+
+    # Step 6: Divergence report
+    all_values: set[str] = set()
+    agent_value_map: dict[str, set[str]] = {}
+    agent_conflict_map: dict[str, set[str]] = {}
+
+    for entry in cards:
+        declared = set(entry["card"].get("values", {}).get("declared", []))
+        conflicts_with = set(entry["card"].get("values", {}).get("conflicts_with", []))
+        agent_value_map[entry["agent_id"]] = declared
+        agent_conflict_map[entry["agent_id"]] = conflicts_with
+        all_values |= declared
+
+    divergence_report: list[ValueDivergence] = []
+    for value in all_values:
+        declaring = [aid for aid in agent_ids if value in agent_value_map[aid]]
+        missing = [aid for aid in agent_ids if value not in agent_value_map[aid]]
+        conflicting = [aid for aid in agent_ids if value in agent_conflict_map[aid]]
+
+        if not missing and not conflicting:
+            continue
+
+        impact = round((len(missing) + len(conflicting)) / len(agent_ids), 4)
+        divergence_report.append(ValueDivergence(
+            value=value,
+            agents_declaring=declaring,
+            agents_missing=missing,
+            agents_conflicting=conflicting,
+            impact_on_fleet_score=impact,
+        ))
+
+    divergence_report.sort(key=lambda d: d.impact_on_fleet_score, reverse=True)
+
+    # Build agent cluster map
+    agent_cluster_map: dict[str, int] = {}
+    for cluster in clusters:
+        for aid in cluster.agent_ids:
+            agent_cluster_map[aid] = cluster.cluster_id
+
+    outlier_ids = {o.agent_id for o in outliers}
+
+    agent_summaries = [
+        AgentCoherenceSummary(
+            agent_id=aid,
+            mean_score=round(agent_means[aid], 4),
+            compatible_count=agent_compatible[aid],
+            conflict_count=agent_conflict[aid],
+            cluster_id=agent_cluster_map.get(aid, 0),
+            is_outlier=aid in outlier_ids,
+        )
+        for aid in agent_ids
+    ]
+
+    return FleetCoherenceResult(
+        fleet_score=round(fleet_score, 4),
+        min_pair_score=round(min_pair_score, 4),
+        max_pair_score=round(max_pair_score, 4),
+        agent_count=len(cards),
+        pair_count=len(pairwise_matrix),
+        pairwise_matrix=pairwise_matrix,
+        outliers=outliers,
+        clusters=clusters,
+        divergence_report=divergence_report,
+        agent_summaries=agent_summaries,
     )
 
 

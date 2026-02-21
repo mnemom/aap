@@ -85,20 +85,27 @@ from aap.tracing import (
 
 # Verification result models
 from aap.verification import (
+    AgentCoherenceSummary,
     CoherenceResult,
     DriftAlert,
     DriftAnalysis,
     DriftDirection,
     DriftIndicator,
+    FleetCluster,
+    FleetCoherenceResult,
+    FleetOutlier,
+    PairwiseEntry,
     Severity,
     ValueAlignment,
     ValueConflict,
+    ValueDivergence,
     VerificationMetadata,
     VerificationResult,
     Violation,
     ViolationType,
     Warning,
     check_coherence,
+    check_fleet_coherence,
     detect_drift,
     verify_trace,
 )
@@ -109,6 +116,7 @@ __all__ = [
     # Core API
     "verify_trace",
     "check_coherence",
+    "check_fleet_coherence",
     "detect_drift",
     # Tracing Decorators
     "trace_decision",
@@ -129,6 +137,13 @@ __all__ = [
     "CoherenceResult",
     "ValueAlignment",
     "ValueConflict",
+    # Fleet Coherence (E-05)
+    "FleetCoherenceResult",
+    "PairwiseEntry",
+    "FleetOutlier",
+    "FleetCluster",
+    "ValueDivergence",
+    "AgentCoherenceSummary",
     "DriftAlert",
     "DriftAnalysis",
     "DriftDirection",

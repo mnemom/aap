@@ -35,7 +35,7 @@
  */
 
 // Main API exports
-export { verifyTrace, checkCoherence, detectDrift } from "./verification/api";
+export { verifyTrace, checkCoherence, checkFleetCoherence, detectDrift } from "./verification/api";
 
 // Schema types
 export type {
@@ -107,6 +107,13 @@ export type {
   DriftAnalysis,
   DriftDirection,
   DriftIndicator,
+  // Fleet Coherence (E-05)
+  FleetCoherenceResult,
+  PairwiseEntry,
+  FleetOutlier,
+  FleetCluster,
+  ValueDivergence,
+  AgentCoherenceSummary,
 } from "./verification/models";
 
 // Utility exports

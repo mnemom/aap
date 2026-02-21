@@ -16,6 +16,7 @@ import {
   DEFAULT_SUSTAINED_TURNS_THRESHOLD,
   MIN_COHERENCE_FOR_PROCEED,
   NEAR_BOUNDARY_THRESHOLD,
+  OUTLIER_STD_DEV_THRESHOLD,
 } from "../constants";
 import type { AlignmentCard } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
@@ -26,11 +27,17 @@ import {
 } from "./features";
 import {
   createViolation,
+  type AgentCoherenceSummary,
   type CoherenceResult,
   type DriftAlert,
   type DriftDirection,
   type DriftIndicator,
+  type FleetCluster,
+  type FleetCoherenceResult,
+  type FleetOutlier,
+  type PairwiseEntry,
   type ValueConflictResult,
+  type ValueDivergence,
   type VerificationResult,
   type Violation,
   type Warning,
@@ -337,6 +344,265 @@ export function checkCoherence(
     proceed,
     conditions: [],
     proposed_resolution: proposedResolution,
+  };
+}
+
+/**
+ * Check fleet-level value coherence across N agents.
+ *
+ * Computes all C(n,2) pairwise coherence scores, then derives:
+ * - Fleet score: mean of all pairwise scores
+ * - Outlier detection: agents >1 std dev below fleet mean
+ * - Cluster analysis: connected components at compatibility threshold
+ * - Divergence report: values where agents disagree
+ *
+ * @param cards - Array of agent cards with their IDs
+ * @param taskValues - Optional list of values required for the task
+ * @returns FleetCoherenceResult with full analysis
+ * @throws Error if fewer than 2 agents provided
+ */
+export function checkFleetCoherence(
+  cards: Array<{ agentId: string; card: AlignmentCard }>,
+  taskValues?: string[]
+): FleetCoherenceResult {
+  if (cards.length < 2) {
+    throw new Error("Fleet coherence requires at least 2 agents");
+  }
+
+  // Step 1: Compute all pairwise coherence scores
+  const pairwiseMatrix: PairwiseEntry[] = [];
+  for (let i = 0; i < cards.length; i++) {
+    for (let j = i + 1; j < cards.length; j++) {
+      pairwiseMatrix.push({
+        agent_a: cards[i].agentId,
+        agent_b: cards[j].agentId,
+        result: checkCoherence(cards[i].card, cards[j].card, taskValues),
+      });
+    }
+  }
+
+  // Step 2: Fleet score (mean of all pairwise scores) + min/max
+  const allScores = pairwiseMatrix.map(p => p.result.score);
+  const fleetScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+  const minPairScore = Math.min(...allScores);
+  const maxPairScore = Math.max(...allScores);
+
+  // Step 3: Per-agent summaries
+  const agentIds = cards.map(c => c.agentId);
+  const agentScoreMap = new Map<string, number[]>();
+  const agentCompatibleCount = new Map<string, number>();
+  const agentConflictCount = new Map<string, number>();
+
+  for (const id of agentIds) {
+    agentScoreMap.set(id, []);
+    agentCompatibleCount.set(id, 0);
+    agentConflictCount.set(id, 0);
+  }
+
+  for (const pair of pairwiseMatrix) {
+    agentScoreMap.get(pair.agent_a)!.push(pair.result.score);
+    agentScoreMap.get(pair.agent_b)!.push(pair.result.score);
+    if (pair.result.compatible) {
+      agentCompatibleCount.set(pair.agent_a, agentCompatibleCount.get(pair.agent_a)! + 1);
+      agentCompatibleCount.set(pair.agent_b, agentCompatibleCount.get(pair.agent_b)! + 1);
+    }
+    if (pair.result.value_alignment.conflicts.length > 0) {
+      agentConflictCount.set(pair.agent_a, agentConflictCount.get(pair.agent_a)! + 1);
+      agentConflictCount.set(pair.agent_b, agentConflictCount.get(pair.agent_b)! + 1);
+    }
+  }
+
+  const agentMeans = new Map<string, number>();
+  for (const id of agentIds) {
+    const scores = agentScoreMap.get(id)!;
+    agentMeans.set(id, scores.reduce((a, b) => a + b, 0) / scores.length);
+  }
+
+  // Step 4: Outlier detection
+  const meanValues = [...agentMeans.values()];
+  const fleetMeanOfMeans = meanValues.reduce((a, b) => a + b, 0) / meanValues.length;
+  const variance = meanValues.reduce((sum, v) => sum + (v - fleetMeanOfMeans) ** 2, 0) / meanValues.length;
+  const stddev = Math.sqrt(variance);
+
+  const outliers: FleetOutlier[] = [];
+  // Only detect outliers when there's meaningful variance (3+ agents)
+  if (stddev > 0 && agentIds.length >= 3) {
+    for (const id of agentIds) {
+      const agentMean = agentMeans.get(id)!;
+      const deviation = (fleetMeanOfMeans - agentMean) / stddev;
+      if (deviation >= OUTLIER_STD_DEV_THRESHOLD) {
+        // Identify primary conflict values
+        const primaryConflicts = new Set<string>();
+        for (const pair of pairwiseMatrix) {
+          if (pair.agent_a === id || pair.agent_b === id) {
+            for (const conflict of pair.result.value_alignment.conflicts) {
+              if (conflict.initiator_value !== "(conflicts_with)") {
+                primaryConflicts.add(conflict.initiator_value);
+              }
+              if (conflict.responder_value !== "(conflicts_with)") {
+                primaryConflicts.add(conflict.responder_value);
+              }
+            }
+          }
+        }
+        outliers.push({
+          agent_id: id,
+          agent_mean_score: Math.round(agentMean * 10000) / 10000,
+          fleet_mean_score: Math.round(fleetMeanOfMeans * 10000) / 10000,
+          deviation: Math.round(deviation * 10000) / 10000,
+          primary_conflicts: [...primaryConflicts],
+        });
+      }
+    }
+  }
+
+  // Step 5: Cluster analysis (connected components at compatibility threshold)
+  const adjacency = new Map<string, Set<string>>();
+  for (const id of agentIds) {
+    adjacency.set(id, new Set());
+  }
+  for (const pair of pairwiseMatrix) {
+    if (pair.result.compatible) {
+      adjacency.get(pair.agent_a)!.add(pair.agent_b);
+      adjacency.get(pair.agent_b)!.add(pair.agent_a);
+    }
+  }
+
+  const visited = new Set<string>();
+  const clusters: FleetCluster[] = [];
+  let clusterId = 0;
+
+  for (const id of agentIds) {
+    if (visited.has(id)) continue;
+    // BFS to find connected component
+    const component: string[] = [];
+    const queue = [id];
+    visited.add(id);
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      component.push(current);
+      for (const neighbor of adjacency.get(current)!) {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    // Compute internal coherence for this cluster
+    let internalSum = 0;
+    let internalCount = 0;
+    for (let i = 0; i < component.length; i++) {
+      for (let j = i + 1; j < component.length; j++) {
+        const pair = pairwiseMatrix.find(
+          p => (p.agent_a === component[i] && p.agent_b === component[j]) ||
+               (p.agent_a === component[j] && p.agent_b === component[i])
+        );
+        if (pair) {
+          internalSum += pair.result.score;
+          internalCount++;
+        }
+      }
+    }
+    const internalCoherence = internalCount > 0 ? internalSum / internalCount : 1;
+
+    // Find shared values (intersection of all agents in cluster)
+    const clusterCards = component.map(cid => cards.find(c => c.agentId === cid)!);
+    const sharedValues = clusterCards.reduce<string[]>((shared, entry, idx) => {
+      const declared = entry.card.values.declared ?? [];
+      if (idx === 0) return [...declared];
+      return shared.filter(v => declared.includes(v));
+    }, []);
+
+    // Find distinguishing values (values in this cluster but not in other clusters' shared values)
+    const allOtherValues = new Set<string>();
+    for (const entry of cards) {
+      if (!component.includes(entry.agentId)) {
+        for (const v of entry.card.values.declared ?? []) {
+          allOtherValues.add(v);
+        }
+      }
+    }
+    const distinguishingValues = sharedValues.filter(v => !allOtherValues.has(v));
+
+    clusters.push({
+      cluster_id: clusterId++,
+      agent_ids: component,
+      internal_coherence: Math.round(internalCoherence * 10000) / 10000,
+      shared_values: sharedValues,
+      distinguishing_values: distinguishingValues,
+    });
+  }
+
+  // Step 6: Divergence report
+  const allValues = new Set<string>();
+  const agentValueMap = new Map<string, Set<string>>();
+  const agentConflictMap = new Map<string, Set<string>>();
+
+  for (const entry of cards) {
+    const declared = new Set(entry.card.values.declared ?? []);
+    const conflicts = new Set(entry.card.values.conflicts_with ?? []);
+    agentValueMap.set(entry.agentId, declared);
+    agentConflictMap.set(entry.agentId, conflicts);
+    for (const v of declared) allValues.add(v);
+  }
+
+  const divergenceReport: ValueDivergence[] = [];
+  for (const value of allValues) {
+    const declaring = agentIds.filter(id => agentValueMap.get(id)!.has(value));
+    const missing = agentIds.filter(id => !agentValueMap.get(id)!.has(value));
+    const conflicting = agentIds.filter(id => agentConflictMap.get(id)!.has(value));
+
+    // Skip values with no divergence (everyone declares, no one conflicts)
+    if (missing.length === 0 && conflicting.length === 0) continue;
+
+    // Estimate impact: fraction of agents not aligned on this value
+    const impactOnFleetScore = Math.round(
+      ((missing.length + conflicting.length) / agentIds.length) * 10000
+    ) / 10000;
+
+    divergenceReport.push({
+      value,
+      agents_declaring: declaring,
+      agents_missing: missing,
+      agents_conflicting: conflicting,
+      impact_on_fleet_score: impactOnFleetScore,
+    });
+  }
+
+  // Sort divergence report by impact (highest first)
+  divergenceReport.sort((a, b) => b.impact_on_fleet_score - a.impact_on_fleet_score);
+
+  // Build agent cluster map for summaries
+  const agentClusterMap = new Map<string, number>();
+  for (const cluster of clusters) {
+    for (const id of cluster.agent_ids) {
+      agentClusterMap.set(id, cluster.cluster_id);
+    }
+  }
+
+  const outlierIds = new Set(outliers.map(o => o.agent_id));
+
+  const agentSummaries: AgentCoherenceSummary[] = agentIds.map(id => ({
+    agent_id: id,
+    mean_score: Math.round(agentMeans.get(id)! * 10000) / 10000,
+    compatible_count: agentCompatibleCount.get(id)!,
+    conflict_count: agentConflictCount.get(id)!,
+    cluster_id: agentClusterMap.get(id) ?? 0,
+    is_outlier: outlierIds.has(id),
+  }));
+
+  return {
+    fleet_score: Math.round(fleetScore * 10000) / 10000,
+    min_pair_score: Math.round(minPairScore * 10000) / 10000,
+    max_pair_score: Math.round(maxPairScore * 10000) / 10000,
+    agent_count: cards.length,
+    pair_count: pairwiseMatrix.length,
+    pairwise_matrix: pairwiseMatrix,
+    outliers,
+    clusters,
+    divergence_report: divergenceReport,
+    agent_summaries: agentSummaries,
   };
 }
 

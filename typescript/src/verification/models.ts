@@ -180,3 +180,97 @@ export interface CoherenceResult {
   /** Proposed conflict resolution (if conflicts exist) */
   proposed_resolution?: { type: string; reason: string } | null;
 }
+
+// --- Fleet Coherence Types (E-05: N-Way Value Coherence) ---
+
+/** A single pairwise coherence entry in the fleet matrix. */
+export interface PairwiseEntry {
+  /** First agent ID */
+  agent_a: string;
+  /** Second agent ID */
+  agent_b: string;
+  /** Pairwise coherence result */
+  result: CoherenceResult;
+}
+
+/** An agent flagged as an outlier in fleet coherence. */
+export interface FleetOutlier {
+  /** Agent ID */
+  agent_id: string;
+  /** Agent's mean pairwise score */
+  agent_mean_score: number;
+  /** Fleet-wide mean score */
+  fleet_mean_score: number;
+  /** Standard deviations below fleet mean */
+  deviation: number;
+  /** Values causing primary conflicts */
+  primary_conflicts: string[];
+}
+
+/** A cluster of compatible agents. */
+export interface FleetCluster {
+  /** Cluster identifier */
+  cluster_id: number;
+  /** Agent IDs in this cluster */
+  agent_ids: string[];
+  /** Mean coherence score within the cluster */
+  internal_coherence: number;
+  /** Values shared by all agents in the cluster */
+  shared_values: string[];
+  /** Values that distinguish this cluster from others */
+  distinguishing_values: string[];
+}
+
+/** A value dimension where agents diverge. */
+export interface ValueDivergence {
+  /** The value in question */
+  value: string;
+  /** Agent IDs that declare this value */
+  agents_declaring: string[];
+  /** Agent IDs missing this value */
+  agents_missing: string[];
+  /** Agent IDs whose conflicts_with includes this value */
+  agents_conflicting: string[];
+  /** Estimated impact on fleet score if resolved */
+  impact_on_fleet_score: number;
+}
+
+/** Summary of one agent's position in the fleet. */
+export interface AgentCoherenceSummary {
+  /** Agent ID */
+  agent_id: string;
+  /** Mean pairwise score with all other agents */
+  mean_score: number;
+  /** Number of compatible pairs */
+  compatible_count: number;
+  /** Number of conflicting pairs */
+  conflict_count: number;
+  /** Cluster this agent belongs to */
+  cluster_id: number;
+  /** Whether this agent is flagged as an outlier */
+  is_outlier: boolean;
+}
+
+/** Result of N-way fleet coherence analysis. */
+export interface FleetCoherenceResult {
+  /** Mean of all pairwise coherence scores */
+  fleet_score: number;
+  /** Minimum pairwise score (weakest link) */
+  min_pair_score: number;
+  /** Maximum pairwise score */
+  max_pair_score: number;
+  /** Number of agents analyzed */
+  agent_count: number;
+  /** Number of pairwise comparisons */
+  pair_count: number;
+  /** All pairwise coherence results */
+  pairwise_matrix: PairwiseEntry[];
+  /** Agents flagged as outliers */
+  outliers: FleetOutlier[];
+  /** Clusters of compatible agents */
+  clusters: FleetCluster[];
+  /** Value dimensions where agents diverge */
+  divergence_report: ValueDivergence[];
+  /** Per-agent coherence summaries */
+  agent_summaries: AgentCoherenceSummary[];
+}

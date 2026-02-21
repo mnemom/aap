@@ -39,6 +39,14 @@ export const MIN_WORD_LENGTH = 3;
 /** Maximum features to extract from TF-IDF vectorization */
 export const MAX_TFIDF_FEATURES = 500;
 
+// Fleet Coherence
+// ----------------
+/** Standard deviations below fleet mean to flag an agent as outlier */
+export const OUTLIER_STD_DEV_THRESHOLD = 1.0;
+
+/** Minimum pairwise score to consider agents compatible for cluster analysis */
+export const CLUSTER_COMPATIBILITY_THRESHOLD = 0.7;
+
 // Version
 // -------
 export const ALGORITHM_VERSION = "1.2.0";

@@ -36,6 +36,7 @@ See SPEC.md Sections 7, 6.4, and 8 for protocol specification.
 
 from aap.verification.api import (
     check_coherence,
+    check_fleet_coherence,
     detect_drift,
     verify_trace,
 )
@@ -57,14 +58,20 @@ from aap.verification.features import (
     cosine_similarity,
 )
 from aap.verification.models import (
+    AgentCoherenceSummary,
     CoherenceResult,
     DriftAlert,
     DriftAnalysis,
     DriftDirection,
     DriftIndicator,
+    FleetCluster,
+    FleetCoherenceResult,
+    FleetOutlier,
+    PairwiseEntry,
     Severity,
     ValueAlignment,
     ValueConflict,
+    ValueDivergence,
     VerificationMetadata,
     VerificationResult,
     Violation,
@@ -80,6 +87,7 @@ __all__ = [
     # Core functions
     "verify_trace",
     "check_coherence",
+    "check_fleet_coherence",
     "detect_drift",
     # SSM and Divergence (Phase 1 Braid extraction)
     "SSMAnalyzer",
@@ -91,6 +99,13 @@ __all__ = [
     "compute_centroid",
     "cosine_similarity",
     "compute_similarity_with_tfidf",
+    # Fleet Coherence (E-05)
+    "FleetCoherenceResult",
+    "PairwiseEntry",
+    "FleetOutlier",
+    "FleetCluster",
+    "ValueDivergence",
+    "AgentCoherenceSummary",
     # Result models
     "VerificationResult",
     "Violation",

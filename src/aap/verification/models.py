@@ -258,3 +258,108 @@ class ValueConflict(BaseModel):
 
 # Rebuild models with forward references
 CoherenceResult.model_rebuild()
+
+
+# --- Fleet Coherence Types (E-05: N-Way Value Coherence) ---
+
+
+class PairwiseEntry(BaseModel):
+    """A single pairwise coherence entry in the fleet matrix."""
+
+    agent_a: str = Field(..., description="First agent ID")
+    agent_b: str = Field(..., description="Second agent ID")
+    result: CoherenceResult = Field(..., description="Pairwise coherence result")
+
+
+class FleetOutlier(BaseModel):
+    """An agent flagged as an outlier in fleet coherence."""
+
+    agent_id: str = Field(..., description="Agent ID")
+    agent_mean_score: float = Field(..., description="Agent's mean pairwise score")
+    fleet_mean_score: float = Field(..., description="Fleet-wide mean score")
+    deviation: float = Field(..., description="Standard deviations below fleet mean")
+    primary_conflicts: list[str] = Field(
+        default_factory=list, description="Values causing primary conflicts"
+    )
+
+
+class FleetCluster(BaseModel):
+    """A cluster of compatible agents."""
+
+    cluster_id: int = Field(..., description="Cluster identifier")
+    agent_ids: list[str] = Field(..., description="Agent IDs in this cluster")
+    internal_coherence: float = Field(
+        ..., description="Mean coherence score within the cluster"
+    )
+    shared_values: list[str] = Field(
+        default_factory=list,
+        description="Values shared by all agents in the cluster",
+    )
+    distinguishing_values: list[str] = Field(
+        default_factory=list,
+        description="Values that distinguish this cluster from others",
+    )
+
+
+class ValueDivergence(BaseModel):
+    """A value dimension where agents diverge."""
+
+    value: str = Field(..., description="The value in question")
+    agents_declaring: list[str] = Field(
+        default_factory=list, description="Agent IDs that declare this value"
+    )
+    agents_missing: list[str] = Field(
+        default_factory=list, description="Agent IDs missing this value"
+    )
+    agents_conflicting: list[str] = Field(
+        default_factory=list,
+        description="Agent IDs whose conflicts_with includes this value",
+    )
+    impact_on_fleet_score: float = Field(
+        ..., description="Estimated impact on fleet score if resolved"
+    )
+
+
+class AgentCoherenceSummary(BaseModel):
+    """Summary of one agent's position in the fleet."""
+
+    agent_id: str = Field(..., description="Agent ID")
+    mean_score: float = Field(
+        ..., description="Mean pairwise score with all other agents"
+    )
+    compatible_count: int = Field(..., description="Number of compatible pairs")
+    conflict_count: int = Field(..., description="Number of conflicting pairs")
+    cluster_id: int = Field(..., description="Cluster this agent belongs to")
+    is_outlier: bool = Field(
+        ..., description="Whether this agent is flagged as an outlier"
+    )
+
+
+class FleetCoherenceResult(BaseModel):
+    """Result of N-way fleet coherence analysis."""
+
+    fleet_score: float = Field(
+        ..., description="Mean of all pairwise coherence scores"
+    )
+    min_pair_score: float = Field(
+        ..., description="Minimum pairwise score (weakest link)"
+    )
+    max_pair_score: float = Field(..., description="Maximum pairwise score")
+    agent_count: int = Field(..., description="Number of agents analyzed")
+    pair_count: int = Field(..., description="Number of pairwise comparisons")
+    pairwise_matrix: list[PairwiseEntry] = Field(
+        ..., description="All pairwise coherence results"
+    )
+    outliers: list[FleetOutlier] = Field(
+        default_factory=list, description="Agents flagged as outliers"
+    )
+    clusters: list[FleetCluster] = Field(
+        default_factory=list, description="Clusters of compatible agents"
+    )
+    divergence_report: list[ValueDivergence] = Field(
+        default_factory=list,
+        description="Value dimensions where agents diverge",
+    )
+    agent_summaries: list[AgentCoherenceSummary] = Field(
+        default_factory=list, description="Per-agent coherence summaries"
+    )

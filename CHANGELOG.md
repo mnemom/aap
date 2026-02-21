@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-20
+
+### Added
+- `checkFleetCoherence()` (TypeScript) / `check_fleet_coherence()` (Python) — N-way fleet coherence analysis
+- New types: `FleetCoherenceResult`, `PairwiseEntry`, `FleetOutlier`, `FleetCluster`, `ValueDivergence`, `AgentCoherenceSummary`
+- Constants: `OUTLIER_STD_DEV_THRESHOLD`, `CLUSTER_COMPATIBILITY_THRESHOLD`
+- Fleet score computation (mean of all pairwise scores)
+- Outlier detection (>1σ below fleet mean)
+- Cluster analysis (connected components at compatibility threshold)
+- Divergence report (per-value agent alignment analysis)
+
 ## [0.1.8] - 2026-02-12
 
 ### Added
