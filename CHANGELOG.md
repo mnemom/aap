@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-02-21
+
+### Removed
+- **Reputation module extracted to standalone packages.** All reputation types, API methods, and gating have been moved to `@mnemom/types` and `@mnemom/reputation` (npm) / `mnemom-types` and `mnemom-reputation` (PyPI). This is a breaking change for code that imports reputation symbols from AAP.
+
+### Migration Guide
+Replace AAP reputation imports with the new packages:
+
+**TypeScript:**
+```typescript
+// Before (0.2.x)
+import { getReputation, createReputationGate } from '@mnemom/agent-alignment-protocol';
+import type { ReputationScore } from '@mnemom/agent-alignment-protocol';
+
+// After (0.3.0)
+import { getReputation, createReputationGate } from '@mnemom/reputation';
+import type { ReputationScore } from '@mnemom/types';
+```
+
+**Python:**
+```python
+# Before (0.2.x)
+from aap import get_reputation, ReputationGate, ReputationScore
+
+# After (0.3.0)
+from mnemom_reputation import get_reputation, ReputationGate
+from mnemom_types import ReputationScore
+```
+
+Install: `npm install @mnemom/types @mnemom/reputation` or `pip install mnemom-types mnemom-reputation`
+
 ## [0.2.0] - 2026-02-20
 
 ### Added
