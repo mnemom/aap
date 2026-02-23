@@ -6,7 +6,7 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
-    "@mnemom/agent-alignment-protocol": "^0.1.8"
+    "@mnemom/agent-alignment-protocol": "^0.4.0"
   },
   "devDependencies": {
     "tsx": "^4.0.0"

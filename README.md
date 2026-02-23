@@ -6,7 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/agent-alignment-protocol.svg)](https://pypi.org/project/agent-alignment-protocol/)
 [![npm](https://img.shields.io/npm/v/@mnemom/agent-alignment-protocol.svg)](https://www.npmjs.com/package/@mnemom/agent-alignment-protocol)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Spec](https://img.shields.io/badge/spec-v0.1.0-green.svg)](https://docs.mnemom.ai/protocols/aap/specification)
+[![Spec](https://img.shields.io/badge/spec-v0.4.0-green.svg)](https://docs.mnemom.ai/protocols/aap/specification)
 
 **A transparency protocol for autonomous agents.**
 
@@ -294,7 +294,7 @@ No server required — runs entirely client-side via WebAssembly.
 
 ## Status
 
-**Current Version**: 0.1.8
+**Current Version**: 0.4.0
 
 | Component | Status |
 |-----------|--------|

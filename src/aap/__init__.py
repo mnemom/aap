@@ -36,7 +36,7 @@ Quick Start:
 See docs/SPEC.md for the full protocol specification.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 # EU AI Act compliance presets
 from aap.compliance import (

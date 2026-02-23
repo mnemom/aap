@@ -6,7 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/agent-alignment-protocol.svg)](https://pypi.org/project/agent-alignment-protocol/)
 [![npm](https://img.shields.io/npm/v/@mnemom/agent-alignment-protocol.svg)](https://www.npmjs.com/package/@mnemom/agent-alignment-protocol)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Spec](https://img.shields.io/badge/spec-v0.1.0-green.svg)](docs/SPEC.md)
+[![Spec](https://img.shields.io/badge/spec-v0.4.0-green.svg)](docs/SPEC.md)
 
 **A transparency protocol for autonomous agents.**
 
