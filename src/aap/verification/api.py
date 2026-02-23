@@ -90,6 +90,13 @@ def verify_trace(
 ) -> VerificationResult:
     """Verify a single AP-Trace against an Alignment Card.
 
+    IMPORTANT: This function provides STRUCTURAL verification only — it checks that
+    a trace conforms to the declarations in an alignment card. It does NOT provide
+    cryptographic integrity verification. Traces are not signed or hash-chained in
+    the current version. A malicious agent can produce structurally valid traces for
+    arbitrary behavior. For integrity guarantees, use AIP (Agent Integrity Protocol)
+    in conjunction with AAP.
+
     Performs the verification algorithm specified in SPEC Section 7.3:
     1. Autonomy compliance - action category matches autonomy envelope
     2. Escalation compliance - required escalations were performed
@@ -103,6 +110,26 @@ def verify_trace(
     Returns:
         VerificationResult with violations and warnings
     """
+    # Validate required fields
+    if not isinstance(trace, dict):
+        raise TypeError("trace must be a dictionary")
+    if not isinstance(card, dict):
+        raise TypeError("card must be a dictionary")
+    if "action" not in trace:
+        raise ValueError("trace must contain 'action' field")
+    if "decision" not in trace or "values_applied" not in trace.get("decision", {}):
+        raise ValueError("trace must contain 'decision.values_applied' field")
+
+    # Warn if tamper_evidence is declared but not cryptographically enforced
+    tamper_evidence = (card.get("audit") or {}).get("commitment", {}).get("tamper_evidence")
+    if tamper_evidence in ("signed", "merkle"):
+        import warnings as _warnings
+        _warnings.warn(
+            f'[AAP] Warning: tamper_evidence mode "{tamper_evidence}" is declared '
+            "but NOT cryptographically enforced in this version.",
+            stacklevel=2,
+        )
+
     start_time = time.time()
     violations: list[Violation] = []
     warnings: list[Warning] = []
@@ -271,6 +298,12 @@ def check_coherence(
     Returns:
         CoherenceResult with compatibility assessment
     """
+    # Validate required fields
+    if not isinstance(my_card, dict):
+        raise TypeError("my_card must be a dictionary")
+    if not isinstance(their_card, dict):
+        raise TypeError("their_card must be a dictionary")
+
     my_values = set(my_card.get("values", {}).get("declared", []))
     their_values = set(their_card.get("values", {}).get("declared", []))
 
@@ -590,6 +623,12 @@ def detect_drift(
     Returns:
         List of DriftAlert objects for detected drift events
     """
+    # Validate required fields
+    if not isinstance(card, dict):
+        raise TypeError("card must be a dictionary")
+    if not isinstance(traces, list):
+        raise TypeError("traces must be a list")
+
     # Delegate to DivergenceDetector (Braid-extracted implementation)
     from aap.verification.divergence import DivergenceDetector
 
@@ -643,6 +682,11 @@ def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:
 
         # Look for field in trace context (handle explicit None)
         actual = (trace.get("context") or {}).get(field)
+        # Check context.metadata (match TypeScript behavior)
+        if actual is None:
+            metadata = (trace.get("context") or {}).get("metadata", {})
+            if isinstance(metadata, dict):
+                actual = metadata.get(field)
         if actual is None:
             actual = (trace.get("action") or {}).get("parameters", {}).get(field)
         if actual is None:
@@ -670,6 +714,13 @@ def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:
     if re.match(r'^\w+$', condition):
         return bool((trace.get("context") or {}).get(condition))
 
+    import logging
+    logging.getLogger("aap").warning(
+        '[AAP] Condition could not be parsed: "%s". Supported patterns: '
+        '"field == value", "field > number", "field_name" (boolean). '
+        "This trigger will not fire.",
+        condition,
+    )
     return False
 
 

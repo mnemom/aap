@@ -108,8 +108,8 @@ class TestTraceDecisionBasic:
         assert "decision" in trace
 
     def test_trace_captures_parameters(self, sample_card: dict[str, Any]):
-        """Trace should capture function parameters."""
-        @trace_decision(card=sample_card)
+        """Trace should capture function parameters when include_args=True."""
+        @trace_decision(card=sample_card, include_args=True)
         def process_data(items: list[str], limit: int = 10) -> int:
             return len(items[:limit])
 

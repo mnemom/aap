@@ -142,8 +142,15 @@ class TraceConfig:
     session_id: str | None = None
     """Session ID to include in trace context."""
 
-    include_args: bool = True
-    """Include function arguments in action.parameters."""
+    include_args: bool = False
+    """Include function arguments in action.parameters.
+
+    WARNING: When set to True, all function arguments are serialized into the
+    trace output. This may inadvertently leak sensitive data (PII, credentials,
+    API keys, etc.) into trace files. Only enable this when you are certain that
+    function arguments do not contain sensitive information, or when traces are
+    stored in a secure, access-controlled location.
+    """
 
     include_return_repr: bool = False
     """Include repr of return value in trace (may leak data)."""
@@ -345,14 +352,19 @@ def _write_trace(trace: dict[str, Any], config: TraceConfig) -> Path | None:
         return None
 
     # Write to file
+    import os
     output_dir = Path(config.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    # Ensure restrictive directory permissions (umask may weaken mode= arg)
+    os.chmod(output_dir, 0o700)
 
     filename = f"{trace['trace_id']}.json"
     filepath = output_dir / filename
 
     with open(filepath, "w") as f:
         json.dump(trace, f, indent=2, default=str)
+    # Restrict file permissions to owner-only read/write
+    os.chmod(filepath, 0o600)
 
     return filepath
 
@@ -403,7 +415,7 @@ def trace_decision(
     default_values: list[str] | None = None,
     agent_id: str = "",
     session_id: str | None = None,
-    include_args: bool = True,
+    include_args: bool = False,
     include_return_repr: bool = False,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     ...
@@ -421,7 +433,7 @@ def trace_decision(
     default_values: list[str] | None = None,
     agent_id: str = "",
     session_id: str | None = None,
-    include_args: bool = True,
+    include_args: bool = False,
     include_return_repr: bool = False,
 ) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator that generates AP-Traces for function calls.
@@ -444,7 +456,9 @@ def trace_decision(
         default_values: Default values_applied if not provided by function.
         agent_id: Agent ID for traces (auto-generated if empty).
         session_id: Session ID to include in trace context.
-        include_args: Include function arguments in action.parameters (default: True).
+        include_args: Include function arguments in action.parameters (default: False).
+            WARNING: When True, all function arguments are serialized into trace
+            output, which may leak sensitive data (PII, credentials, API keys).
         include_return_repr: Include repr of return value (default: False).
 
     Returns:

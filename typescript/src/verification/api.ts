@@ -70,6 +70,13 @@ function actionMatchesList(actionName: string, list: string[]): boolean {
 /**
  * Verify a single AP-Trace against an Alignment Card.
  *
+ * IMPORTANT: This function provides STRUCTURAL verification only — it checks that
+ * a trace conforms to the declarations in an alignment card. It does NOT provide
+ * cryptographic integrity verification. Traces are not signed or hash-chained in
+ * the current version. A malicious agent can produce structurally valid traces for
+ * arbitrary behavior. For integrity guarantees, use AIP (Agent Integrity Protocol)
+ * in conjunction with AAP.
+ *
  * Performs the verification algorithm specified in SPEC Section 7.3:
  * 1. Autonomy compliance - action category matches autonomy envelope
  * 2. Escalation compliance - required escalations were performed
@@ -88,6 +95,12 @@ export function verifyTrace(
   const violations: Violation[] = [];
   const warnings: Warning[] = [];
   const checksPerformed: string[] = [];
+
+  // Warn if tamper_evidence is declared but not cryptographically enforced
+  const tamperEvidence = (card as Record<string, any>).audit?.commitment?.tamper_evidence;
+  if (tamperEvidence === 'signed' || tamperEvidence === 'merkle') {
+    console.warn(`[AAP] Warning: tamper_evidence mode "${tamperEvidence}" is declared but NOT cryptographically enforced in this version.`);
+  }
 
   const traceId = trace.trace_id ?? "";
   const cardId = card.card_id ?? "";
@@ -315,7 +328,7 @@ export function checkCoherence(
   const matchedCount = taskValues
     ? matched.filter((v) => requiredValues.has(v)).length
     : matched.length;
-  const conflictPenalty = CONFLICT_PENALTY_MULTIPLIER * (conflicts.length / totalRequired);
+  const conflictPenalty = Math.min(1, CONFLICT_PENALTY_MULTIPLIER * (conflicts.length / totalRequired));
 
   let score = (matchedCount / totalRequired) * (1 - conflictPenalty);
   score = Math.max(0, Math.min(1, score)); // Clamp to [0, 1]
@@ -798,6 +811,7 @@ function evaluateCondition(condition: string, trace: APTrace): boolean {
     return Boolean(ctxValue ?? trace.context?.metadata?.[condition]);
   }
 
+  console.warn(`[AAP] Condition could not be parsed: "${condition}". Supported patterns: "field == value", "field > number", "field_name" (boolean). This trigger will not fire.`);
   return false;
 }
 
