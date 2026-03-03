@@ -101,3 +101,10 @@ warn_unused_ignores = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "--cov=src/aap --cov-report=xml --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["src/aap"]
+
+[tool.coverage.report]
+show_missing = true

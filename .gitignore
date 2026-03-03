@@ -40,6 +40,8 @@ env/
 .coverage
 .coverage.*
 htmlcov/
+coverage/
+coverage.xml
 .pytest_cache/
 .hypothesis/
 
