@@ -14,6 +14,8 @@ jobs:
   python:
     name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
@@ -47,6 +49,8 @@ jobs:
   typescript:
     name: TypeScript
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -75,6 +79,8 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -94,6 +100,8 @@ jobs:
 
   dispatch-deploy:
     name: Trigger Deploy
+    permissions:
+      contents: read
     needs: [python, typescript, lint]
     if: >-
       always() &&

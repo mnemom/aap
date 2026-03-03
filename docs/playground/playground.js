@@ -1849,35 +1849,81 @@ async function handleAutoRun(params) {
     // Switch to requested mode
     switchMode(mode);
 
-    // Decode and load data
+    // Safely decode base64 — returns null on invalid input
+    function safeAtob(value) {
+        try {
+            return atob(value);
+        } catch {
+            return null;
+        }
+    }
+
+    // Decode, validate, and load data using application-controlled flags
+    // instead of raw user-controlled URL parameters in conditionals
     if (mode === 'verify') {
-        if (params.get('card')) {
-            document.getElementById('card-input').value = atob(params.get('card'));
+        let hasCard = false;
+        let hasTrace = false;
+        const cardParam = params.get('card');
+        const traceParam = params.get('trace');
+        if (cardParam) {
+            const decoded = safeAtob(cardParam);
+            if (decoded !== null) {
+                document.getElementById('card-input').value = decoded;
+                hasCard = true;
+            }
         }
-        if (params.get('trace')) {
-            document.getElementById('trace-input').value = atob(params.get('trace'));
+        if (traceParam) {
+            const decoded = safeAtob(traceParam);
+            if (decoded !== null) {
+                document.getElementById('trace-input').value = decoded;
+                hasTrace = true;
+            }
         }
-        if (params.get('card') && params.get('trace')) {
+        if (hasCard && hasTrace) {
             await runVerify();
         }
     } else if (mode === 'coherence') {
-        if (params.get('myCard')) {
-            document.getElementById('my-card-input').value = atob(params.get('myCard'));
+        let hasMyCard = false;
+        let hasTheirCard = false;
+        const myCardParam = params.get('myCard');
+        const theirCardParam = params.get('theirCard');
+        if (myCardParam) {
+            const decoded = safeAtob(myCardParam);
+            if (decoded !== null) {
+                document.getElementById('my-card-input').value = decoded;
+                hasMyCard = true;
+            }
         }
-        if (params.get('theirCard')) {
-            document.getElementById('their-card-input').value = atob(params.get('theirCard'));
+        if (theirCardParam) {
+            const decoded = safeAtob(theirCardParam);
+            if (decoded !== null) {
+                document.getElementById('their-card-input').value = decoded;
+                hasTheirCard = true;
+            }
         }
-        if (params.get('myCard') && params.get('theirCard')) {
+        if (hasMyCard && hasTheirCard) {
             await runCoherence();
         }
     } else if (mode === 'drift') {
-        if (params.get('card')) {
-            document.getElementById('drift-card-input').value = atob(params.get('card'));
+        let hasCard = false;
+        let hasTraces = false;
+        const cardParam = params.get('card');
+        const tracesParam = params.get('traces');
+        if (cardParam) {
+            const decoded = safeAtob(cardParam);
+            if (decoded !== null) {
+                document.getElementById('drift-card-input').value = decoded;
+                hasCard = true;
+            }
         }
-        if (params.get('traces')) {
-            document.getElementById('drift-traces-input').value = atob(params.get('traces'));
+        if (tracesParam) {
+            const decoded = safeAtob(tracesParam);
+            if (decoded !== null) {
+                document.getElementById('drift-traces-input').value = decoded;
+                hasTraces = true;
+            }
         }
-        if (params.get('card') && params.get('traces')) {
+        if (hasCard && hasTraces) {
             await runDrift();
         }
     }
