@@ -1842,7 +1842,9 @@ function validateJsonInput(event) {
  * Handle URL parameters for AI browser automation
  */
 async function handleAutoRun(params) {
-    const mode = params.get('mode') || 'verify';
+    const VALID_MODES = ['verify', 'coherence', 'drift'];
+    const requestedMode = params.get('mode') || 'verify';
+    const mode = VALID_MODES.includes(requestedMode) ? requestedMode : 'verify';
 
     // Switch to requested mode
     switchMode(mode);

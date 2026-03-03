@@ -765,7 +765,8 @@ function evaluateCondition(condition: string, trace: APTrace): boolean {
   }
 
   // Handle field > value (numeric comparison)
-  const numericMatch = condition.match(/(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)/);
+  // Anchored regex to prevent polynomial backtracking (ReDoS)
+  const numericMatch = condition.match(/^\s*(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)\s*$/);
   if (numericMatch) {
     const [, field, op, valueStr] = numericMatch;
     const value = parseFloat(valueStr);
