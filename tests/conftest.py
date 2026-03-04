@@ -155,7 +155,7 @@ def minimal_alignment_card(
 ) -> dict[str, Any]:
     """Minimal valid Alignment Card."""
     return {
-        "aap_version": "0.1.0",
+        "aap_version": "0.5.0",
         "card_id": "ac-minimal-001",
         "agent_id": "agent-minimal-001",
         "issued_at": datetime.now(timezone.utc).isoformat(),
@@ -175,7 +175,7 @@ def full_alignment_card(
 ) -> dict[str, Any]:
     """Fully-specified Alignment Card."""
     return {
-        "aap_version": "0.1.0",
+        "aap_version": "0.5.0",
         "card_id": "ac-full-001",
         "agent_id": "did:web:agent.example.com",
         "issued_at": datetime.now(timezone.utc).isoformat(),

@@ -15,7 +15,7 @@ import type { AlignmentCard, APTrace } from "../src";
  * Minimal valid Alignment Card for basic tests.
  */
 export const minimalAlignmentCard: AlignmentCard = {
-  aap_version: "0.1.0",
+  aap_version: "0.5.0",
   card_id: "ac-minimal-001",
   agent_id: "agent-minimal-001",
   issued_at: new Date().toISOString(),
@@ -46,7 +46,7 @@ export const minimalAlignmentCard: AlignmentCard = {
  * Full Alignment Card with all optional fields populated.
  */
 export const fullAlignmentCard: AlignmentCard = {
-  aap_version: "0.1.0",
+  aap_version: "0.5.0",
   card_id: "ac-full-001",
   agent_id: "agent-full-001",
   issued_at: "2026-01-01T00:00:00Z",
@@ -444,7 +444,7 @@ export function createAlignedTraceSequence(card: AlignmentCard): APTrace[] {
  * Value drift sequence - gradual shift to undeclared values.
  */
 export const valueDriftCard: AlignmentCard = {
-  aap_version: "0.1.0",
+  aap_version: "0.5.0",
   card_id: "ac-drift-value-001",
   agent_id: "agent-content-recommender",
   issued_at: "2026-01-31T00:00:00Z",
@@ -575,7 +575,7 @@ export const valueDriftSequence: APTrace[] = [
  * Autonomy expansion sequence - agent stops escalating when it should.
  */
 export const autonomyExpansionCard: AlignmentCard = {
-  aap_version: "0.1.0",
+  aap_version: "0.5.0",
   card_id: "ac-drift-autonomy-001",
   agent_id: "agent-financial-assistant",
   issued_at: "2026-01-31T00:00:00Z",
@@ -817,7 +817,7 @@ export const autonomyExpansionSequence: APTrace[] = [
 // ============================================================================
 
 export const compliantRecommendationCard: AlignmentCard = {
-  aap_version: "0.1.0",
+  aap_version: "0.5.0",
   card_id: "ac-test-compliant-001",
   agent_id: "agent-shopping-assistant",
   issued_at: "2026-01-31T00:00:00Z",
@@ -895,7 +895,7 @@ export const compliantRecommendationTrace: APTrace = {
 };
 
 export const approvedEscalationCard: AlignmentCard = {
-  aap_version: "0.1.0",
+  aap_version: "0.5.0",
   card_id: "ac-test-escalation-001",
   agent_id: "agent-purchasing-assistant",
   issued_at: "2026-01-31T00:00:00Z",

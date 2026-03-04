@@ -33,7 +33,7 @@ from aap import (
 def create_alignment_card() -> dict:
     """Create an Alignment Card for a simple recommendation agent."""
     card = AlignmentCard(
-        aap_version="0.1.0",
+        aap_version="0.5.0",
         card_id="ac-simple-agent-001",
         agent_id="simple-recommendation-agent",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),

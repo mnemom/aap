@@ -223,7 +223,7 @@ class AlignmentCard(BaseModel):
 
     Example:
         card = AlignmentCard(
-            aap_version="0.1.0",
+            aap_version="0.5.0",
             card_id="ac-12345",
             agent_id="did:web:agent.example.com",
             issued_at=datetime.utcnow(),
@@ -248,7 +248,7 @@ class AlignmentCard(BaseModel):
     """
 
     aap_version: str = Field(
-        default="0.1.0", description="AAP specification version"
+        default="0.5.0", description="AAP specification version"
     )
     card_id: str = Field(
         ..., description="Unique identifier for this card (UUID or URI)"

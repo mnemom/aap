@@ -39,7 +39,7 @@ def create_user_agent_card() -> dict:
     """
     # Build the AAP alignment block
     alignment = AlignmentCard(
-        aap_version="0.1.0",
+        aap_version="0.5.0",
         card_id="ac-user-shopping-001",
         agent_id="user-shopping-assistant",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -109,7 +109,7 @@ def create_vendor_agent_card() -> dict:
     This creates a potential conflict with user agents.
     """
     alignment = AlignmentCard(
-        aap_version="0.1.0",
+        aap_version="0.5.0",
         card_id="ac-vendor-deals-001",
         agent_id="vendor-deals-agent",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -178,7 +178,7 @@ def create_compatible_vendor_card() -> dict:
     compatible with user agents that conflict with upselling.
     """
     alignment = AlignmentCard(
-        aap_version="0.1.0",
+        aap_version="0.5.0",
         card_id="ac-ethical-vendor-001",
         agent_id="ethical-vendor-agent",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),

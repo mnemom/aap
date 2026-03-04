@@ -196,7 +196,7 @@ def _create_card_from_values(
     """Create a minimal Alignment Card from a list of values."""
     now = datetime.now(timezone.utc)
     return {
-        "aap_version": "0.1.0",
+        "aap_version": "0.5.0",
         "card_id": card_id or f"ac-{uuid.uuid4().hex[:12]}",
         "agent_id": agent_id or f"agent-{uuid.uuid4().hex[:8]}",
         "issued_at": now.isoformat(),
@@ -291,7 +291,7 @@ def _create_card_interactive(agent_id: str | None = None, card_id: str | None = 
 
     now = datetime.now(timezone.utc)
     return {
-        "aap_version": "0.1.0",
+        "aap_version": "0.5.0",
         "card_id": card_id or f"ac-{uuid.uuid4().hex[:12]}",
         "agent_id": agent_id or f"agent-{uuid.uuid4().hex[:8]}",
         "issued_at": now.isoformat(),

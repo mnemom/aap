@@ -24,7 +24,7 @@ def make_card(
 ) -> dict[str, Any]:
     """Create a minimal alignment card dict for fleet tests."""
     card: dict[str, Any] = {
-        "aap_version": "0.1.0",
+        "aap_version": "0.5.0",
         "card_id": f"ac-fleet-{agent_id}",
         "agent_id": f"agent-{agent_id}",
         "issued_at": "2026-01-01T00:00:00Z",

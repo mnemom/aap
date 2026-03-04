@@ -1,7 +1,7 @@
 {
   "description": "A trace with a forbidden action violation - agent attempted to auto-purchase",
   "card": {
-    "aap_version": "0.1.0",
+    "aap_version": "0.5.0",
     "card_id": "ac-shopping-assistant-001",
     "agent_id": "shopping-assistant-v1",
     "issued_at": "2026-01-31T12:00:00Z",

@@ -265,7 +265,7 @@ class TestAlignmentCard:
         """Minimal valid card from fixture."""
         card = AlignmentCard.model_validate(minimal_alignment_card)
         assert card.card_id == "ac-minimal-001"
-        assert card.aap_version == "0.1.0"
+        assert card.aap_version == "0.5.0"
 
     def test_full_card(self, full_alignment_card: dict):
         """Fully-specified card from fixture."""
