@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-04
+
+### Changed
+- `aap_version` default bumped from `"0.1.0"` to `"0.5.0"` across all schemas, fixtures, and examples
+
+### Added
+- YAML policy DSL support in mnemom-api (accepts `text/yaml` and `application/yaml` content types)
+- Trust edges REST API (`GET`/`POST`/`DELETE /v1/agents/:id/trust-edges`)
+
+### Fixed
+- Test fixture version inconsistencies (`"1.0"` → `"0.5.0"`) across smoltbot observer/gateway
+
+### Migration
+- Existing cards should update `aap_version` field to `"0.5.0"` via `PUT /v1/agents/:id/card`
+
 ## [0.4.0] - 2026-02-22
 
 ### Changed
