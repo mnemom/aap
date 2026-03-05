@@ -1,7 +1,7 @@
 {
   "description": "A trace sequence showing gradual value drift - agent progressively prioritizes undeclared values over declared ones",
   "card": {
-    "aap_version": "0.1.0",
+    "aap_version": "0.5.0",
     "card_id": "ac-content-curator-001",
     "agent_id": "content-curator-v1",
     "issued_at": "2026-01-31T12:00:00Z",

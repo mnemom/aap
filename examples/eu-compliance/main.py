@@ -34,7 +34,7 @@ from aap.compliance import (
 def create_eu_compliant_card() -> dict:
     """Create an Alignment Card configured for EU AI Act compliance."""
     card = AlignmentCard(
-        aap_version="0.1.0",
+        aap_version="0.5.0",
         card_id="ac-eu-compliance-001",
         agent_id="eu-compliant-agent",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),

@@ -38,7 +38,7 @@ from aap.schemas.ap_trace import PrincipalResponse
 def create_mcp_server_alignment() -> AlignmentCard:
     """Create alignment card for the MCP filesystem server."""
     return AlignmentCard(
-        aap_version="0.1.0",
+        aap_version="0.5.0",
         card_id="ac-mcp-filesystem-001",
         agent_id="mcp-filesystem-server",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),

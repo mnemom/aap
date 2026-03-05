@@ -117,7 +117,7 @@ class TestInitCommand:
 
         # Verify the card is valid JSON with expected structure
         card = json.loads(output_path.read_text())
-        assert card["aap_version"] == "0.1.0"
+        assert card["aap_version"] == "0.5.0"
         assert "principal_benefit" in card["values"]["declared"]
         assert "transparency" in card["values"]["declared"]
         assert card["principal"]["type"] == "human"

@@ -62,7 +62,7 @@ function createUserAgentCard(): A2AAgentCard {
       },
     ],
     alignment: {
-      aap_version: "0.1.0",
+      aap_version: "0.5.0",
       card_id: "ac-user-shopping-001",
       agent_id: "user-shopping-assistant",
       issued_at: now,
@@ -141,7 +141,7 @@ function createVendorAgentCard(): A2AAgentCard {
       },
     ],
     alignment: {
-      aap_version: "0.1.0",
+      aap_version: "0.5.0",
       card_id: "ac-vendor-deals-001",
       agent_id: "vendor-deals-agent",
       issued_at: now,
@@ -211,7 +211,7 @@ function createCompatibleVendorCard(): A2AAgentCard {
       },
     ],
     alignment: {
-      aap_version: "0.1.0",
+      aap_version: "0.5.0",
       card_id: "ac-ethical-vendor-001",
       agent_id: "ethical-vendor-agent",
       issued_at: now,

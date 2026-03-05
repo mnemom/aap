@@ -733,7 +733,7 @@ def js_compute_similarity_history(card_json: str, traces_json: str) -> str:
 async function loadExamples() {
     // Minimal card example - used by drift detection scenarios
     EXAMPLES.cards.minimal = {
-        "aap_version": "0.1.0",
+        "aap_version": "0.5.0",
         "card_id": "ac-demo-001",
         "agent_id": "demo-agent-001",
         "issued_at": new Date().toISOString(),
@@ -769,7 +769,7 @@ async function loadExamples() {
 
     // Full card example
     EXAMPLES.cards.full = {
-        "aap_version": "0.1.0",
+        "aap_version": "0.5.0",
         "card_id": "ac-demo-002",
         "agent_id": "did:web:agent.example.com",
         "issued_at": new Date().toISOString(),
@@ -815,7 +815,7 @@ async function loadExamples() {
 
     // Restrictive card
     EXAMPLES.cards.restrictive = {
-        "aap_version": "0.1.0",
+        "aap_version": "0.5.0",
         "card_id": "ac-restrictive-001",
         "agent_id": "secure-agent-001",
         "issued_at": new Date().toISOString(),

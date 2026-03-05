@@ -7,7 +7,7 @@
     "warnings": []
   },
   "card": {
-    "aap_version": "0.1.0",
+    "aap_version": "0.5.0",
     "card_id": "ac-test-escalation-001",
     "agent_id": "agent-purchasing-assistant",
     "issued_at": "2026-01-31T00:00:00Z",

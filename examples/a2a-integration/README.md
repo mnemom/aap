@@ -149,7 +149,7 @@ After running, you'll have:
   "skills": [ "...standard A2A skills..." ],
 
   "alignment": {
-    "aap_version": "0.1.0",
+    "aap_version": "0.5.0",
     "card_id": "ac-user-shopping-001",
     "principal": { "type": "human", "relationship": "delegated_authority" },
     "values": {

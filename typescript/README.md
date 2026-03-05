@@ -75,7 +75,7 @@ A structured declaration of an agent's alignment posture:
 
 ```json
 {
-  "aap_version": "0.1.0",
+  "aap_version": "0.5.0",
   "agent_id": "did:web:my-agent.example.com",
   "principal": {
     "type": "human",

@@ -96,7 +96,7 @@ class TestPresetsProduceValidCard:
 
     def test_full_card_with_presets(self):
         card = AlignmentCard(
-            aap_version="0.1.0",
+            aap_version="0.5.0",
             card_id="ac-test-eu-001",
             agent_id="test-eu-agent",
             issued_at="2026-02-13T00:00:00Z",

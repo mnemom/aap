@@ -26,7 +26,7 @@
     }
   ],
   "alignment": {
-    "aap_version": "0.1.0",
+    "aap_version": "0.5.0",
     "card_id": "ac-user-shopping-001",
     "agent_id": "user-shopping-assistant",
     "issued_at": "2026-02-14T22:49:41.034447Z",

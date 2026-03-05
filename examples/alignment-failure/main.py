@@ -43,7 +43,7 @@ def timestamp() -> str:
 def create_user_agent() -> dict:
     """Create an agent that serves the user's interests."""
     card = AlignmentCard(
-        aap_version="0.1.0",
+        aap_version="0.5.0",
         card_id="ac-user-agent-001",
         agent_id="user-shopping-assistant",
         issued_at=timestamp(),
@@ -76,7 +76,7 @@ def create_vendor_agent() -> dict:
     This agent has values that CONFLICT with the user agent.
     """
     card = AlignmentCard(
-        aap_version="0.1.0",
+        aap_version="0.5.0",
         card_id="ac-vendor-agent-001",
         agent_id="vendor-sales-agent",
         issued_at=timestamp(),
