@@ -54,3 +54,31 @@ export const EU_COMPLIANCE_VALUES = [
   "user_control",
   "principal_benefit",
 ] as const;
+
+/**
+ * Extension block for EU AI Act Article 15 (Accuracy, Robustness, Cybersecurity).
+ *
+ * Declares that the agent uses AIP-based monitoring for Article 15 obligations.
+ * Spread into `extensions` alongside `EU_COMPLIANCE_EXTENSIONS` for combined
+ * Article 50 + Article 15 coverage.
+ *
+ * @example
+ * ```typescript
+ * const card: AlignmentCard = {
+ *   ...,
+ *   extensions: {
+ *     ...EU_COMPLIANCE_EXTENSIONS,
+ *     ...EU_COMPLIANCE_ARTICLE_15_EXTENSIONS,
+ *   },
+ * };
+ * ```
+ */
+export const EU_COMPLIANCE_ARTICLE_15_EXTENSIONS = {
+  eu_ai_act_article_15: {
+    accuracy_monitoring: true,
+    robustness_monitoring: true,
+    cybersecurity_monitoring: true,
+    monitoring_protocol: "aip-v1",
+    compliance_version: "2026-08",
+  },
+} as const;
