@@ -67,13 +67,13 @@ jobs:
       - name: TypeScript checks
         working-directory: typescript
         run: |
-          npm ci || npm install
+          npm ci
           npm run typecheck
           npm run build
           npm test
       - name: Python checks
         run: |
-          pip install -e ".[dev]"
+          pip install -e '.[dev]'
           ruff check .
           pytest
 
@@ -89,7 +89,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
-      - run: pip install build twine
+      - run: pip install build==1.2.2 twine==6.1.0
       - run: python -m build
       - run: twine upload dist/*
         env:
@@ -114,7 +114,7 @@ jobs:
         with:
           node-version: "22"
       - name: Upgrade npm for OIDC trusted publishing
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.4.0
       - run: npm ci || npm install
       - run: npm run build
       - run: npm publish --access public --provenance
@@ -135,11 +135,11 @@ jobs:
           node-version: "22"
 
       - name: Upgrade npm for OIDC trusted publishing
-        run: npm install -g npm@latest
+        run: npm install -g npm@11.4.0
       - name: Install and build
         working-directory: ${{ inputs.npm-directory }}
         run: |
-          npm ci || npm install
+          npm ci
           npm run build --if-present
       - name: Check if already published
         id: check
