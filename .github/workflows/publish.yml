@@ -170,7 +170,10 @@ jobs:
       - name: Publish
         if: steps.check.outputs.skip != 'true'
         working-directory: ${{ inputs.npm-directory }}
-        run: npm publish --access public --provenance --loglevel verbose 2>&1 | head -60
+        run: npm publish --access public --provenance --loglevel verbose 2>&1 || true
+      - name: Show full npm debug log
+        if: always()
+        run: cat ~/.npm/_logs/*.log 2>/dev/null | tail -80 || echo "no log file"
 
       - name: Generate SBOM
         uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0
