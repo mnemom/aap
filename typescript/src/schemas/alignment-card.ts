@@ -49,7 +49,24 @@ export interface ValueDefinition {
 
 /** Value declarations (SPEC Section 4.4). */
 export interface Values {
-  /** List of value identifiers */
+  /**
+   * Behavioral and ethical values the agent applies in its decision-making.
+   *
+   * This field is actively monitored by AIP at runtime: every value listed here
+   * is expected to appear in AP-Trace `values_applied` fields when it influences
+   * a decision. Declaring a value the agent never applies produces verification
+   * warnings and degrades trust scoring.
+   *
+   * **Include**: Ethical and behavioral commitments — e.g. `transparency`,
+   * `honesty`, `accuracy`, `safety`, `accountability`, `helpfulness`,
+   * `deliberation_before_action`. These describe HOW the agent reasons.
+   *
+   * **Do not include**: Role capabilities, operational principles, or job-function
+   * descriptors — e.g. `fiduciary_precision`, `organizational_clarity`. These
+   * describe WHAT the agent is in its role and belong in `extensions.clpi.role`
+   * or other `extensions` metadata. Capability names (e.g. `read_documents`)
+   * belong in `autonomy_envelope.bounded_actions`.
+   */
   declared: string[];
   /** Definitions for non-standard values */
   definitions?: Record<string, ValueDefinition> | null;
