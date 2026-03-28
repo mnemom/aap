@@ -274,3 +274,84 @@ export interface FleetCoherenceResult {
   /** Per-agent coherence summaries */
   agent_summaries: AgentCoherenceSummary[];
 }
+
+// --- Fault Line Analysis Types (E-06: Fault Line Detection) ---
+
+/** Classification of a fault line's nature. */
+export type FaultLineClassification =
+  | 'resolvable'
+  | 'priority_mismatch'
+  | 'incompatible'
+  | 'complementary';
+
+/** A single fault line — a value dimension that splits the fleet. */
+export interface FaultLine {
+  /** Deterministic ID for this fault line */
+  id: string;
+  /** The value in question */
+  value: string;
+  /** How the fault line is classified */
+  classification: FaultLineClassification;
+  /** Severity based on impact_score */
+  severity: Severity;
+  /** Agent IDs that declare this value */
+  agents_declaring: string[];
+  /** Agent IDs missing this value */
+  agents_missing: string[];
+  /** Agent IDs whose conflicts_with includes this value */
+  agents_conflicting: string[];
+  /** Weighted impact score (0.0 to 1.0) */
+  impact_score: number;
+  /** Plain-English resolution hint */
+  resolution_hint: string;
+  /** Bounded actions shared by all involved agents */
+  affects_capabilities: string[];
+}
+
+/** Aggregated summary of fault lines by classification. */
+export interface FaultLineSummary {
+  /** Total number of fault lines */
+  total: number;
+  /** Count of resolvable fault lines */
+  resolvable: number;
+  /** Count of priority_mismatch fault lines */
+  priority_mismatch: number;
+  /** Count of incompatible fault lines */
+  incompatible: number;
+  /** Count of complementary fault lines */
+  complementary: number;
+  /** Count of critical-severity fault lines */
+  critical_count: number;
+}
+
+/** A pattern where the same set of agents is consistently isolated across multiple fault lines. */
+export interface FaultLineAlignment {
+  /** Deterministic ID */
+  id: string;
+  /** IDs of the fault lines that form this alignment */
+  fault_line_ids: string[];
+  /** Agents consistently missing from this group of fault lines */
+  minority_agents: string[];
+  /** Agents consistently declaring this group of fault lines */
+  majority_agents: string[];
+  /** Mean Jaccard similarity within the alignment group */
+  alignment_score: number;
+  /** Severity of the alignment pattern */
+  severity: Severity;
+  /** Human-readable description */
+  description: string;
+}
+
+/** Full fault line analysis result. */
+export interface FaultLineAnalysis {
+  /** Deterministic analysis identifier */
+  analysis_id: string;
+  /** Fleet coherence score (from FleetCoherenceResult) */
+  fleet_score: number;
+  /** Detected fault lines, sorted by severity then impact_score desc */
+  fault_lines: FaultLine[];
+  /** Detected alignment patterns */
+  alignments: FaultLineAlignment[];
+  /** Counts by classification */
+  summary: FaultLineSummary;
+}
