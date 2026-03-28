@@ -35,7 +35,7 @@
  */
 
 // Main API exports
-export { verifyTrace, checkCoherence, checkFleetCoherence, detectDrift } from "./verification/api";
+export { verifyTrace, checkCoherence, checkFleetCoherence, detectDrift, analyzeFaultLines, checkFleetFaultLines } from "./verification/api";
 
 // Schema types
 export type {
@@ -114,6 +114,12 @@ export type {
   FleetCluster,
   ValueDivergence,
   AgentCoherenceSummary,
+  // Fault Line Analysis (E-06)
+  FaultLineClassification,
+  FaultLine,
+  FaultLineSummary,
+  FaultLineAlignment,
+  FaultLineAnalysis,
 } from "./verification/models";
 
 // Utility exports
