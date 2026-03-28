@@ -788,6 +788,15 @@ function hasRoleKeyword(agentId: string): boolean {
   return ROLE_KEYWORDS.some(kw => lower.includes(kw));
 }
 
+/** Extract the CLPI role from a card's extensions, if present. */
+function getClpiRole(card: AlignmentCard): string | null {
+  const ext = (card as unknown as { extensions?: Record<string, unknown> }).extensions;
+  if (!ext) return null;
+  const clpi = ext['clpi'] as Record<string, unknown> | undefined;
+  if (!clpi || typeof clpi['role'] !== 'string') return null;
+  return clpi['role'] || null;
+}
+
 /**
  * Analyze fault lines in a fleet based on a FleetCoherenceResult.
  *
@@ -813,6 +822,12 @@ export function analyzeFaultLines(
   const agentConflictMap = new Map<string, Set<string>>();
   for (const { agentId, card } of cards) {
     agentConflictMap.set(agentId, new Set(card.values.conflicts_with ?? []));
+  }
+
+  // Build lookup: agentId → CLPI role (from extensions.clpi.role)
+  const agentRoleMap = new Map<string, string | null>();
+  for (const { agentId, card } of cards) {
+    agentRoleMap.set(agentId, getClpiRole(card));
   }
 
   const faultLines: FaultLine[] = [];
@@ -863,7 +878,18 @@ export function analyzeFaultLines(
       agents_declaring.length >= 1 &&
       agents_missing.length >= 1 &&
       (() => {
-        // complementary: heuristic — some agent (declaring or missing) has a role keyword
+        // complementary: the declaring agents all share a CLPI role that the missing
+        // agents do NOT share — indicating intentional role specialization, not a gap.
+        // Primary check: extensions.clpi.role (authoritative)
+        const declaringRoles = new Set(agents_declaring.map(id => agentRoleMap.get(id) ?? null).filter(Boolean));
+        const missingRoles = new Set(agents_missing.map(id => agentRoleMap.get(id) ?? null).filter(Boolean));
+        if (declaringRoles.size > 0) {
+          // All declaring agents share a role that none of the missing agents have
+          const declaringRoleArr = [...declaringRoles];
+          const isRoleExclusive = declaringRoleArr.every(role => !missingRoles.has(role));
+          if (isRoleExclusive) return true;
+        }
+        // Fallback: agent ID contains a role keyword (original heuristic)
         const allInvolved = [...agents_declaring, ...agents_missing];
         return allInvolved.some(id => hasRoleKeyword(id));
       })()
