@@ -116,13 +116,11 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@11.4.0
-      - name: Strip _authToken from npmrc so npm uses native OIDC exchange
-        run: |
-          sed -i '/_authToken/d' ~/.npmrc || true
-          echo "NODE_AUTH_TOKEN=" >> "$GITHUB_ENV"
+      - name: Strip _authToken from npmrc
+        run: sed -i '/_authToken/d' ~/.npmrc || true
       - run: npm ci || npm install
       - run: npm run build
-      - run: npm publish --access public --provenance
+      - run: env -u NODE_AUTH_TOKEN npm publish --access public --provenance
 
   # ── Orchestrator dispatch publishing ──
 
@@ -141,12 +139,13 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@11.4.0
-      - name: Strip _authToken from npmrc so npm uses native OIDC exchange
+      - name: Strip _authToken from npmrc
         run: |
-          # setup-node sets _authToken=${NODE_AUTH_TOKEN} which blocks npm's internal OIDC
-          # Remove it so --provenance handles OIDC token exchange natively
+          # setup-node writes _authToken=${NODE_AUTH_TOKEN} to ~/.npmrc and exports
+          # NODE_AUTH_TOKEN=GITHUB_TOKEN via GITHUB_ENV. Both block npm's native OIDC
+          # exchange. Remove the _authToken line so the registry URL is configured
+          # but no static token exists.
           sed -i '/_authToken/d' ~/.npmrc || true
-          echo "NODE_AUTH_TOKEN=" >> "$GITHUB_ENV"
       - name: Install and build
         working-directory: ${{ inputs.npm-directory }}
         run: |
@@ -166,10 +165,13 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
             echo "Will publish $PKG_NAME@$PKG_VERSION"
           fi
-      - name: Publish
+      - name: Publish (NODE_AUTH_TOKEN unset so npm uses native OIDC exchange)
         if: steps.check.outputs.skip != 'true'
         working-directory: ${{ inputs.npm-directory }}
-        run: npm publish --access public --provenance
+        # env -u unsets NODE_AUTH_TOKEN from the subprocess — GITHUB_ENV can only set to
+        # empty string, not truly unset. With NODE_AUTH_TOKEN absent, npm --provenance
+        # performs OIDC token exchange with the npm registry automatically.
+        run: env -u NODE_AUTH_TOKEN npm publish --access public --provenance
 
       - name: Generate SBOM
         uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0
