@@ -119,6 +119,8 @@ jobs:
       - run: npm ci || npm install
       - run: npm run build
       - run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ''  # Clear so npm uses OIDC trusted publisher (tokens disallowed)
 
   # ── Orchestrator dispatch publishing ──
 
@@ -161,6 +163,8 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         working-directory: ${{ inputs.npm-directory }}
         run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ''  # Clear so npm uses OIDC trusted publisher (tokens disallowed)
 
       - name: Generate SBOM
         uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0
