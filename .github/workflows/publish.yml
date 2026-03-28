@@ -113,14 +113,13 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
-          registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@11.4.0
+      - name: Configure npm registry (no _authToken — OIDC only)
+        run: npm config set registry https://registry.npmjs.org/
       - run: npm ci || npm install
       - run: npm run build
       - run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ''  # Clear so npm uses OIDC trusted publisher (tokens disallowed)
 
   # ── Orchestrator dispatch publishing ──
 
@@ -136,10 +135,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
-          registry-url: 'https://registry.npmjs.org'
-
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@11.4.0
+      - name: Configure npm registry (no _authToken — OIDC only)
+        run: npm config set registry https://registry.npmjs.org/
       - name: Install and build
         working-directory: ${{ inputs.npm-directory }}
         run: |
@@ -163,8 +162,6 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         working-directory: ${{ inputs.npm-directory }}
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ''  # Clear so npm uses OIDC trusted publisher (tokens disallowed)
 
       - name: Generate SBOM
         uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0
