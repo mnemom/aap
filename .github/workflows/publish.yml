@@ -116,19 +116,13 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@11.4.0
+      - name: Strip _authToken from npmrc so npm uses native OIDC exchange
+        run: |
+          sed -i '/_authToken/d' ~/.npmrc || true
+          echo "NODE_AUTH_TOKEN=" >> "$GITHUB_ENV"
       - run: npm ci || npm install
       - run: npm run build
-      - name: Get OIDC token for npm trusted publishing
-        id: oidc
-        run: |
-          TOKEN=$(curl -sf \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm" | jq -r '.value')
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
       - run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ steps.oidc.outputs.token }}
 
   # ── Orchestrator dispatch publishing ──
 
@@ -147,6 +141,12 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm for OIDC trusted publishing
         run: npm install -g npm@11.4.0
+      - name: Strip _authToken from npmrc so npm uses native OIDC exchange
+        run: |
+          # setup-node sets _authToken=${NODE_AUTH_TOKEN} which blocks npm's internal OIDC
+          # Remove it so --provenance handles OIDC token exchange natively
+          sed -i '/_authToken/d' ~/.npmrc || true
+          echo "NODE_AUTH_TOKEN=" >> "$GITHUB_ENV"
       - name: Install and build
         working-directory: ${{ inputs.npm-directory }}
         run: |
@@ -166,21 +166,10 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
             echo "Will publish $PKG_NAME@$PKG_VERSION"
           fi
-      - name: Get OIDC token for npm trusted publishing
-        id: oidc
-        if: steps.check.outputs.skip != 'true'
-        run: |
-          TOKEN=$(curl -sf \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm" | jq -r '.value')
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
       - name: Publish
         if: steps.check.outputs.skip != 'true'
         working-directory: ${{ inputs.npm-directory }}
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ steps.oidc.outputs.token }}
 
       - name: Generate SBOM
         uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0
