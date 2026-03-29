@@ -923,30 +923,38 @@ export function analyzeFaultLines(
     }
 
     // --- impact_score ---
-    let impactScore = impact_on_fleet_score * coordinationOverlap;
-
-    // Reputation weighting: multiply by geometric mean of reputation/1000
-    if (reputationScores && involvedAgents.length > 0) {
-      const repValues = involvedAgents
-        .map(id => (reputationScores[id] ?? 500) / 1000)
-        .map(r => Math.max(0.001, r)); // avoid log(0)
-      const logSum = repValues.reduce((sum, r) => sum + Math.log(r), 0);
-      const geoMean = Math.exp(logSum / repValues.length);
-      impactScore *= geoMean;
-    }
-
-    impactScore = Math.min(1, Math.max(0, impactScore));
-
-    // --- Severity ---
+    // Complementary faults are intentional — they carry zero risk by definition.
+    let impactScore: number;
     let severity: Severity;
-    if (impactScore >= 0.7) {
-      severity = 'critical';
-    } else if (impactScore >= 0.4) {
-      severity = 'high';
-    } else if (impactScore >= 0.2) {
-      severity = 'medium';
-    } else {
+
+    if (classification === 'complementary') {
+      impactScore = 0;
       severity = 'low';
+    } else {
+      impactScore = impact_on_fleet_score * coordinationOverlap;
+
+      // Reputation weighting: multiply by geometric mean of reputation/1000
+      if (reputationScores && involvedAgents.length > 0) {
+        const repValues = involvedAgents
+          .map(id => (reputationScores[id] ?? 500) / 1000)
+          .map(r => Math.max(0.001, r)); // avoid log(0)
+        const logSum = repValues.reduce((sum, r) => sum + Math.log(r), 0);
+        const geoMean = Math.exp(logSum / repValues.length);
+        impactScore *= geoMean;
+      }
+
+      impactScore = Math.min(1, Math.max(0, impactScore));
+
+      // --- Severity ---
+      if (impactScore >= 0.7) {
+        severity = 'critical';
+      } else if (impactScore >= 0.4) {
+        severity = 'high';
+      } else if (impactScore >= 0.2) {
+        severity = 'medium';
+      } else {
+        severity = 'low';
+      }
     }
 
     // --- Resolution hint ---
@@ -1007,17 +1015,22 @@ export function analyzeFaultLines(
   });
 
   // --- Fault line alignment detection ---
+  // Only consider resolvable and incompatible faults — complementary faults are intentional
+  // role specialization and should NEVER trigger a structural fault line alert.
   const alignments: FaultLineAlignment[] = [];
+  const actionableFaultLines = faultLines.filter(
+    fl => fl.classification === 'resolvable' || fl.classification === 'incompatible'
+  );
 
-  // For each pair of fault lines, compute Jaccard of agents_missing sets
+  // For each pair of actionable fault lines, compute Jaccard of agents_missing sets
   // Group fault lines with similarity > 0.6
   const grouped = new Map<number, number[]>(); // groupId → faultLine indices
   const groupAssignment = new Map<number, number>(); // faultLine index → groupId
   let nextGroupId = 0;
 
-  for (let i = 0; i < faultLines.length; i++) {
-    for (let j = i + 1; j < faultLines.length; j++) {
-      const sim = jaccardSimilarity(faultLines[i].agents_missing, faultLines[j].agents_missing);
+  for (let i = 0; i < actionableFaultLines.length; i++) {
+    for (let j = i + 1; j < actionableFaultLines.length; j++) {
+      const sim = jaccardSimilarity(actionableFaultLines[i].agents_missing, actionableFaultLines[j].agents_missing);
       if (sim > 0.6) {
         // Find or create groups for i and j
         const gi = groupAssignment.get(i);
@@ -1054,7 +1067,7 @@ export function analyzeFaultLines(
   for (const [, members] of grouped) {
     if (members.length < 2) continue;
     const unique = [...new Set(members)];
-    const groupFaultLines = unique.map(i => faultLines[i]);
+    const groupFaultLines = unique.map(i => actionableFaultLines[i]);
 
     const minorityAgents = [
       ...new Set(groupFaultLines.flatMap(fl => fl.agents_missing)),
