@@ -13,7 +13,7 @@ import {
   ALGORITHM_VERSION,
   CONFLICT_PENALTY_MULTIPLIER,
   DEFAULT_SIMILARITY_THRESHOLD,
-  DEFAULT_SUSTAINED_TURNS_THRESHOLD,
+  DEFAULT_SUSTAINED_CHECKS_THRESHOLD,
   MIN_COHERENCE_FOR_PROCEED,
   NEAR_BOUNDARY_THRESHOLD,
   OUTLIER_STD_DEV_THRESHOLD,
@@ -652,7 +652,7 @@ export function detectDrift(
   card: AlignmentCard,
   traces: APTrace[],
   similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
-  sustainedThreshold = DEFAULT_SUSTAINED_TURNS_THRESHOLD
+  sustainedThreshold = DEFAULT_SUSTAINED_CHECKS_THRESHOLD
 ): DriftAlert[] {
   // Sort traces chronologically
   const sorted = [...traces].sort(
