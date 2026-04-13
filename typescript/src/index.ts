@@ -95,6 +95,7 @@ export type {
 // Result types
 export type {
   VerificationResult,
+  VerificationRecommendation,
   Violation,
   ViolationType,
   Severity,

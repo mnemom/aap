@@ -243,8 +243,12 @@ export function verifyTrace(
 
   const durationMs = performance.now() - startTime;
 
+  const hasViolations = violations.length > 0;
+  const hasWarnings  = warnings.length > 0;
+
   return {
-    verified: violations.length === 0,
+    verified: !hasViolations,
+    recommended_action: hasViolations ? "deny" : hasWarnings ? "review" : "proceed",
     trace_id: traceId,
     card_id: cardId,
     timestamp: new Date().toISOString(),

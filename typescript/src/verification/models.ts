@@ -73,10 +73,24 @@ export interface VerificationMetadata {
   duration_ms?: number | null;
 }
 
+/**
+ * What a consumer should do based on verification outcome.
+ * - `"proceed"` — no violations, no warnings; continue normally
+ * - `"review"` — no violations, but warnings present; log and proceed with care
+ * - `"deny"` — violations found; block the action and surface to operator
+ */
+export type VerificationRecommendation = "proceed" | "review" | "deny";
+
 /** Result of verifying an AP-Trace against an Alignment Card (SPEC Section 7.4). */
 export interface VerificationResult {
   /** True if no violations were found */
   verified: boolean;
+  /**
+   * Explicit action recommendation derived from violations and warnings.
+   * Prefer this over branching on `verified` alone — it distinguishes
+   * warning-only results ("review") from clean results ("proceed").
+   */
+  recommended_action: VerificationRecommendation;
   /** ID of the verified trace */
   trace_id: string;
   /** ID of the Alignment Card used */
