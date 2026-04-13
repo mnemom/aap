@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-04-13
+
+### Added
+- `VerificationRecommendation` type: `"proceed" | "review" | "deny"` (exported from main index)
+- `recommended_action` field on `VerificationResult` — derived from violations and warnings:
+  - `"proceed"` — no violations, no warnings
+  - `"review"` — no violations, warnings present
+  - `"deny"` — violations found
+  
+  This mirrors the `recommended_action` field on AIP's `IntegritySignal` for a consistent cross-protocol pattern. Prefer branching on `recommended_action` over `verified` alone.
+
+- `DEFAULT_SUSTAINED_CHECKS_THRESHOLD = 3` — canonical constant name aligned with AIP terminology
+
+### Deprecated
+- `DEFAULT_SUSTAINED_TURNS_THRESHOLD` — renamed to `DEFAULT_SUSTAINED_CHECKS_THRESHOLD`. The deprecated alias remains in 0.7.0 but **will be removed at 1.0.0**. Update any imports now.
+
+### Migration
+
+**`recommended_action` (new field):**
+```typescript
+// Before — required manual logic:
+const result = await verifyTrace(trace, card);
+if (!result.verified) { block(); }
+else if (result.warnings.length > 0) { warn(); }
+else { proceed(); }
+
+// After — use the new field:
+const result = await verifyTrace(trace, card);
+switch (result.recommended_action) {
+  case "proceed": proceed(); break;
+  case "review":  warn(); break;
+  case "deny":    block(); break;
+}
+```
+
+**`DEFAULT_SUSTAINED_CHECKS_THRESHOLD` (renamed constant):**
+```typescript
+// Before:
+import { DEFAULT_SUSTAINED_TURNS_THRESHOLD } from '@mnemom/agent-alignment-protocol';
+
+// After:
+import { DEFAULT_SUSTAINED_CHECKS_THRESHOLD } from '@mnemom/agent-alignment-protocol';
+```
+
 ## [0.5.0] - 2026-03-04
 
 ### Changed
