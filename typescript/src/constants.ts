@@ -18,12 +18,6 @@ export const DEFAULT_SIMILARITY_THRESHOLD = 0.3;
 /** Alert after this many consecutive traces show low similarity. */
 export const DEFAULT_SUSTAINED_CHECKS_THRESHOLD = 3;
 
-/**
- * @deprecated Use `DEFAULT_SUSTAINED_CHECKS_THRESHOLD`.
- * Renamed in 0.7.0 to align with AIP terminology. Will be removed at 1.0.0.
- */
-export const DEFAULT_SUSTAINED_TURNS_THRESHOLD = DEFAULT_SUSTAINED_CHECKS_THRESHOLD;
-
 // Verification Thresholds
 // -----------------------
 /** Score below which an action is flagged as "near boundary" warning */

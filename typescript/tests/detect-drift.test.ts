@@ -15,7 +15,7 @@ import {
   computeCentroid,
   extractTraceFeatures,
   DEFAULT_SIMILARITY_THRESHOLD,
-  DEFAULT_SUSTAINED_TURNS_THRESHOLD,
+  DEFAULT_SUSTAINED_CHECKS_THRESHOLD,
 } from "../src";
 import type { AlignmentCard, APTrace, DriftAlert, DriftDirection } from "../src";
 import {
@@ -525,7 +525,7 @@ describe("detectDrift", () => {
       if (alerts.length > 0) {
         expect(alerts[0].analysis.sustained_traces).toBeDefined();
         expect(alerts[0].analysis.sustained_traces).toBeGreaterThanOrEqual(
-          DEFAULT_SUSTAINED_TURNS_THRESHOLD
+          DEFAULT_SUSTAINED_CHECKS_THRESHOLD
         );
       }
     });
@@ -942,7 +942,7 @@ describe("detectDrift", () => {
 
       if (alerts.length > 0) {
         expect(alerts[0].analysis.sustained_traces).toBeGreaterThanOrEqual(
-          DEFAULT_SUSTAINED_TURNS_THRESHOLD
+          DEFAULT_SUSTAINED_CHECKS_THRESHOLD
         );
       }
     });
