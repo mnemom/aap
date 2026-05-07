@@ -156,3 +156,40 @@ export {
   EU_COMPLIANCE_VALUES,
 } from "./compliance";
 
+// Governance signals — operator-actionable observations (ADR-048).
+// Types only; NOT auto-injected into agent prompts. Application composers
+// (e.g., Polis for sovereign-CTO Wintermute) may render them into a
+// sovereign agent's prompt at request-prep time — that decision lives in
+// the application, not the platform.
+export type {
+  GovernanceSignal,
+  GovernanceSignalScope,
+  GovernanceSignalSource,
+  GovernanceSignalSeverity,
+  GovernanceSignalStatus,
+  GovernanceActorRole,
+  GovernanceResolutionStatus,
+  GovernanceNotificationChannel,
+  GovernanceFleetPatternType,
+  GovernanceCoherencePatternType,
+  GovernanceSourceRef,
+  GovernanceFleetSourceRef,
+  GovernanceCoherenceSourceRef,
+  GovernanceFaultLineSourceRef,
+  GovernanceDriftSourceRef,
+  GovernanceSourceRefBase,
+  GovernanceNotificationDispatchState,
+  GovernanceNotificationChannelState,
+  GovernanceNotificationState,
+  GovernanceWebhookEventType,
+  GovernanceWebhookEnvelope,
+} from "./governance";
+
+export {
+  isFleetSignal,
+  isCoherenceSignal,
+  isFaultLineSignal,
+  isDriftSignal,
+  severityAtLeast,
+  SEVERITY_ORDER,
+} from "./governance";

@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-05-07
+
+### Added — Governance signal types (ADR-048)
+
+Operator-actionable observations produced by Mnemom platform detectors
+(`sideband.coherence`, `sideband.fault_line`, `sideband.fleet`,
+`sideband.drift`, future `protection.*` / `posture.*`). Surfaced via
+REST `/v1/{orgs,teams,agents}/.../governance/signals` and webhook events
+`governance.signal.{fired,acknowledged,resolved,dismissed}`.
+
+- New `src/governance.ts` types: `GovernanceSignal`,
+  `GovernanceSignalScope`, `GovernanceSignalSource`,
+  `GovernanceSignalSeverity`, `GovernanceSignalStatus`,
+  `GovernanceActorRole`, `GovernanceResolutionStatus`,
+  `GovernanceNotificationChannel`, source-specific `*PatternType` +
+  `*SourceRef` discriminated unions, `GovernanceWebhookEnvelope`,
+  per-channel `GovernanceNotificationState`.
+- Type guards: `isFleetSignal`, `isCoherenceSignal`,
+  `isFaultLineSignal`, `isDriftSignal`.
+- Severity helpers: `severityAtLeast`, `SEVERITY_ORDER`.
+- New `examples/sovereign-agent-composer.ts` — application-side worked
+  pattern for composing governance signals into a sovereign agent's
+  prompt at request-prep time. Deliberately documents the
+  counter-example (do NOT auto-compose for non-sovereign agents) since
+  that's the architectural mis-layering ADR-048 corrected.
+
+### Notes
+
+Governance signals are NOT auto-injected into agent prompts. The
+platform surfaces them to operators (UI, webhook, REST) and to
+application composers who own the per-agent rendering decision. See
+ADR-048 §7 for the application-owned sovereign-agent composition
+pattern.
+
+This is a non-breaking minor release: existing `verifyTrace`,
+`checkCoherence`, `detectDrift`, `analyzeFaultLines`,
+`checkFleetCoherence`, `checkFleetFaultLines` APIs are unchanged.
+
 ## [1.0.0] - 2026-04-13
 
 ### 🎯 1.0.0 Stability Commitment
