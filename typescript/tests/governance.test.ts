@@ -2,8 +2,10 @@
  * Tests for governance signal types + helpers (ADR-048).
  *
  * Pure-logic coverage of severity ordering and source-narrowing type
- * guards. The webhook subscription pattern is documented in
- * examples/sovereign-agent-composer.ts.
+ * guards. Operator-shaped consumers (dashboards, webhook subscribers,
+ * alerting tools) use these types; the platform never injects
+ * governance signals into agent prompts (ADR-048's 2026-05-07
+ * amendment retracted the earlier sovereign-composer carve-out).
  */
 
 import { describe, it, expect } from "vitest";
