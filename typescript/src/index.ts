@@ -157,10 +157,11 @@ export {
 } from "./compliance";
 
 // Governance signals — operator-actionable observations (ADR-048).
-// Types only; NOT auto-injected into agent prompts. Application composers
-// (e.g., Polis for sovereign-CTO Wintermute) may render them into a
-// sovereign agent's prompt at request-prep time — that decision lives in
-// the application, not the platform.
+// Types are consumed by operator-shaped clients: dashboards, webhook
+// subscribers, alerting tools, audit pipelines. The platform never
+// injects governance signals into agent prompts; ADR-048's 2026-05-07
+// amendment retracted the earlier "application-owned sovereign-agent
+// composer" carve-out, including the example file removed in 1.2.0.
 export type {
   GovernanceSignal,
   GovernanceSignalScope,

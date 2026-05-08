@@ -8,15 +8,14 @@
  *   - REST: GET /v1/{orgs,teams,agents}/.../governance/signals
  *   - Webhook: governance.signal.{fired,acknowledged,resolved,dismissed}
  *
- * These types mirror the platform schema so consumers (operator
- * dashboards, application-side composers like Polis for sovereign-CTO
- * agents, third-party automation, audit pipelines) can type-check
- * against a stable contract.
+ * These types mirror the platform schema so operator-shaped consumers
+ * (dashboards, webhook subscribers, alerting tools, audit pipelines)
+ * can type-check against a stable contract.
  *
- * IMPORTANT: governance signals are NOT auto-injected into agent prompts.
- * They are operator-facing observations. An application composer may
- * choose to render them into a sovereign agent's prompt at request-prep
- * time — that decision lives in the application, not the platform.
+ * IMPORTANT: governance signals are operator-facing observations. The
+ * platform never injects them into agent prompts and offers no surface
+ * for prompt-time composition. (ADR-048's 2026-05-07 amendment retracted
+ * the earlier "application-owned sovereign-agent composer" carve-out.)
  *
  * @see https://docs.mnemom.ai/concepts/governance-signals
  */

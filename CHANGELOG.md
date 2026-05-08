@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-07
+
+### Removed — `examples/sovereign-agent-composer.ts`
+
+Per [ADR-048](https://github.com/mnemom/scale/blob/main/decisions/ADR-048-governance-signals-layering.md)'s 2026-05-07 amendment retracting §7, the
+"application-owned sovereign-agent composition" pattern is no longer
+part of the Mnemom platform's architectural surface. Mnemom serves
+fleet-shaped governance signals to operators only — humans, dashboards,
+webhooks, paging — and offers no platform-supplied path or example for
+folding them into agent prompts.
+
+The example file `examples/sovereign-agent-composer.ts` shipped in
+1.1.0 is deleted in this release. Applications that want fleet context
+inside an agent's prompt derive it from application-internal data and
+render it application-side; the platform offers no surface or worked
+example for that.
+
+### Unchanged
+
+The TypeScript governance signal types in `src/governance.ts` are
+unaffected. They describe the operator surface and are consumed by
+operator-shaped clients: dashboards, webhook subscribers, alerting
+tools, custom operator panels, audit pipelines. Type guards
+(`isFleetSignal`, `isCoherenceSignal`, `isFaultLineSignal`,
+`isDriftSignal`), severity helpers (`severityAtLeast`,
+`SEVERITY_ORDER`), and all enums remain.
+
+### Migration
+
+Consumers who imported types from `examples/sovereign-agent-composer.ts`
+should not exist — the file was example code, not an exported module.
+If any application coupled to the example by copying its shape, derive
+the typed contract from `@mnemom/agent-alignment-protocol`'s
+`GovernanceSignal` (and friends) instead of continuing to track the
+deleted example.
+
 ## [1.1.0] - 2026-05-07
 
 ### Added — Governance signal types (ADR-048)
@@ -25,19 +61,14 @@ REST `/v1/{orgs,teams,agents}/.../governance/signals` and webhook events
 - Type guards: `isFleetSignal`, `isCoherenceSignal`,
   `isFaultLineSignal`, `isDriftSignal`.
 - Severity helpers: `severityAtLeast`, `SEVERITY_ORDER`.
-- New `examples/sovereign-agent-composer.ts` — application-side worked
-  pattern for composing governance signals into a sovereign agent's
-  prompt at request-prep time. Deliberately documents the
-  counter-example (do NOT auto-compose for non-sovereign agents) since
-  that's the architectural mis-layering ADR-048 corrected.
 
 ### Notes
 
-Governance signals are NOT auto-injected into agent prompts. The
-platform surfaces them to operators (UI, webhook, REST) and to
-application composers who own the per-agent rendering decision. See
-ADR-048 §7 for the application-owned sovereign-agent composition
-pattern.
+Governance signals are operator-facing observations. The platform
+serves them to operators only (UI, webhook, REST). 1.1.0 originally
+shipped an `examples/sovereign-agent-composer.ts` worked pattern for
+application-side prompt composition; that pattern was retracted in
+1.2.0 — see the 1.2.0 entry above.
 
 This is a non-breaking minor release: existing `verifyTrace`,
 `checkCoherence`, `detectDrift`, `analyzeFaultLines`,
