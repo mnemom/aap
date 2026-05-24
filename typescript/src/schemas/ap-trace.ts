@@ -52,6 +52,14 @@ export interface Alternative {
   flags?: string[] | null;
 }
 
+/** Per-value score from V2 observer scoring (Phase 3.3). */
+export interface ValueScore {
+  /** Score against the catalog entry's observer_signals rubric */
+  score: "on_track" | "off_track" | "not_applicable";
+  /** Free-form rationale citing one of the catalog observer_signals patterns */
+  rationale: string;
+}
+
 /** Decision process record (SPEC Section 5.5). */
 export interface Decision {
   /** Options evaluated (minimum 1) */
@@ -64,6 +72,16 @@ export interface Decision {
   values_applied: string[];
   /** Decision confidence (0.0 to 1.0) */
   confidence?: number | null;
+  /**
+   * Per-declared-value score against the alignment card's catalog
+   * observer_signals (Phase 3.3 V2 observer surface). Optional — present
+   * when the card declares catalog values with observer_signals defined;
+   * absent on V1 observer output. Keyed by catalog value id.
+   * `values_applied` is derived from `value_scores` entries whose
+   * `score === "on_track"` to preserve the V1 surface contract for
+   * downstream consumers.
+   */
+  value_scores?: Record<string, ValueScore> | null;
 }
 
 /** Record of checking an escalation trigger. */

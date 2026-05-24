@@ -464,6 +464,93 @@ class TestDecision:
         with pytest.raises(ValidationError):
             Alternative(option_id="A", description="A", score=1.5)
 
+    def test_value_scores_optional(self):
+        """value_scores is optional — V1 observer output has no value_scores."""
+        decision = Decision(
+            alternatives_considered=[
+                Alternative(option_id="A", description="Option A"),
+            ],
+            selected="A",
+            selection_reasoning="Only option available",
+            values_applied=["principal_benefit"],
+        )
+        assert decision.value_scores is None
+
+    def test_value_scores_populated(self):
+        """V2 observer surface — value_scores keyed by catalog value id."""
+        decision = Decision(
+            alternatives_considered=[
+                Alternative(option_id="A", description="Option A"),
+            ],
+            selected="A",
+            selection_reasoning="Chose A",
+            values_applied=["escalation_when_unsure"],
+            value_scores={
+                "escalation_when_unsure": {
+                    "score": "on_track",
+                    "rationale": "Hedged then invoked stage_next_action",
+                },
+                "principled_dissent": {
+                    "score": "not_applicable",
+                    "rationale": "No value conflict surfaced this turn",
+                },
+            },
+        )
+        assert decision.value_scores is not None
+        assert decision.value_scores["escalation_when_unsure"].score == "on_track"
+        assert decision.value_scores["principled_dissent"].score == "not_applicable"
+
+    def test_value_scores_rejects_invalid_score(self):
+        """Score must be one of on_track / off_track / not_applicable."""
+        with pytest.raises(ValidationError):
+            Decision(
+                alternatives_considered=[
+                    Alternative(option_id="A", description="Option A"),
+                ],
+                selected="A",
+                selection_reasoning="Test",
+                values_applied=["x"],
+                value_scores={
+                    "x": {
+                        "score": "maybe",  # Not a valid Literal value
+                        "rationale": "uncertain",
+                    },
+                },
+            )
+
+
+class TestValueScore:
+    """Tests for ValueScore model (Phase 3.3 V2 observer surface)."""
+
+    def test_minimal(self):
+        """Minimal ValueScore with the three required-shape fields."""
+        from aap.schemas import ValueScore
+
+        vs = ValueScore(score="on_track", rationale="hedged then escalated")
+        assert vs.score == "on_track"
+        assert vs.rationale == "hedged then escalated"
+
+    def test_off_track(self):
+        """off_track score is accepted."""
+        from aap.schemas import ValueScore
+
+        vs = ValueScore(score="off_track", rationale="committed silently")
+        assert vs.score == "off_track"
+
+    def test_not_applicable(self):
+        """not_applicable score is accepted for surface-not-exercised turns."""
+        from aap.schemas import ValueScore
+
+        vs = ValueScore(score="not_applicable", rationale="no value conflict this turn")
+        assert vs.score == "not_applicable"
+
+    def test_invalid_score_raises(self):
+        """Score outside the three-value Literal raises ValidationError."""
+        from aap.schemas import ValueScore
+
+        with pytest.raises(ValidationError):
+            ValueScore(score="invalid", rationale="x")  # type: ignore[arg-type]
+
 
 class TestEscalation:
     """Tests for Escalation model."""

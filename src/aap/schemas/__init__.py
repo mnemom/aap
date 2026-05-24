@@ -61,6 +61,7 @@ from aap.schemas.ap_trace import (
     PrincipalResponse,
     TraceContext,
     TriggerCheck,
+    ValueScore,
 )
 from aap.schemas.value_coherence import (
     AlignmentCardRequest,
@@ -109,6 +110,7 @@ __all__ = [
     "TriggerCheck",
     "PrincipalResponse",
     "TraceContext",
+    "ValueScore",
     # Value Coherence (SPEC Section 6)
     "AlignmentCardRequest",
     "AlignmentCardResponse",
