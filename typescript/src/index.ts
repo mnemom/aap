@@ -66,6 +66,7 @@ export type {
   ActionTarget,
   Decision,
   Alternative,
+  ValueScore,
   Escalation,
   EscalationStatus,
   TriggerCheck,

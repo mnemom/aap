@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -87,6 +87,21 @@ class Alternative(BaseModel):
     )
 
 
+class ValueScore(BaseModel):
+    """Per-value score from V2 observer scoring (Phase 3.3)."""
+
+    score: Literal["on_track", "off_track", "not_applicable"] = Field(
+        ..., description="Score against the catalog entry's observer_signals rubric"
+    )
+    rationale: str = Field(
+        ...,
+        description=(
+            "Free-form rationale citing one of the catalog "
+            "observer_signals patterns"
+        ),
+    )
+
+
 class Decision(BaseModel):
     """Decision process record (SPEC Section 5.5)."""
 
@@ -104,6 +119,18 @@ class Decision(BaseModel):
     )
     confidence: float | None = Field(
         None, ge=0.0, le=1.0, description="Decision confidence"
+    )
+    value_scores: dict[str, ValueScore] | None = Field(
+        None,
+        description=(
+            "Per-declared-value score against the alignment card's catalog "
+            "observer_signals (Phase 3.3 V2 observer surface). Optional — "
+            "present when the card declares catalog values with "
+            "observer_signals defined; absent on V1 observer output. Keyed "
+            "by catalog value id. `values_applied` is derived from "
+            "`value_scores` entries whose score is 'on_track' to preserve "
+            "the V1 surface contract for downstream consumers."
+        ),
     )
 
     @model_validator(mode="after")
