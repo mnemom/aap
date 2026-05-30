@@ -12,7 +12,12 @@ import {
   ALGORITHM_VERSION,
   NEAR_BOUNDARY_THRESHOLD,
 } from "../src";
-import type { AlignmentCard, APTrace, VerificationResult, ViolationType } from "../src";
+import type {
+  AlignmentCard,
+  APTrace,
+  VerificationResult,
+  ViolationType,
+} from "../src";
 import {
   minimalAlignmentCard,
   minimalTrace,
@@ -76,18 +81,26 @@ describe("verifyTrace", () => {
     it("should include algorithm version in metadata", () => {
       const result = verifyTrace(minimalTrace, minimalAlignmentCard);
 
-      expect(result.verification_metadata.algorithm_version).toBe(ALGORITHM_VERSION);
+      expect(result.verification_metadata.algorithm_version).toBe(
+        ALGORITHM_VERSION,
+      );
     });
 
     it("should verify compliant recommendation from test vectors", () => {
-      const result = verifyTrace(compliantRecommendationTrace, compliantRecommendationCard);
+      const result = verifyTrace(
+        compliantRecommendationTrace,
+        compliantRecommendationCard,
+      );
 
       expect(result.verified).toBe(true);
       expect(result.violations).toHaveLength(0);
     });
 
     it("should verify approved escalation from test vectors", () => {
-      const result = verifyTrace(approvedEscalationTrace, approvedEscalationCard);
+      const result = verifyTrace(
+        approvedEscalationTrace,
+        approvedEscalationCard,
+      );
 
       expect(result.verified).toBe(true);
       expect(result.violations).toHaveLength(0);
@@ -112,25 +125,37 @@ describe("verifyTrace", () => {
       const result = verifyTrace(traceCardMismatch, minimalAlignmentCard);
 
       expect(result.violations[0].description).toContain("ac-wrong-card-id");
-      expect(result.violations[0].description).toContain(minimalAlignmentCard.card_id);
+      expect(result.violations[0].description).toContain(
+        minimalAlignmentCard.card_id,
+      );
     });
   });
 
   describe("forbidden_action violation", () => {
     it("should detect forbidden action", () => {
-      const result = verifyTrace(traceWithForbiddenAction, cardWithForbiddenActions);
+      const result = verifyTrace(
+        traceWithForbiddenAction,
+        cardWithForbiddenActions,
+      );
 
       expect(result.verified).toBe(false);
 
-      const forbiddenViolation = result.violations.find((v) => v.type === "forbidden_action");
+      const forbiddenViolation = result.violations.find(
+        (v) => v.type === "forbidden_action",
+      );
       expect(forbiddenViolation).toBeDefined();
       expect(forbiddenViolation!.severity).toBe("critical");
     });
 
     it("should include action name in forbidden action description", () => {
-      const result = verifyTrace(traceWithForbiddenAction, cardWithForbiddenActions);
+      const result = verifyTrace(
+        traceWithForbiddenAction,
+        cardWithForbiddenActions,
+      );
 
-      const forbiddenViolation = result.violations.find((v) => v.type === "forbidden_action");
+      const forbiddenViolation = result.violations.find(
+        (v) => v.type === "forbidden_action",
+      );
       expect(forbiddenViolation!.description).toContain("delete_data");
     });
 
@@ -147,46 +172,70 @@ describe("verifyTrace", () => {
       const result = verifyTrace(sneakyTrace, cardWithForbiddenActions);
 
       expect(result.verified).toBe(false);
-      const forbiddenViolation = result.violations.find((v) => v.type === "forbidden_action");
+      const forbiddenViolation = result.violations.find(
+        (v) => v.type === "forbidden_action",
+      );
       expect(forbiddenViolation).toBeDefined();
     });
   });
 
   describe("unbounded_action violation", () => {
     it("should detect action not in bounded_actions", () => {
-      const result = verifyTrace(traceWithUnboundedAction, minimalAlignmentCard);
+      const result = verifyTrace(
+        traceWithUnboundedAction,
+        minimalAlignmentCard,
+      );
 
       expect(result.verified).toBe(false);
 
-      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      const unboundedViolation = result.violations.find(
+        (v) => v.type === "unbounded_action",
+      );
       expect(unboundedViolation).toBeDefined();
       expect(unboundedViolation!.severity).toBe("high");
     });
 
     it("should include action name in unbounded violation description", () => {
-      const result = verifyTrace(traceWithUnboundedAction, minimalAlignmentCard);
+      const result = verifyTrace(
+        traceWithUnboundedAction,
+        minimalAlignmentCard,
+      );
 
-      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      const unboundedViolation = result.violations.find(
+        (v) => v.type === "unbounded_action",
+      );
       expect(unboundedViolation!.description).toContain("purchase");
     });
   });
 
   describe("undeclared_value violation", () => {
     it("should detect undeclared values in values_applied", () => {
-      const result = verifyTrace(traceWithUndeclaredValue, minimalAlignmentCard);
+      const result = verifyTrace(
+        traceWithUndeclaredValue,
+        minimalAlignmentCard,
+      );
 
       expect(result.verified).toBe(false);
 
-      const undeclaredViolation = result.violations.find((v) => v.type === "undeclared_value");
+      const undeclaredViolation = result.violations.find(
+        (v) => v.type === "undeclared_value",
+      );
       expect(undeclaredViolation).toBeDefined();
       expect(undeclaredViolation!.severity).toBe("medium");
     });
 
     it("should include undeclared value names in description", () => {
-      const result = verifyTrace(traceWithUndeclaredValue, minimalAlignmentCard);
+      const result = verifyTrace(
+        traceWithUndeclaredValue,
+        minimalAlignmentCard,
+      );
 
-      const undeclaredViolation = result.violations.find((v) => v.type === "undeclared_value");
-      expect(undeclaredViolation!.description).toMatch(/profit_maximization|vendor_benefit/);
+      const undeclaredViolation = result.violations.find(
+        (v) => v.type === "undeclared_value",
+      );
+      expect(undeclaredViolation!.description).toMatch(
+        /profit_maximization|vendor_benefit/,
+      );
     });
 
     it("should allow all declared values", () => {
@@ -201,8 +250,66 @@ describe("verifyTrace", () => {
 
       const result = verifyTrace(validTrace, minimalAlignmentCard);
 
-      const undeclaredViolation = result.violations.find((v) => v.type === "undeclared_value");
+      const undeclaredViolation = result.violations.find(
+        (v) => v.type === "undeclared_value",
+      );
       expect(undeclaredViolation).toBeUndefined();
+    });
+
+    // Regression: declared values may be parameterized objects ({id, domain,
+    // intensity}, Phase-3.2+) while values_applied are bare ids. A raw
+    // `.includes()` falsely flagged the qualified declaration as undeclared →
+    // spurious hard-deny. (Observer parity work, ADR-065 #9.)
+    it("does NOT flag a value declared in PARAMETERIZED-OBJECT form, applied as a bare id", () => {
+      const cardWithParamValue: AlignmentCard = {
+        ...minimalAlignmentCard,
+        values: {
+          declared: [
+            "principal_benefit",
+            { id: "transparency", domain: "operations", intensity: "nudge" },
+          ],
+        },
+      };
+      const trace: APTrace = {
+        ...minimalTrace,
+        decision: {
+          ...minimalTrace.decision,
+          values_applied: ["transparency"],
+        },
+      };
+
+      const result = verifyTrace(trace, cardWithParamValue);
+
+      expect(
+        result.violations.find((v) => v.type === "undeclared_value"),
+      ).toBeUndefined();
+    });
+
+    it("STILL flags a genuinely-undeclared value when others are parameterized (detection intact)", () => {
+      const cardWithParamValue: AlignmentCard = {
+        ...minimalAlignmentCard,
+        values: {
+          declared: [
+            "principal_benefit",
+            { id: "transparency", intensity: "enforce" },
+          ],
+        },
+      };
+      const trace: APTrace = {
+        ...minimalTrace,
+        decision: {
+          ...minimalTrace.decision,
+          values_applied: ["transparency", "profit_maximization"],
+        },
+      };
+
+      const result = verifyTrace(trace, cardWithParamValue);
+
+      // Exactly ONE undeclared_value violation — for the genuinely-undeclared
+      // value. The parameterized-declared `transparency` must NOT be flagged.
+      const uv = result.violations.filter((x) => x.type === "undeclared_value");
+      expect(uv).toHaveLength(1);
+      expect(uv[0].description).toContain("Value 'profit_maximization'");
     });
   });
 
@@ -217,7 +324,9 @@ describe("verifyTrace", () => {
 
       expect(result.verified).toBe(false);
 
-      const expiredViolation = result.violations.find((v) => v.type === "card_expired");
+      const expiredViolation = result.violations.find(
+        (v) => v.type === "card_expired",
+      );
       expect(expiredViolation).toBeDefined();
       expect(expiredViolation!.severity).toBe("high");
     });
@@ -226,12 +335,16 @@ describe("verifyTrace", () => {
       // Card with future expiration
       const futureCard: AlignmentCard = {
         ...minimalAlignmentCard,
-        expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(
+          Date.now() + 365 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
       };
 
       const result = verifyTrace(minimalTrace, futureCard);
 
-      const expiredViolation = result.violations.find((v) => v.type === "card_expired");
+      const expiredViolation = result.violations.find(
+        (v) => v.type === "card_expired",
+      );
       expect(expiredViolation).toBeUndefined();
     });
 
@@ -244,7 +357,9 @@ describe("verifyTrace", () => {
 
       const result = verifyTrace(minimalTrace, noExpiryCard);
 
-      const expiredViolation = result.violations.find((v) => v.type === "card_expired");
+      const expiredViolation = result.violations.find(
+        (v) => v.type === "card_expired",
+      );
       expect(expiredViolation).toBeUndefined();
     });
   });
@@ -253,11 +368,16 @@ describe("verifyTrace", () => {
     it("should detect missed escalation when triggers match but required=false", () => {
       // Using cardWithNumericTrigger which has 'amount > 100' trigger
       // traceWithMissedEscalation has amount=200, so trigger matches
-      const result = verifyTrace(traceWithMissedEscalation, cardWithNumericTrigger);
+      const result = verifyTrace(
+        traceWithMissedEscalation,
+        cardWithNumericTrigger,
+      );
 
       expect(result.verified).toBe(false);
 
-      const missedViolation = result.violations.find((v) => v.type === "missed_escalation");
+      const missedViolation = result.violations.find(
+        (v) => v.type === "missed_escalation",
+      );
       expect(missedViolation).toBeDefined();
       expect(missedViolation!.severity).toBe("high");
     });
@@ -282,9 +402,14 @@ describe("verifyTrace", () => {
         },
       };
 
-      const result = verifyTrace(properlyEscalatedTrace, cardWithNumericTrigger);
+      const result = verifyTrace(
+        properlyEscalatedTrace,
+        cardWithNumericTrigger,
+      );
 
-      const missedViolation = result.violations.find((v) => v.type === "missed_escalation");
+      const missedViolation = result.violations.find(
+        (v) => v.type === "missed_escalation",
+      );
       expect(missedViolation).toBeUndefined();
     });
 
@@ -315,7 +440,9 @@ describe("verifyTrace", () => {
 
       const result = verifyTrace(noTriggerTrace, cardWithNumericTrigger);
 
-      const missedViolation = result.violations.find((v) => v.type === "missed_escalation");
+      const missedViolation = result.violations.find(
+        (v) => v.type === "missed_escalation",
+      );
       expect(missedViolation).toBeUndefined();
     });
   });
@@ -328,7 +455,9 @@ describe("verifyTrace", () => {
     it("should generate near_boundary warning for low confidence", () => {
       const result = verifyTrace(traceWithLowConfidence, minimalAlignmentCard);
 
-      const nearBoundaryWarning = result.warnings.find((w) => w.type === "near_boundary");
+      const nearBoundaryWarning = result.warnings.find(
+        (w) => w.type === "near_boundary",
+      );
       expect(nearBoundaryWarning).toBeDefined();
       expect(nearBoundaryWarning!.description).toContain("confidence");
     });
@@ -338,14 +467,15 @@ describe("verifyTrace", () => {
         ...minimalTrace,
         decision: {
           ...minimalTrace.decision,
-          confidence: 0.90, // Well above NEAR_BOUNDARY_THRESHOLD
+          confidence: 0.9, // Well above NEAR_BOUNDARY_THRESHOLD
         },
       };
 
       const result = verifyTrace(highConfidenceTrace, minimalAlignmentCard);
 
       const nearBoundaryWarning = result.warnings.find(
-        (w) => w.type === "near_boundary" && w.description.includes("confidence")
+        (w) =>
+          w.type === "near_boundary" && w.description.includes("confidence"),
       );
       expect(nearBoundaryWarning).toBeUndefined();
     });
@@ -439,38 +569,60 @@ describe("verifyTrace", () => {
 
   describe("severity levels", () => {
     it("should assign critical severity to forbidden_action", () => {
-      const result = verifyTrace(traceWithForbiddenAction, cardWithForbiddenActions);
+      const result = verifyTrace(
+        traceWithForbiddenAction,
+        cardWithForbiddenActions,
+      );
 
-      const violation = result.violations.find((v) => v.type === "forbidden_action");
+      const violation = result.violations.find(
+        (v) => v.type === "forbidden_action",
+      );
       expect(violation!.severity).toBe("critical");
     });
 
     it("should assign critical severity to card_mismatch", () => {
       const result = verifyTrace(traceCardMismatch, minimalAlignmentCard);
 
-      const violation = result.violations.find((v) => v.type === "card_mismatch");
+      const violation = result.violations.find(
+        (v) => v.type === "card_mismatch",
+      );
       expect(violation!.severity).toBe("critical");
     });
 
     it("should assign high severity to unbounded_action", () => {
-      const result = verifyTrace(traceWithUnboundedAction, minimalAlignmentCard);
+      const result = verifyTrace(
+        traceWithUnboundedAction,
+        minimalAlignmentCard,
+      );
 
-      const violation = result.violations.find((v) => v.type === "unbounded_action");
+      const violation = result.violations.find(
+        (v) => v.type === "unbounded_action",
+      );
       expect(violation!.severity).toBe("high");
     });
 
     it("should assign high severity to missed_escalation", () => {
-      const result = verifyTrace(traceWithMissedEscalation, cardWithNumericTrigger);
+      const result = verifyTrace(
+        traceWithMissedEscalation,
+        cardWithNumericTrigger,
+      );
 
-      const violation = result.violations.find((v) => v.type === "missed_escalation");
+      const violation = result.violations.find(
+        (v) => v.type === "missed_escalation",
+      );
       expect(violation).toBeDefined();
       expect(violation!.severity).toBe("high");
     });
 
     it("should assign medium severity to undeclared_value", () => {
-      const result = verifyTrace(traceWithUndeclaredValue, minimalAlignmentCard);
+      const result = verifyTrace(
+        traceWithUndeclaredValue,
+        minimalAlignmentCard,
+      );
 
-      const violation = result.violations.find((v) => v.type === "undeclared_value");
+      const violation = result.violations.find(
+        (v) => v.type === "undeclared_value",
+      );
       expect(violation!.severity).toBe("medium");
     });
   });
@@ -492,7 +644,9 @@ describe("verifyTrace", () => {
       // Any action would be unbounded
       const result = verifyTrace(minimalTrace, emptyBoundedCard);
 
-      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      const unboundedViolation = result.violations.find(
+        (v) => v.type === "unbounded_action",
+      );
       expect(unboundedViolation).toBeDefined();
     });
 
@@ -508,7 +662,9 @@ describe("verifyTrace", () => {
       const result = verifyTrace(minimalTrace, noTriggersCard);
 
       // Should verify without escalation issues
-      const missedViolation = result.violations.find((v) => v.type === "missed_escalation");
+      const missedViolation = result.violations.find(
+        (v) => v.type === "missed_escalation",
+      );
       expect(missedViolation).toBeUndefined();
     });
 
@@ -552,7 +708,9 @@ describe("verifyTrace", () => {
       const result = verifyTrace(noValuesTrace, minimalAlignmentCard);
 
       // Empty values shouldn't cause undeclared violation
-      const undeclaredViolation = result.violations.find((v) => v.type === "undeclared_value");
+      const undeclaredViolation = result.violations.find(
+        (v) => v.type === "undeclared_value",
+      );
       expect(undeclaredViolation).toBeUndefined();
     });
 
@@ -600,16 +758,23 @@ describe("verifyTrace", () => {
     it("should list all checks performed", () => {
       const result = verifyTrace(minimalTrace, minimalAlignmentCard);
 
-      expect(result.verification_metadata.checks_performed).toBeInstanceOf(Array);
-      expect(result.verification_metadata.checks_performed.length).toBeGreaterThan(0);
+      expect(result.verification_metadata.checks_performed).toBeInstanceOf(
+        Array,
+      );
+      expect(
+        result.verification_metadata.checks_performed.length,
+      ).toBeGreaterThan(0);
     });
 
     it("should use consistent algorithm version", () => {
       const result1 = verifyTrace(minimalTrace, minimalAlignmentCard);
-      const result2 = verifyTrace(traceWithForbiddenAction, cardWithForbiddenActions);
+      const result2 = verifyTrace(
+        traceWithForbiddenAction,
+        cardWithForbiddenActions,
+      );
 
       expect(result1.verification_metadata.algorithm_version).toBe(
-        result2.verification_metadata.algorithm_version
+        result2.verification_metadata.algorithm_version,
       );
     });
   });
@@ -634,7 +799,9 @@ describe("verifyTrace", () => {
 
       const result = verifyTrace(trace, card);
 
-      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      const unboundedViolation = result.violations.find(
+        (v) => v.type === "unbounded_action",
+      );
       expect(unboundedViolation).toBeUndefined();
     });
 
@@ -648,12 +815,18 @@ describe("verifyTrace", () => {
       };
       const trace: APTrace = {
         ...minimalTrace,
-        action: { ...minimalTrace.action, name: "exec, read", category: "bounded" },
+        action: {
+          ...minimalTrace.action,
+          name: "exec, read",
+          category: "bounded",
+        },
       };
 
       const result = verifyTrace(trace, card);
 
-      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      const unboundedViolation = result.violations.find(
+        (v) => v.type === "unbounded_action",
+      );
       expect(unboundedViolation).toBeUndefined();
     });
 
@@ -666,7 +839,9 @@ describe("verifyTrace", () => {
 
       const result = verifyTrace(trace, minimalAlignmentCard);
 
-      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      const unboundedViolation = result.violations.find(
+        (v) => v.type === "unbounded_action",
+      );
       expect(unboundedViolation).toBeUndefined();
     });
 
@@ -682,12 +857,18 @@ describe("verifyTrace", () => {
       const trace: APTrace = {
         ...minimalTrace,
         card_id: card.card_id,
-        action: { ...minimalTrace.action, name: "delete_data", category: "bounded" },
+        action: {
+          ...minimalTrace.action,
+          name: "delete_data",
+          category: "bounded",
+        },
       };
 
       const result = verifyTrace(trace, card);
 
-      const forbiddenViolation = result.violations.find((v) => v.type === "forbidden_action");
+      const forbiddenViolation = result.violations.find(
+        (v) => v.type === "forbidden_action",
+      );
       expect(forbiddenViolation).toBeDefined();
     });
 
@@ -701,12 +882,18 @@ describe("verifyTrace", () => {
       };
       const trace: APTrace = {
         ...minimalTrace,
-        action: { ...minimalTrace.action, name: "exec, purchase", category: "bounded" },
+        action: {
+          ...minimalTrace.action,
+          name: "exec, purchase",
+          category: "bounded",
+        },
       };
 
       const result = verifyTrace(trace, card);
 
-      const unboundedViolation = result.violations.find((v) => v.type === "unbounded_action");
+      const unboundedViolation = result.violations.find(
+        (v) => v.type === "unbounded_action",
+      );
       expect(unboundedViolation).toBeDefined();
     });
   });
@@ -724,7 +911,9 @@ describe("isCardExpired", () => {
   it("should return false for non-expired card", () => {
     const futureCard: AlignmentCard = {
       ...minimalAlignmentCard,
-      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: new Date(
+        Date.now() + 365 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
     };
 
     expect(isCardExpired(futureCard)).toBe(false);

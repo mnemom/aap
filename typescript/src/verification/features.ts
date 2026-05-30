@@ -7,6 +7,7 @@
 
 import { MIN_WORD_LENGTH } from "../constants";
 import type { AlignmentCard } from "../schemas/alignment-card";
+import { declaredValueIds } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
 
 /** Sparse feature vector represented as a record. */
@@ -14,11 +15,53 @@ export type FeatureVector = Record<string, number>;
 
 /** Stopwords to filter from text features. */
 const STOPWORDS = new Set([
-  "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
-  "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
-  "being", "have", "has", "had", "do", "does", "did", "will", "would",
-  "could", "should", "may", "might", "must", "shall", "can", "this",
-  "that", "these", "those", "it", "its", "as", "if", "then", "else",
+  "the",
+  "a",
+  "an",
+  "and",
+  "or",
+  "but",
+  "in",
+  "on",
+  "at",
+  "to",
+  "for",
+  "of",
+  "with",
+  "by",
+  "from",
+  "is",
+  "are",
+  "was",
+  "were",
+  "be",
+  "been",
+  "being",
+  "have",
+  "has",
+  "had",
+  "do",
+  "does",
+  "did",
+  "will",
+  "would",
+  "could",
+  "should",
+  "may",
+  "might",
+  "must",
+  "shall",
+  "can",
+  "this",
+  "that",
+  "these",
+  "those",
+  "it",
+  "its",
+  "as",
+  "if",
+  "then",
+  "else",
 ]);
 
 /**
@@ -38,8 +81,8 @@ function tokenize(text: string): string[] {
 export function extractCardFeatures(card: AlignmentCard): FeatureVector {
   const features: FeatureVector = {};
 
-  // Value features
-  for (const value of card.values.declared) {
+  // Value features (normalize declared → ids; entries may be parameterized objects)
+  for (const value of declaredValueIds(card.values.declared)) {
     features[`value:${value}`] = 1.0;
   }
 
@@ -63,7 +106,8 @@ export function extractCardFeatures(card: AlignmentCard): FeatureVector {
     features[`escalation:${trigger.action}`] = 1.0;
     const conditionTokens = tokenize(trigger.condition);
     for (const token of conditionTokens) {
-      features[`condition:${token}`] = (features[`condition:${token}`] ?? 0) + 0.5;
+      features[`condition:${token}`] =
+        (features[`condition:${token}`] ?? 0) + 0.5;
     }
   }
 
@@ -92,7 +136,9 @@ export function extractTraceFeatures(trace: APTrace): FeatureVector {
 
   // Escalation features
   if (trace.escalation) {
-    features[`escalation:${trace.escalation.required ? "required" : "not_required"}`] = 1.0;
+    features[
+      `escalation:${trace.escalation.required ? "required" : "not_required"}`
+    ] = 1.0;
     if (trace.escalation.escalation_status) {
       features[`escalation:${trace.escalation.escalation_status}`] = 1.0;
     }

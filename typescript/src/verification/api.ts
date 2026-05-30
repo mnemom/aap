@@ -19,6 +19,7 @@ import {
   OUTLIER_STD_DEV_THRESHOLD,
 } from "../constants";
 import type { AlignmentCard } from "../schemas/alignment-card";
+import { declaredValueIds } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
 import {
   computeCentroid,
@@ -53,16 +54,16 @@ import {
  * Supports exact match, prefix match (before ':'), and compound name splitting.
  */
 function actionMatchesList(actionName: string, list: string[]): boolean {
-  const components = actionName.includes(', ')
-    ? actionName.split(', ')
+  const components = actionName.includes(", ")
+    ? actionName.split(", ")
     : [actionName];
 
-  return components.every(component => {
+  return components.every((component) => {
     const trimmed = component.trim();
     if (!trimmed) return true;
-    return list.some(entry => {
+    return list.some((entry) => {
       if (entry === trimmed) return true;
-      const colonIndex = entry.indexOf(':');
+      const colonIndex = entry.indexOf(":");
       if (colonIndex > 0) {
         const prefix = entry.substring(0, colonIndex).trim();
         if (prefix === trimmed) return true;
@@ -94,7 +95,7 @@ function actionMatchesList(actionName: string, list: string[]): boolean {
  */
 export function verifyTrace(
   trace: APTrace,
-  card: AlignmentCard
+  card: AlignmentCard,
 ): VerificationResult {
   const startTime = performance.now();
   const violations: Violation[] = [];
@@ -102,9 +103,12 @@ export function verifyTrace(
   const checksPerformed: string[] = [];
 
   // Warn if tamper_evidence is declared but not cryptographically enforced
-  const tamperEvidence = (card as Record<string, any>).audit?.commitment?.tamper_evidence;
-  if (tamperEvidence === 'signed' || tamperEvidence === 'merkle') {
-    console.warn(`[AAP] Warning: tamper_evidence mode "${tamperEvidence}" is declared but NOT cryptographically enforced in this version.`);
+  const tamperEvidence = (card as Record<string, any>).audit?.commitment
+    ?.tamper_evidence;
+  if (tamperEvidence === "signed" || tamperEvidence === "merkle") {
+    console.warn(
+      `[AAP] Warning: tamper_evidence mode "${tamperEvidence}" is declared but NOT cryptographically enforced in this version.`,
+    );
   }
 
   const traceId = trace.trace_id ?? "";
@@ -116,8 +120,8 @@ export function verifyTrace(
     violations.push(
       createViolation(
         "card_mismatch",
-        `Trace references card '${trace.card_id}' but verified against '${cardId}'`
-      )
+        `Trace references card '${trace.card_id}' but verified against '${cardId}'`,
+      ),
     );
   }
 
@@ -128,7 +132,10 @@ export function verifyTrace(
       const expiry = new Date(card.expires_at);
       if (new Date() > expiry) {
         violations.push(
-          createViolation("card_expired", `Alignment Card expired at ${card.expires_at}`)
+          createViolation(
+            "card_expired",
+            `Alignment Card expired at ${card.expires_at}`,
+          ),
         );
       }
     } catch {
@@ -156,8 +163,8 @@ export function verifyTrace(
         createViolation(
           "unbounded_action",
           `Action '${actionName}' not in bounded_actions: ${JSON.stringify(boundedActions)}`,
-          "action.name"
-        )
+          "action.name",
+        ),
       );
     }
   }
@@ -170,8 +177,8 @@ export function verifyTrace(
       createViolation(
         "forbidden_action",
         `Action '${actionName}' is in forbidden_actions`,
-        "action.name"
-      )
+        "action.name",
+      ),
     );
   }
 
@@ -186,8 +193,8 @@ export function verifyTrace(
           createViolation(
             "missed_escalation",
             `Trigger '${condition}' matched but escalation not required`,
-            "escalation.required"
-          )
+            "escalation.required",
+          ),
         );
       } else if (escalation.escalation_status === "timeout") {
         // Timeout is not a violation if escalation was attempted
@@ -200,20 +207,23 @@ export function verifyTrace(
     }
   }
 
-  // Check value consistency
+  // Check value consistency. Declared values may be bare strings OR
+  // parameterized objects ({id, domain, intensity}); values_applied are always
+  // bare ids. Normalize declared → ids before membership, else an object-form
+  // declaration falsely flags its own value `undeclared_value` → spurious deny.
   checksPerformed.push("values");
   const decision = trace.decision;
-  const declaredValues = card.values.declared ?? [];
+  const declaredValueIdList = declaredValueIds(card.values.declared);
   const valuesApplied = decision.values_applied ?? [];
 
   for (const value of valuesApplied) {
-    if (!declaredValues.includes(value)) {
+    if (!declaredValueIdList.includes(value)) {
       violations.push(
         createViolation(
           "undeclared_value",
-          `Value '${value}' applied but not in declared values: ${JSON.stringify(declaredValues)}`,
-          "decision.values_applied"
-        )
+          `Value '${value}' applied but not in declared values: ${JSON.stringify(declaredValueIdList)}`,
+          "decision.values_applied",
+        ),
       );
     }
   }
@@ -244,11 +254,15 @@ export function verifyTrace(
   const durationMs = performance.now() - startTime;
 
   const hasViolations = violations.length > 0;
-  const hasWarnings  = warnings.length > 0;
+  const hasWarnings = warnings.length > 0;
 
   return {
     verified: !hasViolations,
-    recommended_action: hasViolations ? "deny" : hasWarnings ? "review" : "proceed",
+    recommended_action: hasViolations
+      ? "deny"
+      : hasWarnings
+        ? "review"
+        : "proceed",
     trace_id: traceId,
     card_id: cardId,
     timestamp: new Date().toISOString(),
@@ -277,10 +291,10 @@ export function verifyTrace(
 export function checkCoherence(
   myCard: AlignmentCard,
   theirCard: AlignmentCard,
-  taskValues?: string[]
+  taskValues?: string[],
 ): CoherenceResult {
-  const myValues = new Set(myCard.values.declared ?? []);
-  const theirValues = new Set(theirCard.values.declared ?? []);
+  const myValues = new Set(declaredValueIds(myCard.values.declared));
+  const theirValues = new Set(declaredValueIds(theirCard.values.declared));
 
   const myConflicts = new Set(myCard.values.conflicts_with ?? []);
   const theirConflicts = new Set(theirCard.values.conflicts_with ?? []);
@@ -337,13 +351,17 @@ export function checkCoherence(
   const matchedCount = taskValues
     ? matched.filter((v) => requiredValues.has(v)).length
     : matched.length;
-  const conflictPenalty = Math.min(1, CONFLICT_PENALTY_MULTIPLIER * (conflicts.length / totalRequired));
+  const conflictPenalty = Math.min(
+    1,
+    CONFLICT_PENALTY_MULTIPLIER * (conflicts.length / totalRequired),
+  );
 
   let score = (matchedCount / totalRequired) * (1 - conflictPenalty);
   score = Math.max(0, Math.min(1, score)); // Clamp to [0, 1]
 
   // Determine compatibility
-  const compatible = conflicts.length === 0 && score >= MIN_COHERENCE_FOR_PROCEED;
+  const compatible =
+    conflicts.length === 0 && score >= MIN_COHERENCE_FOR_PROCEED;
   const proceed = compatible;
 
   // Build proposed resolution if conflicts exist
@@ -385,7 +403,7 @@ export function checkCoherence(
  */
 export function checkFleetCoherence(
   cards: Array<{ agentId: string; card: AlignmentCard }>,
-  taskValues?: string[]
+  taskValues?: string[],
 ): FleetCoherenceResult {
   if (cards.length < 2) {
     throw new Error("Fleet coherence requires at least 2 agents");
@@ -404,13 +422,13 @@ export function checkFleetCoherence(
   }
 
   // Step 2: Fleet score (mean of all pairwise scores) + min/max
-  const allScores = pairwiseMatrix.map(p => p.result.score);
+  const allScores = pairwiseMatrix.map((p) => p.result.score);
   const fleetScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
   const minPairScore = Math.min(...allScores);
   const maxPairScore = Math.max(...allScores);
 
   // Step 3: Per-agent summaries
-  const agentIds = cards.map(c => c.agentId);
+  const agentIds = cards.map((c) => c.agentId);
   const agentScoreMap = new Map<string, number[]>();
   const agentCompatibleCount = new Map<string, number>();
   const agentConflictCount = new Map<string, number>();
@@ -425,12 +443,24 @@ export function checkFleetCoherence(
     agentScoreMap.get(pair.agent_a)!.push(pair.result.score);
     agentScoreMap.get(pair.agent_b)!.push(pair.result.score);
     if (pair.result.compatible) {
-      agentCompatibleCount.set(pair.agent_a, agentCompatibleCount.get(pair.agent_a)! + 1);
-      agentCompatibleCount.set(pair.agent_b, agentCompatibleCount.get(pair.agent_b)! + 1);
+      agentCompatibleCount.set(
+        pair.agent_a,
+        agentCompatibleCount.get(pair.agent_a)! + 1,
+      );
+      agentCompatibleCount.set(
+        pair.agent_b,
+        agentCompatibleCount.get(pair.agent_b)! + 1,
+      );
     }
     if (pair.result.value_alignment.conflicts.length > 0) {
-      agentConflictCount.set(pair.agent_a, agentConflictCount.get(pair.agent_a)! + 1);
-      agentConflictCount.set(pair.agent_b, agentConflictCount.get(pair.agent_b)! + 1);
+      agentConflictCount.set(
+        pair.agent_a,
+        agentConflictCount.get(pair.agent_a)! + 1,
+      );
+      agentConflictCount.set(
+        pair.agent_b,
+        agentConflictCount.get(pair.agent_b)! + 1,
+      );
     }
   }
 
@@ -442,8 +472,11 @@ export function checkFleetCoherence(
 
   // Step 4: Outlier detection
   const meanValues = [...agentMeans.values()];
-  const fleetMeanOfMeans = meanValues.reduce((a, b) => a + b, 0) / meanValues.length;
-  const variance = meanValues.reduce((sum, v) => sum + (v - fleetMeanOfMeans) ** 2, 0) / meanValues.length;
+  const fleetMeanOfMeans =
+    meanValues.reduce((a, b) => a + b, 0) / meanValues.length;
+  const variance =
+    meanValues.reduce((sum, v) => sum + (v - fleetMeanOfMeans) ** 2, 0) /
+    meanValues.length;
   const stddev = Math.sqrt(variance);
 
   const outliers: FleetOutlier[] = [];
@@ -517,8 +550,9 @@ export function checkFleetCoherence(
     for (let i = 0; i < component.length; i++) {
       for (let j = i + 1; j < component.length; j++) {
         const pair = pairwiseMatrix.find(
-          p => (p.agent_a === component[i] && p.agent_b === component[j]) ||
-               (p.agent_a === component[j] && p.agent_b === component[i])
+          (p) =>
+            (p.agent_a === component[i] && p.agent_b === component[j]) ||
+            (p.agent_a === component[j] && p.agent_b === component[i]),
         );
         if (pair) {
           internalSum += pair.result.score;
@@ -526,26 +560,31 @@ export function checkFleetCoherence(
         }
       }
     }
-    const internalCoherence = internalCount > 0 ? internalSum / internalCount : 1;
+    const internalCoherence =
+      internalCount > 0 ? internalSum / internalCount : 1;
 
     // Find shared values (intersection of all agents in cluster)
-    const clusterCards = component.map(cid => cards.find(c => c.agentId === cid)!);
+    const clusterCards = component.map(
+      (cid) => cards.find((c) => c.agentId === cid)!,
+    );
     const sharedValues = clusterCards.reduce<string[]>((shared, entry, idx) => {
-      const declared = entry.card.values.declared ?? [];
+      const declared = declaredValueIds(entry.card.values.declared);
       if (idx === 0) return [...declared];
-      return shared.filter(v => declared.includes(v));
+      return shared.filter((v) => declared.includes(v));
     }, []);
 
     // Find distinguishing values (values in this cluster but not in other clusters' shared values)
     const allOtherValues = new Set<string>();
     for (const entry of cards) {
       if (!component.includes(entry.agentId)) {
-        for (const v of entry.card.values.declared ?? []) {
+        for (const v of declaredValueIds(entry.card.values.declared)) {
           allOtherValues.add(v);
         }
       }
     }
-    const distinguishingValues = sharedValues.filter(v => !allOtherValues.has(v));
+    const distinguishingValues = sharedValues.filter(
+      (v) => !allOtherValues.has(v),
+    );
 
     clusters.push({
       cluster_id: clusterId++,
@@ -562,7 +601,7 @@ export function checkFleetCoherence(
   const agentConflictMap = new Map<string, Set<string>>();
 
   for (const entry of cards) {
-    const declared = new Set(entry.card.values.declared ?? []);
+    const declared = new Set(declaredValueIds(entry.card.values.declared));
     const conflicts = new Set(entry.card.values.conflicts_with ?? []);
     agentValueMap.set(entry.agentId, declared);
     agentConflictMap.set(entry.agentId, conflicts);
@@ -571,17 +610,22 @@ export function checkFleetCoherence(
 
   const divergenceReport: ValueDivergence[] = [];
   for (const value of allValues) {
-    const declaring = agentIds.filter(id => agentValueMap.get(id)!.has(value));
-    const missing = agentIds.filter(id => !agentValueMap.get(id)!.has(value));
-    const conflicting = agentIds.filter(id => agentConflictMap.get(id)!.has(value));
+    const declaring = agentIds.filter((id) =>
+      agentValueMap.get(id)!.has(value),
+    );
+    const missing = agentIds.filter((id) => !agentValueMap.get(id)!.has(value));
+    const conflicting = agentIds.filter((id) =>
+      agentConflictMap.get(id)!.has(value),
+    );
 
     // Skip values with no divergence (everyone declares, no one conflicts)
     if (missing.length === 0 && conflicting.length === 0) continue;
 
     // Estimate impact: fraction of agents not aligned on this value
-    const impactOnFleetScore = Math.round(
-      ((missing.length + conflicting.length) / agentIds.length) * 10000
-    ) / 10000;
+    const impactOnFleetScore =
+      Math.round(
+        ((missing.length + conflicting.length) / agentIds.length) * 10000,
+      ) / 10000;
 
     divergenceReport.push({
       value,
@@ -593,7 +637,9 @@ export function checkFleetCoherence(
   }
 
   // Sort divergence report by impact (highest first)
-  divergenceReport.sort((a, b) => b.impact_on_fleet_score - a.impact_on_fleet_score);
+  divergenceReport.sort(
+    (a, b) => b.impact_on_fleet_score - a.impact_on_fleet_score,
+  );
 
   // Build agent cluster map for summaries
   const agentClusterMap = new Map<string, number>();
@@ -603,9 +649,9 @@ export function checkFleetCoherence(
     }
   }
 
-  const outlierIds = new Set(outliers.map(o => o.agent_id));
+  const outlierIds = new Set(outliers.map((o) => o.agent_id));
 
-  const agentSummaries: AgentCoherenceSummary[] = agentIds.map(id => ({
+  const agentSummaries: AgentCoherenceSummary[] = agentIds.map((id) => ({
     agent_id: id,
     mean_score: Math.round(agentMeans.get(id)! * 10000) / 10000,
     compatible_count: agentCompatibleCount.get(id)!,
@@ -652,17 +698,17 @@ export function detectDrift(
   card: AlignmentCard,
   traces: APTrace[],
   similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD,
-  sustainedThreshold = DEFAULT_SUSTAINED_CHECKS_THRESHOLD
+  sustainedThreshold = DEFAULT_SUSTAINED_CHECKS_THRESHOLD,
 ): DriftAlert[] {
   // Sort traces chronologically
   const sorted = [...traces].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   );
 
   // Compute baseline window size
   const baselineSize = Math.max(
     sustainedThreshold,
-    Math.min(10, Math.floor(sorted.length / 4))
+    Math.min(10, Math.floor(sorted.length / 4)),
   );
 
   // Need enough traces for baseline + sustained threshold
@@ -723,13 +769,13 @@ export function detectDrift(
         lowSimilarityStreak,
         card,
         escalationRates,
-        valueUsage
+        valueUsage,
       );
 
       // Build specific indicators
       const indicators = buildDriftIndicators(
         lowSimilarityStreak,
-        escalationRates
+        escalationRates,
       );
 
       const alert: DriftAlert = {
@@ -766,39 +812,51 @@ function deterministicHex(input: string, length: number): string {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
     const char = input.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
-  return Math.abs(hash).toString(16).padStart(length, '0').slice(0, length);
+  return Math.abs(hash).toString(16).padStart(length, "0").slice(0, length);
 }
 
 /** Compute Jaccard similarity of two string sets: |A ∩ B| / |A ∪ B|. */
 function jaccardSimilarity(a: string[], b: string[]): number {
   const setA = new Set(a);
   const setB = new Set(b);
-  const intersection = [...setA].filter(x => setB.has(x)).length;
+  const intersection = [...setA].filter((x) => setB.has(x)).length;
   const union = new Set([...setA, ...setB]).size;
   return union === 0 ? 0 : intersection / union;
 }
 
 /** Role keywords that indicate agent specialization for complementary detection. */
 const ROLE_KEYWORDS = [
-  'safety', 'executive', 'cfo', 'analyst', 'compliance', 'legal',
-  'risk', 'finance', 'security', 'ethics', 'audit', 'ops', 'operations',
+  "safety",
+  "executive",
+  "cfo",
+  "analyst",
+  "compliance",
+  "legal",
+  "risk",
+  "finance",
+  "security",
+  "ethics",
+  "audit",
+  "ops",
+  "operations",
 ];
 
 function hasRoleKeyword(agentId: string): boolean {
   const lower = agentId.toLowerCase();
-  return ROLE_KEYWORDS.some(kw => lower.includes(kw));
+  return ROLE_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 /** Extract the CLPI role from a card's extensions, if present. */
 function getClpiRole(card: AlignmentCard): string | null {
-  const ext = (card as unknown as { extensions?: Record<string, unknown> }).extensions;
+  const ext = (card as unknown as { extensions?: Record<string, unknown> })
+    .extensions;
   if (!ext) return null;
-  const clpi = ext['clpi'] as Record<string, unknown> | undefined;
-  if (!clpi || typeof clpi['role'] !== 'string') return null;
-  return clpi['role'] || null;
+  const clpi = ext["clpi"] as Record<string, unknown> | undefined;
+  if (!clpi || typeof clpi["role"] !== "string") return null;
+  return clpi["role"] || null;
 }
 
 /**
@@ -812,14 +870,17 @@ function getClpiRole(card: AlignmentCard): string | null {
 export function analyzeFaultLines(
   coherenceResult: FleetCoherenceResult,
   cards: Array<{ agentId: string; card: AlignmentCard }>,
-  options?: { reputationScores?: Record<string, number>; taskContext?: string }
+  options?: { reputationScores?: Record<string, number>; taskContext?: string },
 ): FaultLineAnalysis {
   const reputationScores = options?.reputationScores;
 
   // Build a lookup: agentId → bounded_actions
   const agentBoundedActions = new Map<string, string[]>();
   for (const { agentId, card } of cards) {
-    agentBoundedActions.set(agentId, card.autonomy_envelope?.bounded_actions ?? []);
+    agentBoundedActions.set(
+      agentId,
+      card.autonomy_envelope?.bounded_actions ?? [],
+    );
   }
 
   // Build lookup for conflicts_with per agent (already in divergence report, but keep for classification)
@@ -847,15 +908,19 @@ export function analyzeFaultLines(
 
     // All agents involved in this fault line
     const involvedAgents = [
-      ...new Set([...agents_declaring, ...agents_missing, ...agents_conflicting]),
+      ...new Set([
+        ...agents_declaring,
+        ...agents_missing,
+        ...agents_conflicting,
+      ]),
     ];
 
     // --- Classification ---
-    let classification: FaultLine['classification'];
+    let classification: FaultLine["classification"];
 
     // incompatible: any agent has an explicit conflicts_with for this value
     if (agents_conflicting.length > 0) {
-      classification = 'incompatible';
+      classification = "incompatible";
     } else if (
       agents_declaring.length >= 2 &&
       (() => {
@@ -865,9 +930,9 @@ export function analyzeFaultLines(
             const idA = agents_declaring[i];
             const idB = agents_declaring[j];
             const entry = coherenceResult.pairwise_matrix.find(
-              p =>
+              (p) =>
                 (p.agent_a === idA && p.agent_b === idB) ||
-                (p.agent_a === idB && p.agent_b === idA)
+                (p.agent_a === idB && p.agent_b === idA),
             );
             if (entry && entry.result.score < 0.5) {
               return true;
@@ -877,7 +942,7 @@ export function analyzeFaultLines(
         return false;
       })()
     ) {
-      classification = 'priority_mismatch';
+      classification = "priority_mismatch";
     } else if (
       agents_declaring.length >= 1 &&
       agents_missing.length >= 1 &&
@@ -885,22 +950,32 @@ export function analyzeFaultLines(
         // complementary: the declaring agents all share a CLPI role that the missing
         // agents do NOT share — indicating intentional role specialization, not a gap.
         // Primary check: extensions.clpi.role (authoritative)
-        const declaringRoles = new Set(agents_declaring.map(id => agentRoleMap.get(id) ?? null).filter(Boolean));
-        const missingRoles = new Set(agents_missing.map(id => agentRoleMap.get(id) ?? null).filter(Boolean));
+        const declaringRoles = new Set(
+          agents_declaring
+            .map((id) => agentRoleMap.get(id) ?? null)
+            .filter(Boolean),
+        );
+        const missingRoles = new Set(
+          agents_missing
+            .map((id) => agentRoleMap.get(id) ?? null)
+            .filter(Boolean),
+        );
         if (declaringRoles.size > 0) {
           // All declaring agents share a role that none of the missing agents have
           const declaringRoleArr = [...declaringRoles];
-          const isRoleExclusive = declaringRoleArr.every(role => !missingRoles.has(role));
+          const isRoleExclusive = declaringRoleArr.every(
+            (role) => !missingRoles.has(role),
+          );
           if (isRoleExclusive) return true;
         }
         // Fallback: agent ID contains a role keyword (original heuristic)
         const allInvolved = [...agents_declaring, ...agents_missing];
-        return allInvolved.some(id => hasRoleKeyword(id));
+        return allInvolved.some((id) => hasRoleKeyword(id));
       })()
     ) {
-      classification = 'complementary';
+      classification = "complementary";
     } else {
-      classification = 'resolvable';
+      classification = "resolvable";
     }
 
     // --- Coordination overlap (Jaccard of bounded_actions across all involved agents) ---
@@ -908,8 +983,10 @@ export function analyzeFaultLines(
     if (involvedAgents.length < 2) {
       coordinationOverlap = 0.5;
     } else {
-      const actionSets = involvedAgents.map(id => agentBoundedActions.get(id) ?? []);
-      const nonEmpty = actionSets.filter(s => s.length > 0);
+      const actionSets = involvedAgents.map(
+        (id) => agentBoundedActions.get(id) ?? [],
+      );
+      const nonEmpty = actionSets.filter((s) => s.length > 0);
       if (nonEmpty.length < 2) {
         coordinationOverlap = 0.5;
       } else {
@@ -931,17 +1008,17 @@ export function analyzeFaultLines(
     let impactScore: number;
     let severity: Severity;
 
-    if (classification === 'complementary') {
+    if (classification === "complementary") {
       impactScore = 0;
-      severity = 'low';
+      severity = "low";
     } else {
       impactScore = impact_on_fleet_score * coordinationOverlap;
 
       // Reputation weighting: multiply by geometric mean of reputation/1000
       if (reputationScores && involvedAgents.length > 0) {
         const repValues = involvedAgents
-          .map(id => (reputationScores[id] ?? 500) / 1000)
-          .map(r => Math.max(0.001, r)); // avoid log(0)
+          .map((id) => (reputationScores[id] ?? 500) / 1000)
+          .map((r) => Math.max(0.001, r)); // avoid log(0)
         const logSum = repValues.reduce((sum, r) => sum + Math.log(r), 0);
         const geoMean = Math.exp(logSum / repValues.length);
         impactScore *= geoMean;
@@ -951,29 +1028,29 @@ export function analyzeFaultLines(
 
       // --- Severity ---
       if (impactScore >= 0.7) {
-        severity = 'critical';
+        severity = "critical";
       } else if (impactScore >= 0.4) {
-        severity = 'high';
+        severity = "high";
       } else if (impactScore >= 0.2) {
-        severity = 'medium';
+        severity = "medium";
       } else {
-        severity = 'low';
+        severity = "low";
       }
     }
 
     // --- Resolution hint ---
     let resolutionHint: string;
     switch (classification) {
-      case 'resolvable':
-        resolutionHint = `Add value '${value}' to ${agents_missing.join(', ')} alignment card(s).`;
+      case "resolvable":
+        resolutionHint = `Add value '${value}' to ${agents_missing.join(", ")} alignment card(s).`;
         break;
-      case 'priority_mismatch':
+      case "priority_mismatch":
         resolutionHint = `Align priority/definition of '${value}' across all declaring agents.`;
         break;
-      case 'incompatible':
-        resolutionHint = `Value '${value}' conflicts with ${agents_conflicting.join(', ')}. Requires human review.`;
+      case "incompatible":
+        resolutionHint = `Value '${value}' conflicts with ${agents_conflicting.join(", ")}. Requires human review.`;
         break;
-      case 'complementary':
+      case "complementary":
         resolutionHint = `Value '${value}' divergence appears intentional given agent specializations.`;
         break;
     }
@@ -982,13 +1059,15 @@ export function analyzeFaultLines(
     let affectsCapabilities: string[] = [];
     if (involvedAgents.length > 0) {
       const firstActions = agentBoundedActions.get(involvedAgents[0]) ?? [];
-      affectsCapabilities = firstActions.filter(action =>
-        involvedAgents.every(id => (agentBoundedActions.get(id) ?? []).includes(action))
+      affectsCapabilities = firstActions.filter((action) =>
+        involvedAgents.every((id) =>
+          (agentBoundedActions.get(id) ?? []).includes(action),
+        ),
       );
     }
 
     // --- deterministic id ---
-    const idInput = [value, ...involvedAgents.sort()].join('|');
+    const idInput = [value, ...involvedAgents.sort()].join("|");
     const id = deterministicHex(idInput, 12);
 
     faultLines.push({
@@ -1023,7 +1102,9 @@ export function analyzeFaultLines(
   // role specialization and should NEVER trigger a structural fault line alert.
   const alignments: FaultLineAlignment[] = [];
   const actionableFaultLines = faultLines.filter(
-    fl => fl.classification === 'resolvable' || fl.classification === 'incompatible'
+    (fl) =>
+      fl.classification === "resolvable" ||
+      fl.classification === "incompatible",
   );
 
   // For each pair of actionable fault lines, compute Jaccard of agents_missing sets
@@ -1034,7 +1115,10 @@ export function analyzeFaultLines(
 
   for (let i = 0; i < actionableFaultLines.length; i++) {
     for (let j = i + 1; j < actionableFaultLines.length; j++) {
-      const sim = jaccardSimilarity(actionableFaultLines[i].agents_missing, actionableFaultLines[j].agents_missing);
+      const sim = jaccardSimilarity(
+        actionableFaultLines[i].agents_missing,
+        actionableFaultLines[j].agents_missing,
+      );
       if (sim > 0.6) {
         // Find or create groups for i and j
         const gi = groupAssignment.get(i);
@@ -1071,13 +1155,13 @@ export function analyzeFaultLines(
   for (const [, members] of grouped) {
     if (members.length < 2) continue;
     const unique = [...new Set(members)];
-    const groupFaultLines = unique.map(i => actionableFaultLines[i]);
+    const groupFaultLines = unique.map((i) => actionableFaultLines[i]);
 
     const minorityAgents = [
-      ...new Set(groupFaultLines.flatMap(fl => fl.agents_missing)),
+      ...new Set(groupFaultLines.flatMap((fl) => fl.agents_missing)),
     ];
     const majorityAgents = [
-      ...new Set(groupFaultLines.flatMap(fl => fl.agents_declaring)),
+      ...new Set(groupFaultLines.flatMap((fl) => fl.agents_declaring)),
     ];
 
     // Alignment score: mean pairwise Jaccard of agents_missing within the group
@@ -1087,7 +1171,7 @@ export function analyzeFaultLines(
       for (let j = i + 1; j < unique.length; j++) {
         jaccardSum += jaccardSimilarity(
           groupFaultLines[i].agents_missing,
-          groupFaultLines[j].agents_missing
+          groupFaultLines[j].agents_missing,
         );
         jaccardCount++;
       }
@@ -1096,15 +1180,15 @@ export function analyzeFaultLines(
 
     // Base severity on group size, raised if any fault line is critical/high
     const hasHigherSeverity = groupFaultLines.some(
-      fl => fl.severity === 'critical' || fl.severity === 'high'
+      (fl) => fl.severity === "critical" || fl.severity === "high",
     );
-    let severity: Severity = unique.length >= 3 ? 'high' : 'medium';
-    if (hasHigherSeverity && severity === 'medium') {
-      severity = 'high';
+    let severity: Severity = unique.length >= 3 ? "high" : "medium";
+    if (hasHigherSeverity && severity === "medium") {
+      severity = "high";
     }
 
-    const sortedFaultLineIds = groupFaultLines.map(fl => fl.id).sort();
-    const alignmentId = deterministicHex(sortedFaultLineIds.join('|'), 12);
+    const sortedFaultLineIds = groupFaultLines.map((fl) => fl.id).sort();
+    const alignmentId = deterministicHex(sortedFaultLineIds.join("|"), 12);
 
     alignments.push({
       id: alignmentId,
@@ -1113,25 +1197,33 @@ export function analyzeFaultLines(
       majority_agents: majorityAgents,
       alignment_score: Math.round(alignmentScore * 10000) / 10000,
       severity,
-      description: `${groupFaultLines.length} fault lines consistently isolate ${minorityAgents.join(', ')} from the team`,
+      description: `${groupFaultLines.length} fault lines consistently isolate ${minorityAgents.join(", ")} from the team`,
     });
   }
 
   // --- Summary ---
   const summary: FaultLineSummary = {
     total: faultLines.length,
-    resolvable: faultLines.filter(fl => fl.classification === 'resolvable').length,
-    priority_mismatch: faultLines.filter(fl => fl.classification === 'priority_mismatch').length,
-    incompatible: faultLines.filter(fl => fl.classification === 'incompatible').length,
-    complementary: faultLines.filter(fl => fl.classification === 'complementary').length,
-    critical_count: faultLines.filter(fl => fl.severity === 'critical').length,
+    resolvable: faultLines.filter((fl) => fl.classification === "resolvable")
+      .length,
+    priority_mismatch: faultLines.filter(
+      (fl) => fl.classification === "priority_mismatch",
+    ).length,
+    incompatible: faultLines.filter(
+      (fl) => fl.classification === "incompatible",
+    ).length,
+    complementary: faultLines.filter(
+      (fl) => fl.classification === "complementary",
+    ).length,
+    critical_count: faultLines.filter((fl) => fl.severity === "critical")
+      .length,
   };
 
   // --- analysis_id: deterministic from fleet_score + sorted fault_line ids ---
   const analysisIdInput = [
     String(coherenceResult.fleet_score),
-    ...faultLines.map(fl => fl.id).sort(),
-  ].join('|');
+    ...faultLines.map((fl) => fl.id).sort(),
+  ].join("|");
   const analysisId = deterministicHex(analysisIdInput, 16);
 
   return {
@@ -1152,7 +1244,7 @@ export function analyzeFaultLines(
  */
 export function checkFleetFaultLines(
   cards: Array<{ agentId: string; card: AlignmentCard }>,
-  options?: { reputationScores?: Record<string, number>; taskContext?: string }
+  options?: { reputationScores?: Record<string, number>; taskContext?: string },
 ): { coherence: FleetCoherenceResult; analysis: FaultLineAnalysis } {
   const coherence = checkFleetCoherence(cards);
   const analysis = analyzeFaultLines(coherence, cards, options);
@@ -1180,13 +1272,17 @@ function evaluateCondition(condition: string, trace: APTrace): boolean {
 
   // Handle field > value (numeric comparison)
   // Anchored regex to prevent polynomial backtracking (ReDoS)
-  const numericMatch = condition.match(/^\s*(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)\s*$/);
+  const numericMatch = condition.match(
+    /^\s*(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)\s*$/,
+  );
   if (numericMatch) {
     const [, field, op, valueStr] = numericMatch;
     const value = parseFloat(valueStr);
 
     // Look for field in trace context (aligned with Python: check context directly first)
-    let actual: unknown = (trace.context as Record<string, unknown> | null)?.[field];
+    let actual: unknown = (trace.context as Record<string, unknown> | null)?.[
+      field
+    ];
     if (actual == null) {
       actual = trace.context?.metadata?.[field];
     }
@@ -1222,11 +1318,15 @@ function evaluateCondition(condition: string, trace: APTrace): boolean {
 
   // Handle boolean fields (aligned with Python: check context directly first)
   if (/^\w+$/.test(condition)) {
-    const ctxValue = (trace.context as Record<string, unknown> | null)?.[condition];
+    const ctxValue = (trace.context as Record<string, unknown> | null)?.[
+      condition
+    ];
     return Boolean(ctxValue ?? trace.context?.metadata?.[condition]);
   }
 
-  console.warn(`[AAP] Condition could not be parsed: "${condition}". Supported patterns: "field == value", "field > number", "field_name" (boolean). This trigger will not fire.`);
+  console.warn(
+    `[AAP] Condition could not be parsed: "${condition}". Supported patterns: "field == value", "field > number", "field_name" (boolean). This trigger will not fire.`,
+  );
   return false;
 }
 
@@ -1237,13 +1337,14 @@ function inferDriftDirection(
   streak: Array<{ trace: APTrace; similarity: number }>,
   card: AlignmentCard,
   escalationRates: number[],
-  valueUsage: Record<string, number>
+  valueUsage: Record<string, number>,
 ): DriftDirection {
-  const declaredValues = new Set(card.values.declared ?? []);
+  const declaredValues = new Set(declaredValueIds(card.values.declared));
 
   // Check for autonomy expansion (decreased escalation rate)
   if (escalationRates.length >= 6) {
-    const earlyRate = escalationRates.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+    const earlyRate =
+      escalationRates.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
     const lateRate = escalationRates.slice(-3).reduce((a, b) => a + b, 0) / 3;
     if (earlyRate > 0.1 && lateRate < earlyRate * 0.5) {
       return "autonomy_expansion";
@@ -1265,10 +1366,11 @@ function inferDriftDirection(
 
   // Check for principal misalignment
   if (declaredValues.has("principal_benefit")) {
-    const recentConfidences = streak.slice(-3).map(
-      (s) => s.trace.decision.confidence ?? 1.0
-    );
-    const avgConfidence = recentConfidences.reduce((a, b) => a + b, 0) / recentConfidences.length;
+    const recentConfidences = streak
+      .slice(-3)
+      .map((s) => s.trace.decision.confidence ?? 1.0);
+    const avgConfidence =
+      recentConfidences.reduce((a, b) => a + b, 0) / recentConfidences.length;
     if (avgConfidence < 0.5) {
       return "principal_misalignment";
     }
@@ -1282,14 +1384,16 @@ function inferDriftDirection(
  */
 function buildDriftIndicators(
   streak: Array<{ trace: APTrace; similarity: number }>,
-  escalationRates: number[]
+  escalationRates: number[],
 ): DriftIndicator[] {
   const indicators: DriftIndicator[] = [];
 
   // Escalation rate indicator
   if (escalationRates.length >= 6) {
-    const baselineRate = escalationRates.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
-    const currentRate = escalationRates.slice(-3).reduce((a, b) => a + b, 0) / 3;
+    const baselineRate =
+      escalationRates.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+    const currentRate =
+      escalationRates.slice(-3).reduce((a, b) => a + b, 0) / 3;
     if (Math.abs(baselineRate - currentRate) > 0.05) {
       indicators.push({
         indicator: "escalation_rate_change",
@@ -1307,7 +1411,8 @@ function buildDriftIndicators(
     indicators.push({
       indicator: "similarity_trend",
       baseline: Math.round(similarities[0] * 10000) / 10000,
-      current: Math.round(similarities[similarities.length - 1] * 10000) / 10000,
+      current:
+        Math.round(similarities[similarities.length - 1] * 10000) / 10000,
       description: `Similarity ${trend < 0 ? "decreasing" : "stable"} over ${streak.length} traces`,
     });
   }
