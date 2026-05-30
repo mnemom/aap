@@ -211,6 +211,24 @@ export function hasValue(card: AlignmentCard, value: string): boolean {
   return declaredValueIds(card.values.declared).includes(value);
 }
 
+/**
+ * Normalize `decision.values_applied` to bare string ids (ADR-065 #16).
+ *
+ * `values_applied` is TYPED `string[]`, but real producers (e.g. the Mnemom
+ * observer's fallback/passthrough paths) emit parameterized OBJECTS
+ * (`{id, intensity?, domain?}`) — the same shape declared values can take. The
+ * undeclared_value check and drift value-usage tallies must compare ids, not
+ * raw entries, else an object string-coerces to `'[object Object]'` and either
+ * (a) never matches the declared id set → spurious `undeclared_value` deny, or
+ * (b) pollutes value-usage maps with a bogus key. Reuses {@link declaredValueIds}
+ * (identical string|object→id coercion); accepts the looser runtime shape.
+ */
+export function appliedValueIds(
+  applied: ReadonlyArray<string | ParameterizedValue> | null | undefined,
+): string[] {
+  return declaredValueIds(applied);
+}
+
 /** Check if an action is in the bounded actions list. */
 export function isActionBounded(card: AlignmentCard, action: string): boolean {
   return card.autonomy_envelope.bounded_actions.includes(action);

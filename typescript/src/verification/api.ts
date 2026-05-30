@@ -19,7 +19,7 @@ import {
   OUTLIER_STD_DEV_THRESHOLD,
 } from "../constants";
 import type { AlignmentCard } from "../schemas/alignment-card";
-import { declaredValueIds } from "../schemas/alignment-card";
+import { appliedValueIds, declaredValueIds } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
 import {
   computeCentroid,
@@ -207,14 +207,17 @@ export function verifyTrace(
     }
   }
 
-  // Check value consistency. Declared values may be bare strings OR
-  // parameterized objects ({id, domain, intensity}); values_applied are always
-  // bare ids. Normalize declared → ids before membership, else an object-form
-  // declaration falsely flags its own value `undeclared_value` → spurious deny.
+  // Check value consistency. BOTH sides may be bare strings OR parameterized
+  // objects ({id, domain, intensity}) at runtime: declared (Phase-3.2+ cards)
+  // and values_applied (ADR-065 #16 — observer fallback paths emit objects
+  // despite the string[] type). Normalize BOTH → ids before membership, else an
+  // object string-coerces to '[object Object]' and either an object-form
+  // declaration or an object-form applied value falsely flags `undeclared_value`
+  // → spurious deny.
   checksPerformed.push("values");
   const decision = trace.decision;
   const declaredValueIdList = declaredValueIds(card.values.declared);
-  const valuesApplied = decision.values_applied ?? [];
+  const valuesApplied = appliedValueIds(decision.values_applied);
 
   for (const value of valuesApplied) {
     if (!declaredValueIdList.includes(value)) {
@@ -733,7 +736,9 @@ export function detectDrift(
   for (const trace of sorted.slice(0, baselineSize)) {
     const escalation = trace.escalation;
     escalationRates.push(escalation?.required ? 1.0 : 0.0);
-    for (const value of trace.decision.values_applied ?? []) {
+    // ADR-065 #16: normalize applied values to ids — object entries would
+    // otherwise key the usage map under '[object Object]'.
+    for (const value of appliedValueIds(trace.decision.values_applied)) {
       valueUsage[value] = (valueUsage[value] ?? 0) + 1;
     }
   }
@@ -748,8 +753,8 @@ export function detectDrift(
     const escalation = trace.escalation;
     escalationRates.push(escalation?.required ? 1.0 : 0.0);
 
-    // Track value usage
-    for (const value of trace.decision.values_applied ?? []) {
+    // Track value usage (ADR-065 #16: normalize applied values to ids).
+    for (const value of appliedValueIds(trace.decision.values_applied)) {
       valueUsage[value] = (valueUsage[value] ?? 0) + 1;
     }
 

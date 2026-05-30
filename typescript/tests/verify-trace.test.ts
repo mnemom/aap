@@ -311,6 +311,61 @@ describe("verifyTrace", () => {
       expect(uv).toHaveLength(1);
       expect(uv[0].description).toContain("Value 'profit_maximization'");
     });
+
+    // Regression: the APPLIED side is also parameterized-object in real prod
+    // traffic (the Mnemom observer's fallback/passthrough paths emit
+    // `{id, intensity}` despite the `string[]` type). A raw `.includes()`
+    // string-coerces the object to '[object Object]' → never matches declared →
+    // spurious hard-deny. (Observer parity work, ADR-065 #16.) `values_applied`
+    // is typed `string[]`, so the object shape is cast to model runtime data.
+    it("does NOT flag a value APPLIED in PARAMETERIZED-OBJECT form when declared", () => {
+      const card: AlignmentCard = {
+        ...minimalAlignmentCard,
+        values: {
+          declared: [
+            "principal_benefit",
+            { id: "transparency", domain: "operations", intensity: "nudge" },
+          ],
+        },
+      };
+      const trace: APTrace = {
+        ...minimalTrace,
+        decision: {
+          ...minimalTrace.decision,
+          values_applied: [
+            { id: "transparency", intensity: "observe" },
+          ] as unknown as string[],
+        },
+      };
+
+      const result = verifyTrace(trace, card);
+
+      expect(
+        result.violations.find((v) => v.type === "undeclared_value"),
+      ).toBeUndefined();
+    });
+
+    it("STILL flags a genuinely-undeclared value applied in OBJECT form (detection intact)", () => {
+      const card: AlignmentCard = {
+        ...minimalAlignmentCard,
+        values: { declared: [{ id: "transparency", intensity: "enforce" }] },
+      };
+      const trace: APTrace = {
+        ...minimalTrace,
+        decision: {
+          ...minimalTrace.decision,
+          values_applied: [
+            { id: "profit_maximization", intensity: "enforce" },
+          ] as unknown as string[],
+        },
+      };
+
+      const result = verifyTrace(trace, card);
+
+      const uv = result.violations.filter((x) => x.type === "undeclared_value");
+      expect(uv).toHaveLength(1);
+      expect(uv[0].description).toContain("Value 'profit_maximization'");
+    });
   });
 
   describe("card_expired violation", () => {
