@@ -11,7 +11,10 @@
 export type PrincipalType = "human" | "organization" | "agent" | "unspecified";
 
 /** Nature of authority delegation from principal to agent. */
-export type RelationshipType = "delegated_authority" | "advisory" | "autonomous";
+export type RelationshipType =
+  | "delegated_authority"
+  | "advisory"
+  | "autonomous";
 
 /** How value conflicts are resolved. */
 export type HierarchyType = "lexicographic" | "weighted" | "contextual";
@@ -47,6 +50,17 @@ export interface ValueDefinition {
   priority?: number;
 }
 
+/**
+ * A declared value in parameterized form (SPEC Section 4.4, Phase-3.2+):
+ * `id` is the value name, `domain`/`intensity` qualify how it applies.
+ * `declared` accepts either this object form or a bare-string id.
+ */
+export interface ParameterizedValue {
+  id: string;
+  domain?: string;
+  intensity?: string;
+}
+
 /** Value declarations (SPEC Section 4.4). */
 export interface Values {
   /**
@@ -66,8 +80,13 @@ export interface Values {
    * describe WHAT the agent is in its role and belong in `extensions.clpi.role`
    * or other `extensions` metadata. Capability names (e.g. `read_documents`)
    * belong in `autonomy_envelope.bounded_actions`.
+   *
+   * Each entry is either a bare-string id (`"honesty"`) or a parameterized
+   * object (`{id, domain?, intensity?}`). Use {@link declaredValueIds} to
+   * compare against AP-Trace `values_applied` (which are always bare ids) —
+   * NEVER `.includes()` raw, or object-form declarations silently mismatch.
    */
-  declared: string[];
+  declared: Array<string | ParameterizedValue>;
   /** Definitions for non-standard values */
   definitions?: Record<string, ValueDefinition> | null;
   /** Values this agent refuses to coordinate with */
@@ -167,9 +186,47 @@ export function isCardExpired(card: AlignmentCard): boolean {
   return new Date() > new Date(card.expires_at);
 }
 
-/** Check if a value is declared in the card. */
+/**
+ * Normalize a `values.declared` list to bare-string value ids. Declared entries
+ * may be bare strings OR parameterized objects (`{id, domain?, intensity?}`);
+ * AP-Trace `values_applied` are always bare ids. Compare via this — a raw
+ * `.includes()` would silently fail to match an object-form declaration against
+ * a bare applied id, falsely flagging it `undeclared_value`.
+ */
+export function declaredValueIds(
+  declared: ReadonlyArray<string | ParameterizedValue> | null | undefined,
+): string[] {
+  if (!Array.isArray(declared)) return [];
+  const ids: string[] = [];
+  for (const d of declared) {
+    if (typeof d === "string") ids.push(d);
+    else if (d && typeof d === "object" && typeof d.id === "string")
+      ids.push(d.id);
+  }
+  return ids;
+}
+
+/** Check if a value is declared in the card (id-aware; handles parameterized form). */
 export function hasValue(card: AlignmentCard, value: string): boolean {
-  return card.values.declared.includes(value);
+  return declaredValueIds(card.values.declared).includes(value);
+}
+
+/**
+ * Normalize `decision.values_applied` to bare string ids (ADR-065 #16).
+ *
+ * `values_applied` is TYPED `string[]`, but real producers (e.g. the Mnemom
+ * observer's fallback/passthrough paths) emit parameterized OBJECTS
+ * (`{id, intensity?, domain?}`) — the same shape declared values can take. The
+ * undeclared_value check and drift value-usage tallies must compare ids, not
+ * raw entries, else an object string-coerces to `'[object Object]'` and either
+ * (a) never matches the declared id set → spurious `undeclared_value` deny, or
+ * (b) pollutes value-usage maps with a bogus key. Reuses {@link declaredValueIds}
+ * (identical string|object→id coercion); accepts the looser runtime shape.
+ */
+export function appliedValueIds(
+  applied: ReadonlyArray<string | ParameterizedValue> | null | undefined,
+): string[] {
+  return declaredValueIds(applied);
 }
 
 /** Check if an action is in the bounded actions list. */
@@ -178,6 +235,9 @@ export function isActionBounded(card: AlignmentCard, action: string): boolean {
 }
 
 /** Check if an action is forbidden. */
-export function isActionForbidden(card: AlignmentCard, action: string): boolean {
+export function isActionForbidden(
+  card: AlignmentCard,
+  action: string,
+): boolean {
   return (card.autonomy_envelope.forbidden_actions ?? []).includes(action);
 }
