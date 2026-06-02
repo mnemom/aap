@@ -4,7 +4,14 @@
   "packages": {
     "typescript": {
       "package-name": "@mnemom/agent-alignment-protocol",
-      "include-component-in-tag": false
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "pyproject.toml",
+          "jsonpath": "$.project.version"
+        }
+      ]
     }
   },
   "changelog-sections": [
