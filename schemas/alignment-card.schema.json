@@ -1,7 +1,18 @@
 {
   "$defs": {
-    "AuditCommitment": {
-      "description": "Audit trail commitments (SPEC Section 4.7).",
+    "AlignmentMode": {
+      "description": "Master-switch mode shared by autonomy_mode and integrity_mode (unified / ADR-039).",
+      "enum": [
+        "off",
+        "observe",
+        "nudge",
+        "enforce"
+      ],
+      "title": "AlignmentMode",
+      "type": "string"
+    },
+    "Audit": {
+      "description": "Audit trail commitments (unified / ADR-039 §audit). Renamed from the legacy AAP 0.5.0 `audit_commitment`; semantics preserved.",
       "properties": {
         "trace_format": {
           "default": "ap-trace-v1",
@@ -11,21 +22,9 @@
         },
         "retention_days": {
           "description": "Minimum retention period in days",
-          "minimum": 1,
+          "minimum": 0,
           "title": "Retention Days",
           "type": "integer"
-        },
-        "storage": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/AuditStorage"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "Storage configuration"
         },
         "queryable": {
           "description": "Whether traces can be queried externally",
@@ -62,38 +61,11 @@
         "retention_days",
         "queryable"
       ],
-      "title": "AuditCommitment",
+      "title": "Audit",
       "type": "object"
     },
-    "AuditStorage": {
-      "description": "Audit log storage configuration.",
-      "properties": {
-        "type": {
-          "$ref": "#/$defs/StorageType",
-          "description": "Storage type"
-        },
-        "location": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "Storage endpoint or location",
-          "title": "Location"
-        }
-      },
-      "required": [
-        "type"
-      ],
-      "title": "AuditStorage",
-      "type": "object"
-    },
-    "AutonomyEnvelope": {
-      "description": "Autonomy bounds and escalation triggers (SPEC Section 4.5).",
+    "Autonomy": {
+      "description": "Autonomy bounds and escalation triggers (unified / ADR-039 §autonomy). Renamed from the legacy AAP 0.5.0 `autonomy_envelope`; semantics preserved.",
       "properties": {
         "bounded_actions": {
           "description": "Actions permitted without escalation",
@@ -141,17 +113,16 @@
         }
       },
       "required": [
-        "bounded_actions",
-        "escalation_triggers"
+        "bounded_actions"
       ],
-      "title": "AutonomyEnvelope",
+      "title": "Autonomy",
       "type": "object"
     },
     "EscalationTrigger": {
-      "description": "Condition that triggers escalation (SPEC Section 4.5).",
+      "description": "Condition that triggers escalation (unified / ADR-039 §autonomy).",
       "properties": {
         "condition": {
-          "description": "Condition expression (see SPEC Section 4.6)",
+          "description": "Condition expression",
           "title": "Condition",
           "type": "string"
         },
@@ -205,7 +176,7 @@
       "type": "object"
     },
     "Principal": {
-      "description": "Principal relationship declaration (SPEC Section 4.3).",
+      "description": "Principal relationship declaration (unified / ADR-039 §principal).",
       "properties": {
         "type": {
           "$ref": "#/$defs/PrincipalType",
@@ -221,7 +192,7 @@
             }
           ],
           "default": null,
-          "description": "Principal identifier (DID, email, org ID)",
+          "description": "Principal identifier (DID, email, org ID). Required when type != 'unspecified'.",
           "title": "Identifier"
         },
         "relationship": {
@@ -270,16 +241,6 @@
       "title": "RelationshipType",
       "type": "string"
     },
-    "StorageType": {
-      "description": "Audit log storage type.",
-      "enum": [
-        "local",
-        "remote",
-        "distributed"
-      ],
-      "title": "StorageType",
-      "type": "string"
-    },
     "TamperEvidence": {
       "description": "Tamper-evidence mechanism for audit logs.",
       "enum": [
@@ -301,12 +262,20 @@
       "type": "string"
     },
     "ValueDefinition": {
-      "description": "Definition of a custom value.",
+      "description": "Definition of a custom value (unified / ADR-039 §values).",
       "properties": {
         "name": {
-          "description": "Human-readable name",
-          "title": "Name",
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-readable name (optional)",
+          "title": "Name"
         },
         "description": {
           "description": "What this value means operationally",
@@ -315,20 +284,19 @@
         },
         "priority": {
           "default": 0,
-          "description": "Priority for lexicographic ordering (higher = more important)",
+          "description": "Priority for lexicographic/weighted ordering (higher = more important)",
           "title": "Priority",
-          "type": "integer"
+          "type": "number"
         }
       },
       "required": [
-        "name",
         "description"
       ],
       "title": "ValueDefinition",
       "type": "object"
     },
     "Values": {
-      "description": "Value declarations (SPEC Section 4.4).",
+      "description": "Value declarations (unified / ADR-039 §values).",
       "properties": {
         "declared": {
           "description": "List of value identifiers",
@@ -390,12 +358,13 @@
       "type": "object"
     }
   },
-  "description": "Alignment Card \u2014 Agent alignment declaration (SPEC Section 4).\n\nA structured document declaring an agent's alignment posture. It MUST be\nmachine-readable (JSON) and SHOULD be human-readable.\n\nExample:\n    card = AlignmentCard(\n        aap_version=\"0.5.0\",\n        card_id=\"ac-12345\",\n        agent_id=\"did:web:agent.example.com\",\n        issued_at=datetime.utcnow(),\n        principal=Principal(type=PrincipalType.HUMAN, relationship=RelationshipType.DELEGATED_AUTHORITY),\n        values=Values(declared=[\"principal_benefit\", \"transparency\"]),\n        autonomy_envelope=AutonomyEnvelope(\n            bounded_actions=[\"search\", \"recommend\"],\n            escalation_triggers=[\n                EscalationTrigger(\n                    condition='action_type == \"purchase\"',\n                    action=TriggerAction.ESCALATE,\n                    reason=\"Purchases require approval\",\n                )\n            ],\n        ),\n        audit_commitment=AuditCommitment(\n            retention_days=90,\n            queryable=True,\n            query_endpoint=\"https://agent.example.com/api/traces\",\n        ),\n    )",
+  "description": "Alignment Card — Agent alignment declaration (unified / ADR-039).\n\nA structured document declaring an agent's alignment posture. It MUST be\nmachine-readable (JSON) and SHOULD be human-readable. This is the unified\ncard shape accepted by `mnemom card validate` and the Mnemom platform;\nit renames the legacy AAP 0.5.0 `autonomy_envelope`→`autonomy` and\n`audit_commitment`→`audit` and adds the top-level master switches\n`autonomy_mode` + `integrity_mode`. Semantics are preserved.\n\nExample:\n    card = AlignmentCard(\n        card_version=\"unified/2026-04-26\",\n        card_id=\"ac-12345\",\n        agent_id=\"did:web:agent.example.com\",\n        issued_at=datetime.now(timezone.utc),\n        autonomy_mode=AlignmentMode.OBSERVE,\n        integrity_mode=AlignmentMode.OBSERVE,\n        principal=Principal(\n            type=PrincipalType.HUMAN,\n            identifier=\"did:web:user.example.com\",\n            relationship=RelationshipType.DELEGATED_AUTHORITY,\n        ),\n        values=Values(declared=[\"principal_benefit\", \"transparency\"]),\n        autonomy=Autonomy(\n            bounded_actions=[\"search\", \"recommend\"],\n            escalation_triggers=[\n                EscalationTrigger(\n                    condition='action_type == \"purchase\"',\n                    action=TriggerAction.ESCALATE,\n                    reason=\"Purchases require approval\",\n                )\n            ],\n        ),\n        audit=Audit(\n            retention_days=90,\n            queryable=True,\n            query_endpoint=\"https://agent.example.com/api/traces\",\n        ),\n    )",
   "properties": {
-    "aap_version": {
-      "default": "0.5.0",
-      "description": "AAP specification version",
-      "title": "Aap Version",
+    "card_version": {
+      "default": "unified/2026-04-26",
+      "description": "Unified alignment-card schema version (date-anchored identifier)",
+      "pattern": "^unified/\\d{4}-\\d{2}-\\d{2}$",
+      "title": "Card Version",
       "type": "string"
     },
     "card_id": {
@@ -428,6 +397,14 @@
       "description": "When this card expires",
       "title": "Expires At"
     },
+    "autonomy_mode": {
+      "$ref": "#/$defs/AlignmentMode",
+      "description": "Master switch for the action-policing pipeline (off | observe | nudge | enforce)"
+    },
+    "integrity_mode": {
+      "$ref": "#/$defs/AlignmentMode",
+      "description": "Master switch for the values/conscience pipeline (off | observe | nudge | enforce)"
+    },
     "principal": {
       "$ref": "#/$defs/Principal",
       "description": "Principal relationship declaration"
@@ -436,12 +413,12 @@
       "$ref": "#/$defs/Values",
       "description": "Value declarations"
     },
-    "autonomy_envelope": {
-      "$ref": "#/$defs/AutonomyEnvelope",
+    "autonomy": {
+      "$ref": "#/$defs/Autonomy",
       "description": "Autonomy bounds and escalation triggers"
     },
-    "audit_commitment": {
-      "$ref": "#/$defs/AuditCommitment",
+    "audit": {
+      "$ref": "#/$defs/Audit",
       "description": "Audit trail commitments"
     },
     "extensions": {
@@ -463,13 +440,15 @@
     "card_id",
     "agent_id",
     "issued_at",
+    "autonomy_mode",
+    "integrity_mode",
     "principal",
     "values",
-    "autonomy_envelope",
-    "audit_commitment"
+    "autonomy",
+    "audit"
   ],
   "title": "AlignmentCard",
   "type": "object",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://aap.dev/schemas/alignment-card-v1.json"
+  "$id": "https://aap.dev/schemas/alignment-card-unified.json"
 }

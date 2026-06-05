@@ -19,8 +19,8 @@ from aap import (
     AlignmentCard,
     Alternative,
     APTrace,
-    AuditCommitment,
-    AutonomyEnvelope,
+    Audit,
+    Autonomy,
     Decision,
     Escalation,
     Principal,
@@ -39,19 +39,20 @@ def create_user_agent_card() -> dict:
     """
     # Build the AAP alignment block
     alignment = AlignmentCard(
-        aap_version="0.5.0",
+        card_version="unified/2026-04-26",
         card_id="ac-user-shopping-001",
         agent_id="user-shopping-assistant",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         principal=Principal(
             type="human",
+            identifier="did:web:example.com",
             relationship="delegated_authority",
         ),
         values=Values(
             declared=["principal_benefit", "transparency", "minimal_data", "honesty"],
             conflicts_with=["deceptive_marketing", "hidden_fees", "upselling"],
         ),
-        autonomy_envelope=AutonomyEnvelope(
+        autonomy=Autonomy(
             bounded_actions=["search", "compare", "recommend", "add_to_cart", "vendor-coordination"],
             escalation_triggers=[
                 {
@@ -62,7 +63,7 @@ def create_user_agent_card() -> dict:
             ],
             forbidden_actions=["share_payment_info", "auto_subscribe", "share_browsing_history"],
         ),
-        audit_commitment=AuditCommitment(
+        audit=Audit(
             trace_format="ap-trace-v1",
             retention_days=30,
             queryable=True,
@@ -109,19 +110,20 @@ def create_vendor_agent_card() -> dict:
     This creates a potential conflict with user agents.
     """
     alignment = AlignmentCard(
-        aap_version="0.5.0",
+        card_version="unified/2026-04-26",
         card_id="ac-vendor-deals-001",
         agent_id="vendor-deals-agent",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         principal=Principal(
             type="organization",
+            identifier="did:web:example.com",
             relationship="delegated_authority",
         ),
         values=Values(
             declared=["customer_satisfaction", "transparency", "upselling", "conversion"],
             conflicts_with=["price_undercutting"],
         ),
-        autonomy_envelope=AutonomyEnvelope(
+        autonomy=Autonomy(
             bounded_actions=["search", "recommend", "apply_discount", "suggest_bundle"],
             escalation_triggers=[
                 {
@@ -132,7 +134,7 @@ def create_vendor_agent_card() -> dict:
             ],
             forbidden_actions=["price_match_competitor"],
         ),
-        audit_commitment=AuditCommitment(
+        audit=Audit(
             trace_format="ap-trace-v1",
             retention_days=90,
             queryable=True,
@@ -178,24 +180,25 @@ def create_compatible_vendor_card() -> dict:
     compatible with user agents that conflict with upselling.
     """
     alignment = AlignmentCard(
-        aap_version="0.5.0",
+        card_version="unified/2026-04-26",
         card_id="ac-ethical-vendor-001",
         agent_id="ethical-vendor-agent",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         principal=Principal(
             type="organization",
+            identifier="did:web:example.com",
             relationship="delegated_authority",
         ),
         values=Values(
             declared=["principal_benefit", "transparency", "honesty", "minimal_data"],
             conflicts_with=["deceptive_marketing", "hidden_fees", "upselling"],
         ),
-        autonomy_envelope=AutonomyEnvelope(
+        autonomy=Autonomy(
             bounded_actions=["search", "recommend", "apply_discount"],
             escalation_triggers=[],
             forbidden_actions=["upsell_unrelated", "hide_cheaper_options"],
         ),
-        audit_commitment=AuditCommitment(
+        audit=Audit(
             trace_format="ap-trace-v1",
             retention_days=90,
             queryable=True,

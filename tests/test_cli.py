@@ -115,13 +115,18 @@ class TestInitCommand:
         assert "Created" in result.output
         assert output_path.exists()
 
-        # Verify the card is valid JSON with expected structure
+        # Verify the card is valid JSON with the unified / ADR-039 structure
         card = json.loads(output_path.read_text())
-        assert card["aap_version"] == "0.5.0"
+        assert card["card_version"] == "unified/2026-04-26"
+        assert card["autonomy_mode"] in {"off", "observe", "nudge", "enforce"}
+        assert card["integrity_mode"] in {"off", "observe", "nudge", "enforce"}
         assert "principal_benefit" in card["values"]["declared"]
         assert "transparency" in card["values"]["declared"]
         assert card["principal"]["type"] == "human"
+        assert card["principal"]["identifier"]
         assert card["principal"]["relationship"] == "delegated_authority"
+        assert "autonomy" in card
+        assert "audit" in card
 
     def test_init_with_single_value(self, runner: CliRunner, tmp_path: Path) -> None:
         """Init with single value should work."""

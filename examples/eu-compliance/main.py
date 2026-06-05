@@ -15,8 +15,8 @@ from aap import (
     AlignmentCard,
     Alternative,
     APTrace,
-    AuditCommitment,
-    AutonomyEnvelope,
+    Audit,
+    Autonomy,
     Decision,
     Escalation,
     EscalationTrigger,
@@ -25,19 +25,21 @@ from aap import (
     verify_trace,
 )
 from aap.compliance import (
-    EU_COMPLIANCE_AUDIT_COMMITMENT,
+    EU_COMPLIANCE_AUDIT,
     EU_COMPLIANCE_EXTENSIONS,
     EU_COMPLIANCE_VALUES,
 )
 
 
 def create_eu_compliant_card() -> dict:
-    """Create an Alignment Card configured for EU AI Act compliance."""
+    """Create an Alignment Card (unified / ADR-039) configured for EU AI Act compliance."""
     card = AlignmentCard(
-        aap_version="0.5.0",
+        card_version="unified/2026-04-26",
         card_id="ac-eu-compliance-001",
         agent_id="eu-compliant-agent",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        autonomy_mode="enforce",
+        integrity_mode="enforce",
         principal=Principal(
             type="organization",
             identifier="Example Corp (EU)",
@@ -45,7 +47,7 @@ def create_eu_compliant_card() -> dict:
             escalation_contact="compliance@example.com",
         ),
         values=Values(
-            declared=EU_COMPLIANCE_VALUES,
+            declared=list(EU_COMPLIANCE_VALUES),
             definitions={
                 "transparency": {
                     "description": "All decisions are logged, auditable, and explainable to users",
@@ -57,7 +59,7 @@ def create_eu_compliant_card() -> dict:
             conflicts_with=["deceptive_marketing", "data_exfiltration"],
             hierarchy="lexicographic",
         ),
-        autonomy_envelope=AutonomyEnvelope(
+        autonomy=Autonomy(
             bounded_actions=["search", "compare", "recommend", "summarize"],
             escalation_triggers=[
                 EscalationTrigger(
@@ -73,7 +75,7 @@ def create_eu_compliant_card() -> dict:
             ],
             forbidden_actions=["share_personal_data", "auto_subscribe", "delete_user_data"],
         ),
-        audit_commitment=AuditCommitment(**EU_COMPLIANCE_AUDIT_COMMITMENT),
+        audit=Audit(**EU_COMPLIANCE_AUDIT),
         extensions=EU_COMPLIANCE_EXTENSIONS,
     )
     return card.model_dump(mode="json")
@@ -147,8 +149,8 @@ def print_compliance_summary(card: dict, result) -> None:
     print(f"    Disclosure:     {eu.get('disclosure_text', 'NOT SET')}")
 
     print("\n  Art. 50(2) — Machine-Readable Marking:")
-    print(f"    Trace format:   {card['audit_commitment']['trace_format']}")
-    print(f"    AAP version:    {card['aap_version']}")
+    print(f"    Trace format:   {card['audit']['trace_format']}")
+    print(f"    Card version:   {card['card_version']}")
 
     print("\n  Art. 50(3) — Decision Transparency:")
     print(f"    Verified:       {result.verified}")
@@ -156,9 +158,9 @@ def print_compliance_summary(card: dict, result) -> None:
     print(f"    Warnings:       {len(result.warnings)}")
 
     print("\n  Art. 50(4) — Audit Trail:")
-    print(f"    Retention:      {card['audit_commitment']['retention_days']} days")
-    print(f"    Queryable:      {card['audit_commitment']['queryable']}")
-    print(f"    Tamper evidence:{card['audit_commitment']['tamper_evidence']}")
+    print(f"    Retention:      {card['audit']['retention_days']} days")
+    print(f"    Queryable:      {card['audit']['queryable']}")
+    print(f"    Tamper evidence:{card['audit']['tamper_evidence']}")
 
     print(f"\n  Classification:   {eu.get('ai_system_classification', 'NOT SET')}")
     print(f"  Compliance ver:   {eu.get('compliance_version', 'NOT SET')}")
@@ -176,8 +178,8 @@ def main():
     card = create_eu_compliant_card()
     print(f"    Card ID: {card['card_id']}")
     print(f"    Values: {card['values']['declared']}")
-    print(f"    Retention: {card['audit_commitment']['retention_days']} days")
-    print(f"    Tamper evidence: {card['audit_commitment']['tamper_evidence']}")
+    print(f"    Retention: {card['audit']['retention_days']} days")
+    print(f"    Tamper evidence: {card['audit']['tamper_evidence']}")
     print(f"    EU extensions: {list(card['extensions']['eu_ai_act'].keys())}")
 
     # Step 2: Generate a traced decision

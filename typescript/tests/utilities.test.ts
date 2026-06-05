@@ -115,7 +115,7 @@ describe("isActionBounded", () => {
   it("should handle empty bounded_actions", () => {
     const emptyCard: AlignmentCard = {
       ...minimalAlignmentCard,
-      autonomy_envelope: {
+      autonomy: {
         bounded_actions: [],
         escalation_triggers: [],
       },

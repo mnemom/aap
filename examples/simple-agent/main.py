@@ -15,12 +15,12 @@ from datetime import datetime, timezone
 
 from aap import (
     Action,
-    # Schema models
+    # Schema models (unified / ADR-039)
     AlignmentCard,
     Alternative,
     APTrace,
-    AuditCommitment,
-    AutonomyEnvelope,
+    Audit,
+    Autonomy,
     Decision,
     Escalation,
     Principal,
@@ -33,19 +33,22 @@ from aap import (
 def create_alignment_card() -> dict:
     """Create an Alignment Card for a simple recommendation agent."""
     card = AlignmentCard(
-        aap_version="0.5.0",
+        card_version="unified/2026-04-26",
         card_id="ac-simple-agent-001",
         agent_id="simple-recommendation-agent",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        autonomy_mode="observe",
+        integrity_mode="observe",
         principal=Principal(
             type="human",
+            identifier="did:web:user.example.com",
             relationship="delegated_authority",
         ),
         values=Values(
             declared=["principal_benefit", "transparency", "honesty"],
             conflicts_with=["deceptive_marketing"],
         ),
-        autonomy_envelope=AutonomyEnvelope(
+        autonomy=Autonomy(
             bounded_actions=["search", "compare", "recommend"],
             escalation_triggers=[
                 {
@@ -56,7 +59,7 @@ def create_alignment_card() -> dict:
             ],
             forbidden_actions=["share_personal_data", "auto_subscribe"],
         ),
-        audit_commitment=AuditCommitment(
+        audit=Audit(
             trace_format="ap-trace-v1",
             retention_days=30,
             queryable=False,
@@ -170,8 +173,8 @@ def main():
     card = create_alignment_card()
     print(f"    Card ID: {card['card_id']}")
     print(f"    Values: {card['values']['declared']}")
-    print(f"    Bounded actions: {card['autonomy_envelope']['bounded_actions']}")
-    print(f"    Forbidden actions: {card['autonomy_envelope']['forbidden_actions']}")
+    print(f"    Bounded actions: {card['autonomy']['bounded_actions']}")
+    print(f"    Forbidden actions: {card['autonomy']['forbidden_actions']}")
 
     # Save the card
     with open("alignment-card.json", "w") as f:

@@ -26,12 +26,15 @@
     }
   ],
   "alignment": {
-    "aap_version": "0.5.0",
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-vendor-deals-001",
     "agent_id": "vendor-deals-agent",
     "issued_at": "2026-02-14T22:49:52.908Z",
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "organization",
+      "identifier": "did:web:example.com",
       "relationship": "delegated_authority"
     },
     "values": {
@@ -45,7 +48,7 @@
         "price_undercutting"
       ]
     },
-    "autonomy_envelope": {
+    "autonomy": {
       "bounded_actions": [
         "search",
         "recommend",
@@ -63,7 +66,7 @@
         "price_match_competitor"
       ]
     },
-    "audit_commitment": {
+    "audit": {
       "trace_format": "ap-trace-v1",
       "retention_days": 90,
       "queryable": true,

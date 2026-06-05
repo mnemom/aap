@@ -21,16 +21,16 @@
     }
   ],
   "alignment": {
-    "aap_version": "0.5.0",
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-ethical-vendor-001",
     "agent_id": "ethical-vendor-agent",
     "issued_at": "2026-02-14T22:49:41.036031Z",
-    "expires_at": null,
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "organization",
-      "identifier": null,
-      "relationship": "delegated_authority",
-      "escalation_contact": null
+      "identifier": "did:web:vendor.example.com",
+      "relationship": "delegated_authority"
     },
     "values": {
       "declared": [
@@ -39,35 +39,29 @@
         "honesty",
         "minimal_data"
       ],
-      "definitions": null,
       "conflicts_with": [
         "deceptive_marketing",
         "hidden_fees",
         "upselling"
-      ],
-      "hierarchy": null
+      ]
     },
-    "autonomy_envelope": {
+    "autonomy": {
       "bounded_actions": [
         "search",
         "recommend",
         "apply_discount"
       ],
       "escalation_triggers": [],
-      "max_autonomous_value": null,
       "forbidden_actions": [
         "upsell_unrelated",
         "hide_cheaper_options"
       ]
     },
-    "audit_commitment": {
+    "audit": {
       "trace_format": "ap-trace-v1",
       "retention_days": 90,
-      "storage": null,
       "queryable": true,
-      "query_endpoint": "https://ethical-vendor.example.com/api/traces",
-      "tamper_evidence": null
-    },
-    "extensions": null
+      "query_endpoint": "https://ethical-vendor.example.com/api/traces"
+    }
   }
 }

@@ -6,14 +6,14 @@ transparency obligations. Spread them into your AlignmentCard fields.
 
 Usage:
     from aap.compliance import (
-        EU_COMPLIANCE_AUDIT_COMMITMENT,
+        EU_COMPLIANCE_AUDIT,
         EU_COMPLIANCE_EXTENSIONS,
         EU_COMPLIANCE_VALUES,
     )
 
     card = AlignmentCard(
         ...,
-        audit_commitment=AuditCommitment(**EU_COMPLIANCE_AUDIT_COMMITMENT),
+        audit=Audit(**EU_COMPLIANCE_AUDIT),
         values=Values(declared=EU_COMPLIANCE_VALUES, ...),
         extensions=EU_COMPLIANCE_EXTENSIONS,
     )
@@ -26,7 +26,8 @@ qualified legal counsel for your specific compliance obligations.
 from __future__ import annotations
 
 # Audit commitment values that satisfy Article 50(4) audit trail requirements.
-EU_COMPLIANCE_AUDIT_COMMITMENT: dict = {
+# Spread into the unified card's `audit` section (Audit(**EU_COMPLIANCE_AUDIT)).
+EU_COMPLIANCE_AUDIT: dict = {
     "retention_days": 90,
     "queryable": True,
     "query_endpoint": "https://audit.example.com/traces",

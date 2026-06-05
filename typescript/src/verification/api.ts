@@ -19,7 +19,7 @@ import {
   OUTLIER_STD_DEV_THRESHOLD,
 } from "../constants";
 import type { AlignmentCard } from "../schemas/alignment-card";
-import { appliedValueIds, declaredValueIds } from "../schemas/alignment-card";
+import { appliedValueIds, cardAudit, cardAutonomy, declaredValueIds } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
 import {
   computeCentroid,
@@ -102,9 +102,10 @@ export function verifyTrace(
   const warnings: Warning[] = [];
   const checksPerformed: string[] = [];
 
-  // Warn if tamper_evidence is declared but not cryptographically enforced
-  const tamperEvidence = (card as Record<string, any>).audit?.commitment
-    ?.tamper_evidence;
+  // Warn if tamper_evidence is declared but not cryptographically enforced.
+  // Reads the unified `audit` (legacy `audit_commitment` fallback) via the
+  // shared helper, matching the Python engine's `_card_audit(...)`.
+  const tamperEvidence = cardAudit(card)?.tamper_evidence;
   if (tamperEvidence === "signed" || tamperEvidence === "merkle") {
     console.warn(
       `[AAP] Warning: tamper_evidence mode "${tamperEvidence}" is declared but NOT cryptographically enforced in this version.`,
@@ -147,8 +148,9 @@ export function verifyTrace(
     }
   }
 
-  // Extract envelope for remaining checks
-  const envelope = card.autonomy_envelope;
+  // Extract the autonomy section for remaining checks (unified `autonomy`,
+  // legacy `autonomy_envelope` fallback).
+  const envelope = cardAutonomy(card);
   const action = trace.action;
 
   // Check autonomy compliance
@@ -884,7 +886,7 @@ export function analyzeFaultLines(
   for (const { agentId, card } of cards) {
     agentBoundedActions.set(
       agentId,
-      card.autonomy_envelope?.bounded_actions ?? [],
+      cardAutonomy(card).bounded_actions ?? [],
     );
   }
 

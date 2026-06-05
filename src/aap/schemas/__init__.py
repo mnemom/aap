@@ -13,15 +13,19 @@ All models support:
 Example:
     from aap.schemas import AlignmentCard, APTrace
 
-    # Create an Alignment Card
+    # Create an Alignment Card (unified / ADR-039 shape)
     card = AlignmentCard(
         card_id="ac-12345",
         agent_id="did:web:agent.example.com",
-        issued_at=datetime.utcnow(),
-        principal=Principal(type=PrincipalType.HUMAN, relationship=RelationshipType.DELEGATED_AUTHORITY),
+        issued_at=datetime.now(timezone.utc),
+        principal=Principal(
+            type=PrincipalType.HUMAN,
+            identifier="did:web:user.example.com",
+            relationship=RelationshipType.DELEGATED_AUTHORITY,
+        ),
         values=Values(declared=["principal_benefit", "transparency"]),
-        autonomy_envelope=AutonomyEnvelope(...),
-        audit_commitment=AuditCommitment(...),
+        autonomy=Autonomy(...),
+        audit=Audit(...),
     )
 
     # Serialize to JSON
@@ -33,16 +37,15 @@ Example:
 
 from aap.schemas.alignment_card import (
     AlignmentCard,
-    AuditCommitment,
-    AuditStorage,
-    AutonomyEnvelope,
+    AlignmentMode,
+    Audit,
+    Autonomy,
     EscalationTrigger,
     HierarchyType,
     MonetaryValue,
     Principal,
     PrincipalType,
     RelationshipType,
-    StorageType,
     TamperEvidence,
     TriggerAction,
     ValueDefinition,
@@ -81,21 +84,20 @@ from aap.schemas.value_coherence import (
 )
 
 __all__ = [
-    # Alignment Card (SPEC Section 4)
+    # Alignment Card (unified / ADR-039)
     "AlignmentCard",
+    "AlignmentMode",
     "Principal",
     "PrincipalType",
     "RelationshipType",
     "Values",
     "ValueDefinition",
     "HierarchyType",
-    "AutonomyEnvelope",
+    "Autonomy",
     "EscalationTrigger",
     "TriggerAction",
     "MonetaryValue",
-    "AuditCommitment",
-    "AuditStorage",
-    "StorageType",
+    "Audit",
     "TamperEvidence",
     # AP-Trace (SPEC Section 5)
     "APTrace",

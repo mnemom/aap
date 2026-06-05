@@ -24,9 +24,10 @@ import pytest
 
 @pytest.fixture
 def minimal_principal() -> dict[str, Any]:
-    """Minimal valid principal declaration."""
+    """Minimal valid principal declaration (identifier required when typed)."""
     return {
         "type": "human",
+        "identifier": "did:web:user.example.com",
         "relationship": "delegated_authority",
     }
 
@@ -77,8 +78,8 @@ def values_with_custom() -> dict[str, Any]:
 
 
 @pytest.fixture
-def minimal_autonomy_envelope() -> dict[str, Any]:
-    """Minimal valid autonomy envelope."""
+def minimal_autonomy() -> dict[str, Any]:
+    """Minimal valid autonomy section (unified / ADR-039)."""
     return {
         "bounded_actions": ["search", "recommend", "summarize"],
         "escalation_triggers": [
@@ -92,8 +93,8 @@ def minimal_autonomy_envelope() -> dict[str, Any]:
 
 
 @pytest.fixture
-def full_autonomy_envelope() -> dict[str, Any]:
-    """Fully-specified autonomy envelope."""
+def full_autonomy() -> dict[str, Any]:
+    """Fully-specified autonomy section (unified / ADR-039)."""
     return {
         "bounded_actions": ["search", "recommend", "summarize", "draft_email"],
         "escalation_triggers": [
@@ -122,8 +123,8 @@ def full_autonomy_envelope() -> dict[str, Any]:
 
 
 @pytest.fixture
-def minimal_audit_commitment() -> dict[str, Any]:
-    """Minimal valid audit commitment."""
+def minimal_audit() -> dict[str, Any]:
+    """Minimal valid audit section (unified / ADR-039)."""
     return {
         "retention_days": 90,
         "queryable": False,
@@ -131,15 +132,11 @@ def minimal_audit_commitment() -> dict[str, Any]:
 
 
 @pytest.fixture
-def full_audit_commitment() -> dict[str, Any]:
-    """Fully-specified audit commitment."""
+def full_audit() -> dict[str, Any]:
+    """Fully-specified audit section (unified / ADR-039)."""
     return {
         "trace_format": "ap-trace-v1",
         "retention_days": 365,
-        "storage": {
-            "type": "distributed",
-            "location": "ipfs://QmXyz...",
-        },
         "queryable": True,
         "query_endpoint": "https://agent.example.com/api/traces",
         "tamper_evidence": "merkle",
@@ -150,19 +147,21 @@ def full_audit_commitment() -> dict[str, Any]:
 def minimal_alignment_card(
     minimal_principal: dict,
     minimal_values: dict,
-    minimal_autonomy_envelope: dict,
-    minimal_audit_commitment: dict,
+    minimal_autonomy: dict,
+    minimal_audit: dict,
 ) -> dict[str, Any]:
-    """Minimal valid Alignment Card."""
+    """Minimal valid Alignment Card (unified / ADR-039)."""
     return {
-        "aap_version": "0.5.0",
+        "card_version": "unified/2026-04-26",
         "card_id": "ac-minimal-001",
         "agent_id": "agent-minimal-001",
         "issued_at": datetime.now(timezone.utc).isoformat(),
+        "autonomy_mode": "observe",
+        "integrity_mode": "observe",
         "principal": minimal_principal,
         "values": minimal_values,
-        "autonomy_envelope": minimal_autonomy_envelope,
-        "audit_commitment": minimal_audit_commitment,
+        "autonomy": minimal_autonomy,
+        "audit": minimal_audit,
     }
 
 
@@ -170,20 +169,22 @@ def minimal_alignment_card(
 def full_alignment_card(
     full_principal: dict,
     values_with_conflicts: dict,
-    full_autonomy_envelope: dict,
-    full_audit_commitment: dict,
+    full_autonomy: dict,
+    full_audit: dict,
 ) -> dict[str, Any]:
-    """Fully-specified Alignment Card."""
+    """Fully-specified Alignment Card (unified / ADR-039)."""
     return {
-        "aap_version": "0.5.0",
+        "card_version": "unified/2026-04-26",
         "card_id": "ac-full-001",
         "agent_id": "did:web:agent.example.com",
         "issued_at": datetime.now(timezone.utc).isoformat(),
         "expires_at": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat(),
+        "autonomy_mode": "enforce",
+        "integrity_mode": "enforce",
         "principal": full_principal,
         "values": values_with_conflicts,
-        "autonomy_envelope": full_autonomy_envelope,
-        "audit_commitment": full_audit_commitment,
+        "autonomy": full_autonomy,
+        "audit": full_audit,
         "extensions": {
             "a2a": {
                 "skills": ["search", "recommend"],

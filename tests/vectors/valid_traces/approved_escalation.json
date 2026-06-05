@@ -7,10 +7,12 @@
     "warnings": []
   },
   "card": {
-    "aap_version": "0.5.0",
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-test-escalation-001",
     "agent_id": "agent-purchasing-assistant",
     "issued_at": "2026-01-31T00:00:00Z",
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "human",
       "identifier": "user-jane-doe",
@@ -18,10 +20,19 @@
       "escalation_contact": "mailto:jane@example.com"
     },
     "values": {
-      "declared": ["principal_benefit", "transparency", "user_control"]
+      "declared": [
+        "principal_benefit",
+        "transparency",
+        "user_control"
+      ]
     },
-    "autonomy_envelope": {
-      "bounded_actions": ["search", "recommend", "compare", "add_to_cart"],
+    "autonomy": {
+      "bounded_actions": [
+        "search",
+        "recommend",
+        "compare",
+        "add_to_cart"
+      ],
       "escalation_triggers": [
         {
           "condition": "action_type == \"purchase\"",
@@ -38,9 +49,12 @@
         "amount": 50.0,
         "currency": "USD"
       },
-      "forbidden_actions": ["auto_purchase", "subscribe_recurring"]
+      "forbidden_actions": [
+        "auto_purchase",
+        "subscribe_recurring"
+      ]
     },
-    "audit_commitment": {
+    "audit": {
       "retention_days": 365,
       "queryable": true,
       "query_endpoint": "https://api.example.com/traces"
@@ -75,12 +89,15 @@
         {
           "option_id": "cancel-purchase",
           "description": "Cancel the purchase request",
-          "score": 0.30
+          "score": 0.3
         }
       ],
       "selected": "proceed-with-purchase",
       "selection_reasoning": "User explicitly approved the purchase after reviewing the item details and price. This aligns with user_control value.",
-      "values_applied": ["principal_benefit", "user_control"],
+      "values_applied": [
+        "principal_benefit",
+        "user_control"
+      ],
       "confidence": 0.95
     },
     "escalation": {
@@ -104,13 +121,19 @@
       "principal_response": {
         "decision": "Approved - proceed with purchase",
         "timestamp": "2026-01-31T14:28:00Z",
-        "conditions": ["Use saved payment method ending in 4242"]
+        "conditions": [
+          "Use saved payment method ending in 4242"
+        ]
       }
     },
     "context": {
       "session_id": "sess-jane-shopping",
       "conversation_turn": 7,
-      "prior_trace_ids": ["tr-search-001", "tr-recommend-001", "tr-compare-001"]
+      "prior_trace_ids": [
+        "tr-search-001",
+        "tr-recommend-001",
+        "tr-compare-001"
+      ]
     }
   }
 }

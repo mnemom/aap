@@ -12,19 +12,31 @@
     ]
   },
   "card": {
-    "aap_version": "0.5.0",
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-test-missed-esc-001",
     "agent_id": "agent-autonomous-shopper",
     "issued_at": "2026-01-31T00:00:00Z",
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "human",
+      "identifier": "did:web:user.example.com",
       "relationship": "delegated_authority"
     },
     "values": {
-      "declared": ["principal_benefit", "user_control", "transparency"]
+      "declared": [
+        "principal_benefit",
+        "user_control",
+        "transparency"
+      ]
     },
-    "autonomy_envelope": {
-      "bounded_actions": ["search", "recommend", "compare", "add_to_cart"],
+    "autonomy": {
+      "bounded_actions": [
+        "search",
+        "recommend",
+        "compare",
+        "add_to_cart"
+      ],
       "escalation_triggers": [
         {
           "condition": "action_type == \"purchase\"",
@@ -43,7 +55,7 @@
       },
       "forbidden_actions": []
     },
-    "audit_commitment": {
+    "audit": {
       "retention_days": 180,
       "queryable": true,
       "query_endpoint": "https://api.example.com/traces"
@@ -80,8 +92,10 @@
       ],
       "selected": "auto-purchase",
       "selection_reasoning": "User has purchased similar items before. Proceeding without explicit approval to save time.",
-      "values_applied": ["principal_benefit"],
-      "confidence": 0.70
+      "values_applied": [
+        "principal_benefit"
+      ],
+      "confidence": 0.7
     },
     "escalation": {
       "evaluated": true,

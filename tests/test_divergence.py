@@ -131,7 +131,7 @@ class TestDivergenceDetection:
         return {
             "card_id": "card-001",
             "values": {"declared": ["principal_benefit", "transparency"]},
-            "autonomy_envelope": {"bounded_actions": ["search", "recommend"]},
+            "autonomy": {"bounded_actions": ["search", "recommend"]},
         }
 
     def test_consistent_traces_no_alert(self, card):

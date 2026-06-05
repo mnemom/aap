@@ -1,13 +1,21 @@
-"""Alignment Card schema — Agent alignment declaration.
+"""Alignment Card schema — Agent alignment declaration (unified / ADR-039).
 
-Defines the Alignment Card structure per SPEC Section 4. An Alignment Card
-is a structured document declaring an agent's alignment posture:
+Defines the unified Alignment Card structure accepted by the Mnemom platform
+and `mnemom card validate`. An Alignment Card is a structured document
+declaring an agent's alignment posture:
 - Principal relationship
 - Declared values
-- Autonomy envelope
-- Audit commitment
+- Autonomy bounds (`autonomy`)
+- Audit commitments (`audit`)
+- Two top-level master switches (`autonomy_mode`, `integrity_mode`)
 
-See SPEC.md Section 4 for complete specification.
+This is the unified shape. It renames the legacy AAP 0.5.0
+`autonomy_envelope`→`autonomy` and `audit_commitment`→`audit`, replaces
+`aap_version` with the date-anchored `card_version`, and adds the top-level
+master switches. Semantics are preserved; the migration is largely a rename.
+
+See https://docs.mnemom.ai/specifications/alignment-card-schema for the
+normative reference.
 """
 
 from __future__ import annotations
@@ -17,6 +25,28 @@ from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
+
+#: Current unified alignment-card schema version (date-anchored identifier).
+CARD_VERSION = "unified/2026-04-26"
+
+
+class AlignmentMode(str, Enum):
+    """Master-switch mode shared by ``autonomy_mode`` and ``integrity_mode``.
+
+    Strictest wins on composition: ``enforce > nudge > observe > off``.
+    """
+
+    OFF = "off"
+    """Pipeline disabled."""
+
+    OBSERVE = "observe"
+    """Log results; do not block."""
+
+    NUDGE = "nudge"
+    """Inject advisory annotation; do not block."""
+
+    ENFORCE = "enforce"
+    """Block violations and escalate."""
 
 
 class PrincipalType(str, Enum):
@@ -42,13 +72,13 @@ class RelationshipType(str, Enum):
 
 
 class Principal(BaseModel):
-    """Principal relationship declaration (SPEC Section 4.3)."""
+    """Principal relationship declaration (unified / ADR-039 §principal)."""
 
     type: PrincipalType = Field(
         ..., description="Type of principal"
     )
     identifier: str | None = Field(
-        None, description="Principal identifier (DID, email, org ID)"
+        None, description="Principal identifier (DID, email, org ID). Required when type != 'unspecified'."
     )
     relationship: RelationshipType = Field(
         ..., description="Nature of authority delegation"
@@ -56,6 +86,15 @@ class Principal(BaseModel):
     escalation_contact: str | None = Field(
         None, description="Endpoint for escalation notifications"
     )
+
+    @model_validator(mode="after")
+    def identifier_required_when_typed(self) -> Principal:
+        """`identifier` is required when `type` is not 'unspecified' (ADR-039)."""
+        if self.type != PrincipalType.UNSPECIFIED and not self.identifier:
+            raise ValueError(
+                "principal.identifier is required when principal.type is not 'unspecified'"
+            )
+        return self
 
 
 class HierarchyType(str, Enum):
@@ -72,17 +111,23 @@ class HierarchyType(str, Enum):
 
 
 class ValueDefinition(BaseModel):
-    """Definition of a custom value."""
+    """Definition of a custom value (unified / ADR-039 §values).
 
-    name: str = Field(..., description="Human-readable name")
+    Per the unified spec a definition carries a ``description`` and optional
+    ``priority``; ``name`` is optional (the value's identifier is the
+    ``definitions`` map key).
+    """
+
+    name: str | None = Field(None, description="Human-readable name (optional)")
     description: str = Field(..., description="What this value means operationally")
-    priority: int = Field(
-        default=0, description="Priority for lexicographic ordering (higher = more important)"
+    priority: float = Field(
+        default=0,
+        description="Priority for lexicographic/weighted ordering (higher = more important)",
     )
 
 
 class Values(BaseModel):
-    """Value declarations (SPEC Section 4.4)."""
+    """Value declarations (unified / ADR-039 §values)."""
 
     declared: list[str] = Field(
         ..., description="List of value identifiers"
@@ -125,10 +170,10 @@ class TriggerAction(str, Enum):
 
 
 class EscalationTrigger(BaseModel):
-    """Condition that triggers escalation (SPEC Section 4.5)."""
+    """Condition that triggers escalation (unified / ADR-039 §autonomy)."""
 
     condition: str = Field(
-        ..., description="Condition expression (see SPEC Section 4.6)"
+        ..., description="Condition expression"
     )
     action: TriggerAction = Field(
         ..., description="Action to take when trigger matches"
@@ -145,14 +190,19 @@ class MonetaryValue(BaseModel):
     currency: str = Field(default="USD", description="ISO 4217 currency code")
 
 
-class AutonomyEnvelope(BaseModel):
-    """Autonomy bounds and escalation triggers (SPEC Section 4.5)."""
+class Autonomy(BaseModel):
+    """Autonomy bounds and escalation triggers (unified / ADR-039 §autonomy).
+
+    Renamed from the legacy AAP 0.5.0 ``autonomy_envelope``; semantics
+    preserved. ``escalation_triggers`` is now optional (defaults to an empty
+    list) to match the unified spec, where only ``bounded_actions`` is required.
+    """
 
     bounded_actions: list[str] = Field(
         ..., description="Actions permitted without escalation"
     )
     escalation_triggers: list[EscalationTrigger] = Field(
-        ..., description="Conditions requiring escalation"
+        default_factory=list, description="Conditions requiring escalation"
     )
     max_autonomous_value: MonetaryValue | None = Field(
         None, description="Maximum transaction value without escalation"
@@ -161,13 +211,17 @@ class AutonomyEnvelope(BaseModel):
         None, description="Actions never permitted"
     )
 
-
-class StorageType(str, Enum):
-    """Audit log storage type."""
-
-    LOCAL = "local"
-    REMOTE = "remote"
-    DISTRIBUTED = "distributed"
+    @model_validator(mode="after")
+    def bounded_and_forbidden_disjoint(self) -> Autonomy:
+        """`bounded_actions` and `forbidden_actions` must be disjoint (ADR-039)."""
+        if self.forbidden_actions:
+            overlap = set(self.bounded_actions) & set(self.forbidden_actions)
+            if overlap:
+                raise ValueError(
+                    "autonomy.bounded_actions and forbidden_actions must be disjoint; "
+                    f"both contain: {', '.join(sorted(overlap))}"
+                )
+        return self
 
 
 class TamperEvidence(str, Enum):
@@ -178,24 +232,19 @@ class TamperEvidence(str, Enum):
     MERKLE = "merkle"
 
 
-class AuditStorage(BaseModel):
-    """Audit log storage configuration."""
+class Audit(BaseModel):
+    """Audit trail commitments (unified / ADR-039 §audit).
 
-    type: StorageType = Field(..., description="Storage type")
-    location: str | None = Field(None, description="Storage endpoint or location")
-
-
-class AuditCommitment(BaseModel):
-    """Audit trail commitments (SPEC Section 4.7)."""
+    Renamed from the legacy AAP 0.5.0 ``audit_commitment``; semantics
+    preserved. The legacy ``storage`` sub-object is no longer part of the
+    unified shape (the platform validator rejects ``audit.storage``).
+    """
 
     trace_format: str = Field(
         default="ap-trace-v1", description="Trace format identifier"
     )
     retention_days: int = Field(
-        ..., ge=1, description="Minimum retention period in days"
-    )
-    storage: AuditStorage | None = Field(
-        None, description="Storage configuration"
+        ..., ge=0, description="Minimum retention period in days"
     )
     queryable: bool = Field(
         ..., description="Whether traces can be queried externally"
@@ -208,7 +257,7 @@ class AuditCommitment(BaseModel):
     )
 
     @model_validator(mode="after")
-    def queryable_requires_endpoint(self) -> AuditCommitment:
+    def queryable_requires_endpoint(self) -> Audit:
         """If queryable is true, query_endpoint is required."""
         if self.queryable and not self.query_endpoint:
             raise ValueError("query_endpoint is required when queryable is true")
@@ -216,20 +265,27 @@ class AuditCommitment(BaseModel):
 
 
 class AlignmentCard(BaseModel):
-    """Alignment Card — Agent alignment declaration (SPEC Section 4).
+    """Alignment Card — Agent alignment declaration (unified / ADR-039).
 
     A structured document declaring an agent's alignment posture. It MUST be
-    machine-readable (JSON) and SHOULD be human-readable.
+    machine-readable (JSON) and SHOULD be human-readable. This is the unified
+    card shape accepted by `mnemom card validate` and the Mnemom platform.
 
     Example:
         card = AlignmentCard(
-            aap_version="0.5.0",
+            card_version="unified/2026-04-26",
             card_id="ac-12345",
             agent_id="did:web:agent.example.com",
-            issued_at=datetime.utcnow(),
-            principal=Principal(type=PrincipalType.HUMAN, relationship=RelationshipType.DELEGATED_AUTHORITY),
+            issued_at=datetime.now(timezone.utc),
+            autonomy_mode=AlignmentMode.OBSERVE,
+            integrity_mode=AlignmentMode.OBSERVE,
+            principal=Principal(
+                type=PrincipalType.HUMAN,
+                identifier="did:web:user.example.com",
+                relationship=RelationshipType.DELEGATED_AUTHORITY,
+            ),
             values=Values(declared=["principal_benefit", "transparency"]),
-            autonomy_envelope=AutonomyEnvelope(
+            autonomy=Autonomy(
                 bounded_actions=["search", "recommend"],
                 escalation_triggers=[
                     EscalationTrigger(
@@ -239,7 +295,7 @@ class AlignmentCard(BaseModel):
                     )
                 ],
             ),
-            audit_commitment=AuditCommitment(
+            audit=Audit(
                 retention_days=90,
                 queryable=True,
                 query_endpoint="https://agent.example.com/api/traces",
@@ -247,8 +303,9 @@ class AlignmentCard(BaseModel):
         )
     """
 
-    aap_version: str = Field(
-        default="0.5.0", description="AAP specification version"
+    card_version: str = Field(
+        default=CARD_VERSION,
+        description="Unified alignment-card schema version (date-anchored identifier)",
     )
     card_id: str = Field(
         ..., description="Unique identifier for this card (UUID or URI)"
@@ -262,16 +319,24 @@ class AlignmentCard(BaseModel):
     expires_at: datetime | None = Field(
         None, description="When this card expires"
     )
+    autonomy_mode: AlignmentMode = Field(
+        default=AlignmentMode.OBSERVE,
+        description="Master switch for the action-policing pipeline",
+    )
+    integrity_mode: AlignmentMode = Field(
+        default=AlignmentMode.OBSERVE,
+        description="Master switch for the values/conscience pipeline",
+    )
     principal: Principal = Field(
         ..., description="Principal relationship declaration"
     )
     values: Values = Field(
         ..., description="Value declarations"
     )
-    autonomy_envelope: AutonomyEnvelope = Field(
+    autonomy: Autonomy = Field(
         ..., description="Autonomy bounds and escalation triggers"
     )
-    audit_commitment: AuditCommitment = Field(
+    audit: Audit = Field(
         ..., description="Audit trail commitments"
     )
     extensions: dict[str, Any] | None = Field(
@@ -288,10 +353,18 @@ class AlignmentCard(BaseModel):
         return cls.model_validate(data)
 
     def is_expired(self) -> bool:
-        """Check if the card has expired."""
+        """Check if the card has expired.
+
+        Handles both timezone-aware and naive ``expires_at`` values: the
+        comparison ``now`` is built to match the awareness of ``expires_at``.
+        """
         if self.expires_at is None:
             return False
-        return datetime.utcnow() > self.expires_at
+        if self.expires_at.tzinfo is None:
+            # Naive expiry — compare against naive UTC now.
+            return datetime.utcnow() > self.expires_at
+        # Aware expiry — compare against aware now in the same tz.
+        return datetime.now(self.expires_at.tzinfo) > self.expires_at
 
     def has_value(self, value: str) -> bool:
         """Check if a value is declared."""
@@ -299,8 +372,8 @@ class AlignmentCard(BaseModel):
 
     def is_action_bounded(self, action: str) -> bool:
         """Check if an action is in the bounded actions list."""
-        return action in self.autonomy_envelope.bounded_actions
+        return action in self.autonomy.bounded_actions
 
     def is_action_forbidden(self, action: str) -> bool:
         """Check if an action is forbidden."""
-        return action in (self.autonomy_envelope.forbidden_actions or [])
+        return action in (self.autonomy.forbidden_actions or [])

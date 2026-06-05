@@ -36,11 +36,17 @@ Quick Start:
 See docs/SPEC.md for the full protocol specification.
 """
 
-__version__ = "1.0.0"
+from importlib import metadata as _metadata
+
+try:
+    # Single source of truth: the installed distribution version (pyproject.toml).
+    __version__ = _metadata.version("agent-alignment-protocol")
+except _metadata.PackageNotFoundError:  # pragma: no cover - editable/source tree fallback
+    __version__ = "2.0.0"
 
 # EU AI Act compliance presets
 from aap.compliance import (
-    EU_COMPLIANCE_AUDIT_COMMITMENT,
+    EU_COMPLIANCE_AUDIT,
     EU_COMPLIANCE_EXTENSIONS,
     EU_COMPLIANCE_VALUES,
 )
@@ -53,10 +59,11 @@ from aap.schemas import (
     AlignmentCard,
     AlignmentCardRequest,
     AlignmentCardResponse,
+    AlignmentMode,
     Alternative,
     APTrace,
-    AuditCommitment,
-    AutonomyEnvelope,
+    Audit,
+    Autonomy,
     CoherenceResultMessage,
     Decision,
     Escalation,
@@ -148,16 +155,17 @@ __all__ = [
     "DriftAnalysis",
     "DriftDirection",
     "DriftIndicator",
-    # Alignment Card
+    # Alignment Card (unified / ADR-039)
     "AlignmentCard",
+    "AlignmentMode",
     "Principal",
     "PrincipalType",
     "RelationshipType",
     "Values",
-    "AutonomyEnvelope",
+    "Autonomy",
     "EscalationTrigger",
     "TriggerAction",
-    "AuditCommitment",
+    "Audit",
     # AP-Trace
     "APTrace",
     "Action",
@@ -174,7 +182,7 @@ __all__ = [
     "CoherenceResultMessage",
     "ProposedCollaboration",
     # EU AI Act Compliance
-    "EU_COMPLIANCE_AUDIT_COMMITMENT",
+    "EU_COMPLIANCE_AUDIT",
     "EU_COMPLIANCE_EXTENSIONS",
     "EU_COMPLIANCE_VALUES",
 ]

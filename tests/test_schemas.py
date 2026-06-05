@@ -23,15 +23,15 @@ from aap.schemas import (
     Action,
     ActionCategory,
     ActionType,
-    # Alignment Card
+    # Alignment Card (unified / ADR-039)
     AlignmentCard,
     # Value Coherence
     AlignmentCardRequest,
     AlignmentCardResponse,
     Alternative,
     APTrace,
-    AuditCommitment,
-    AutonomyEnvelope,
+    Audit,
+    Autonomy,
     CoherenceResultMessage,
     Decision,
     Escalation,
@@ -54,15 +54,33 @@ class TestPrincipal:
     """Tests for Principal model."""
 
     def test_minimal_principal(self):
-        """Minimal valid principal."""
+        """Minimal valid principal (identifier required when type != unspecified)."""
         principal = Principal(
             type=PrincipalType.HUMAN,
+            identifier="did:web:user.example.com",
             relationship=RelationshipType.DELEGATED_AUTHORITY,
         )
         assert principal.type == PrincipalType.HUMAN
         assert principal.relationship == RelationshipType.DELEGATED_AUTHORITY
-        assert principal.identifier is None
+        assert principal.identifier == "did:web:user.example.com"
         assert principal.escalation_contact is None
+
+    def test_unspecified_principal_needs_no_identifier(self):
+        """A principal of type 'unspecified' does not require an identifier."""
+        principal = Principal(
+            type=PrincipalType.UNSPECIFIED,
+            relationship=RelationshipType.ADVISORY,
+        )
+        assert principal.identifier is None
+
+    def test_identifier_required_when_typed(self):
+        """ADR-039: identifier is required when type != 'unspecified'."""
+        with pytest.raises(ValidationError) as exc_info:
+            Principal(
+                type=PrincipalType.HUMAN,
+                relationship=RelationshipType.DELEGATED_AUTHORITY,
+            )
+        assert "identifier" in str(exc_info.value)
 
     def test_full_principal(self):
         """Fully-specified principal."""
@@ -76,10 +94,12 @@ class TestPrincipal:
         assert principal.identifier == "did:web:corp.example.com"
 
     def test_all_principal_types(self):
-        """All principal types are valid."""
+        """All principal types are valid (typed ones require an identifier)."""
         for ptype in PrincipalType:
+            identifier = None if ptype == PrincipalType.UNSPECIFIED else "did:web:p.example.com"
             principal = Principal(
                 type=ptype,
+                identifier=identifier,
                 relationship=RelationshipType.ADVISORY,
             )
             assert principal.type == ptype
@@ -89,6 +109,7 @@ class TestPrincipal:
         for rtype in RelationshipType:
             principal = Principal(
                 type=PrincipalType.HUMAN,
+                identifier="did:web:user.example.com",
                 relationship=rtype,
             )
             assert principal.relationship == rtype
@@ -169,12 +190,12 @@ class TestValues:
         assert values.declared == []
 
 
-class TestAutonomyEnvelope:
-    """Tests for AutonomyEnvelope model."""
+class TestAutonomy:
+    """Tests for Autonomy model (unified / ADR-039 §autonomy)."""
 
-    def test_minimal_envelope(self):
-        """Minimal valid envelope."""
-        envelope = AutonomyEnvelope(
+    def test_minimal_autonomy(self):
+        """Minimal valid autonomy section."""
+        autonomy = Autonomy(
             bounded_actions=["search"],
             escalation_triggers=[
                 EscalationTrigger(
@@ -184,27 +205,41 @@ class TestAutonomyEnvelope:
                 )
             ],
         )
-        assert envelope.bounded_actions == ["search"]
-        assert len(envelope.escalation_triggers) == 1
+        assert autonomy.bounded_actions == ["search"]
+        assert len(autonomy.escalation_triggers) == 1
+
+    def test_escalation_triggers_optional(self):
+        """escalation_triggers defaults to an empty list (unified shape)."""
+        autonomy = Autonomy(bounded_actions=["search"])
+        assert autonomy.escalation_triggers == []
 
     def test_forbidden_actions(self):
         """Forbidden actions list."""
-        envelope = AutonomyEnvelope(
+        autonomy = Autonomy(
             bounded_actions=["search"],
             escalation_triggers=[],
             forbidden_actions=["delete", "transfer_funds"],
         )
-        assert "delete" in envelope.forbidden_actions
+        assert "delete" in autonomy.forbidden_actions
+
+    def test_bounded_and_forbidden_must_be_disjoint(self):
+        """ADR-039: bounded_actions and forbidden_actions must be disjoint."""
+        with pytest.raises(ValidationError) as exc_info:
+            Autonomy(
+                bounded_actions=["search", "delete"],
+                forbidden_actions=["delete"],
+            )
+        assert "disjoint" in str(exc_info.value)
 
     def test_max_autonomous_value(self):
         """Monetary limit specification."""
-        envelope = AutonomyEnvelope(
+        autonomy = Autonomy(
             bounded_actions=["purchase"],
             escalation_triggers=[],
             max_autonomous_value={"amount": 100.0, "currency": "EUR"},
         )
-        assert envelope.max_autonomous_value.amount == 100.0
-        assert envelope.max_autonomous_value.currency == "EUR"
+        assert autonomy.max_autonomous_value.amount == 100.0
+        assert autonomy.max_autonomous_value.currency == "EUR"
 
     def test_all_trigger_actions(self):
         """All trigger actions are valid."""
@@ -217,24 +252,24 @@ class TestAutonomyEnvelope:
             assert trigger.action == action
 
 
-class TestAuditCommitment:
-    """Tests for AuditCommitment model."""
+class TestAudit:
+    """Tests for Audit model (unified / ADR-039 §audit)."""
 
     def test_minimal_audit(self):
-        """Minimal valid audit commitment."""
-        audit = AuditCommitment(retention_days=30, queryable=False)
+        """Minimal valid audit section."""
+        audit = Audit(retention_days=30, queryable=False)
         assert audit.retention_days == 30
         assert audit.queryable is False
 
     def test_queryable_requires_endpoint(self):
         """If queryable=True, query_endpoint is required."""
         with pytest.raises(ValidationError) as exc_info:
-            AuditCommitment(retention_days=90, queryable=True)
+            Audit(retention_days=90, queryable=True)
         assert "query_endpoint" in str(exc_info.value)
 
     def test_queryable_with_endpoint(self):
         """Queryable with endpoint is valid."""
-        audit = AuditCommitment(
+        audit = Audit(
             retention_days=90,
             queryable=True,
             query_endpoint="https://api.example.com/traces",
@@ -242,15 +277,20 @@ class TestAuditCommitment:
         assert audit.queryable is True
         assert audit.query_endpoint == "https://api.example.com/traces"
 
-    def test_retention_days_minimum(self):
-        """Retention days must be at least 1."""
+    def test_retention_days_zero_allowed(self):
+        """ADR-039: retention_days must be non-negative (0 is allowed)."""
+        audit = Audit(retention_days=0, queryable=False)
+        assert audit.retention_days == 0
+
+    def test_retention_days_negative_rejected(self):
+        """Negative retention_days is rejected."""
         with pytest.raises(ValidationError):
-            AuditCommitment(retention_days=0, queryable=False)
+            Audit(retention_days=-1, queryable=False)
 
     def test_tamper_evidence_options(self):
         """All tamper evidence types are valid."""
         for evidence in ["append_only", "signed", "merkle"]:
-            audit = AuditCommitment(
+            audit = Audit(
                 retention_days=90,
                 queryable=False,
                 tamper_evidence=evidence,
@@ -265,7 +305,7 @@ class TestAlignmentCard:
         """Minimal valid card from fixture."""
         card = AlignmentCard.model_validate(minimal_alignment_card)
         assert card.card_id == "ac-minimal-001"
-        assert card.aap_version == "0.5.0"
+        assert card.card_version == "unified/2026-04-26"
 
     def test_full_card(self, full_alignment_card: dict):
         """Fully-specified card from fixture."""

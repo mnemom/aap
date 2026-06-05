@@ -332,7 +332,7 @@ class TestVerifyTraceEdgeCases:
 
     def test_empty_bounded_actions(self, minimal_alignment_card: dict):
         """Card with empty bounded_actions list."""
-        minimal_alignment_card["autonomy_envelope"]["bounded_actions"] = []
+        minimal_alignment_card["autonomy"]["bounded_actions"] = []
 
         trace = {
             "trace_id": "tr-empty-bounds-001",
@@ -1005,11 +1005,11 @@ class TestActionMatchingIntegration:
         card = {
             "card_id": "ac-prefix-001",
             "values": {"declared": ["principal_benefit"]},
-            "autonomy_envelope": {
+            "autonomy": {
                 "bounded_actions": ["exec: execute shell commands", "read: read files"],
                 "escalation_triggers": [],
             },
-            "audit_commitment": {"retention_days": 90, "queryable": False},
+            "audit": {"retention_days": 90, "queryable": False},
         }
         trace = {
             "trace_id": "tr-prefix-001",
@@ -1035,11 +1035,11 @@ class TestActionMatchingIntegration:
         card = {
             "card_id": "ac-compound-001",
             "values": {"declared": ["principal_benefit"]},
-            "autonomy_envelope": {
+            "autonomy": {
                 "bounded_actions": ["exec: execute shell commands", "read: read files"],
                 "escalation_triggers": [],
             },
-            "audit_commitment": {"retention_days": 90, "queryable": False},
+            "audit": {"retention_days": 90, "queryable": False},
         }
         trace = {
             "trace_id": "tr-compound-001",
@@ -1065,11 +1065,11 @@ class TestActionMatchingIntegration:
         card = {
             "card_id": "ac-partial-001",
             "values": {"declared": ["principal_benefit"]},
-            "autonomy_envelope": {
+            "autonomy": {
                 "bounded_actions": ["exec: execute shell commands", "read: read files"],
                 "escalation_triggers": [],
             },
-            "audit_commitment": {"retention_days": 90, "queryable": False},
+            "audit": {"retention_days": 90, "queryable": False},
         }
         trace = {
             "trace_id": "tr-partial-001",
@@ -1095,12 +1095,12 @@ class TestActionMatchingIntegration:
         card = {
             "card_id": "ac-forbidden-prefix-001",
             "values": {"declared": ["principal_benefit"]},
-            "autonomy_envelope": {
+            "autonomy": {
                 "bounded_actions": ["search", "recommend"],
                 "escalation_triggers": [],
                 "forbidden_actions": ["delete_data: permanently delete user data"],
             },
-            "audit_commitment": {"retention_days": 90, "queryable": False},
+            "audit": {"retention_days": 90, "queryable": False},
         }
         trace = {
             "trace_id": "tr-forbidden-prefix-001",
@@ -1126,11 +1126,11 @@ class TestActionMatchingIntegration:
         card = {
             "card_id": "ac-compat-001",
             "values": {"declared": ["principal_benefit"]},
-            "autonomy_envelope": {
+            "autonomy": {
                 "bounded_actions": ["search", "recommend", "summarize"],
                 "escalation_triggers": [],
             },
-            "audit_commitment": {"retention_days": 90, "queryable": False},
+            "audit": {"retention_days": 90, "queryable": False},
         }
         trace = {
             "trace_id": "tr-compat-001",

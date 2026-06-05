@@ -39,21 +39,20 @@ export { verifyTrace, checkCoherence, checkFleetCoherence, detectDrift, analyzeF
 
 // Schema types
 export type {
-  // Alignment Card
+  // Alignment Card (unified / ADR-039)
   AlignmentCard,
+  AlignmentMode,
   Principal,
   PrincipalType,
   RelationshipType,
   Values,
   ValueDefinition,
   HierarchyType,
-  AutonomyEnvelope,
+  Autonomy,
   EscalationTrigger,
   TriggerAction,
   MonetaryValue,
-  AuditCommitment,
-  AuditStorage,
-  StorageType,
+  Audit,
   TamperEvidence,
 } from "./schemas/alignment-card";
 
@@ -152,7 +151,7 @@ export * from "./constants";
 
 // EU AI Act compliance presets
 export {
-  EU_COMPLIANCE_AUDIT_COMMITMENT,
+  EU_COMPLIANCE_AUDIT,
   EU_COMPLIANCE_EXTENSIONS,
   EU_COMPLIANCE_VALUES,
 } from "./compliance";

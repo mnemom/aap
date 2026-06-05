@@ -149,15 +149,21 @@ After running, you'll have:
   "skills": [ "...standard A2A skills..." ],
 
   "alignment": {
-    "aap_version": "0.5.0",
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-user-shopping-001",
-    "principal": { "type": "human", "relationship": "delegated_authority" },
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
+    "principal": {
+      "type": "human",
+      "identifier": "did:web:example.com",
+      "relationship": "delegated_authority"
+    },
     "values": {
       "declared": ["principal_benefit", "transparency"],
       "conflicts_with": ["upselling"]
     },
-    "autonomy_envelope": { "...": "..." },
-    "audit_commitment": { "...": "..." }
+    "autonomy": { "...": "..." },
+    "audit": { "...": "..." }
   }
 }
 ```

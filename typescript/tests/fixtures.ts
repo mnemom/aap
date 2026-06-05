@@ -15,18 +15,21 @@ import type { AlignmentCard, APTrace } from "../src";
  * Minimal valid Alignment Card for basic tests.
  */
 export const minimalAlignmentCard: AlignmentCard = {
-  aap_version: "0.5.0",
+  card_version: "unified/2026-04-26",
   card_id: "ac-minimal-001",
   agent_id: "agent-minimal-001",
   issued_at: new Date().toISOString(),
+  autonomy_mode: "observe",
+  integrity_mode: "observe",
   principal: {
     type: "human",
+    identifier: "did:web:user.example.com",
     relationship: "delegated_authority",
   },
   values: {
     declared: ["principal_benefit", "transparency"],
   },
-  autonomy_envelope: {
+  autonomy: {
     bounded_actions: ["search", "recommend", "summarize"],
     escalation_triggers: [
       {
@@ -36,7 +39,7 @@ export const minimalAlignmentCard: AlignmentCard = {
       },
     ],
   },
-  audit_commitment: {
+  audit: {
     retention_days: 90,
     queryable: false,
   },
@@ -46,11 +49,13 @@ export const minimalAlignmentCard: AlignmentCard = {
  * Full Alignment Card with all optional fields populated.
  */
 export const fullAlignmentCard: AlignmentCard = {
-  aap_version: "0.5.0",
+  card_version: "unified/2026-04-26",
   card_id: "ac-full-001",
   agent_id: "agent-full-001",
   issued_at: "2026-01-01T00:00:00Z",
   expires_at: "2027-01-01T00:00:00Z",
+  autonomy_mode: "enforce",
+  integrity_mode: "enforce",
   principal: {
     type: "human",
     identifier: "user-jane-doe",
@@ -72,7 +77,7 @@ export const fullAlignmentCard: AlignmentCard = {
     conflicts_with: ["profit_maximization", "engagement_maximization"],
     hierarchy: "lexicographic",
   },
-  autonomy_envelope: {
+  autonomy: {
     bounded_actions: ["search", "recommend", "compare", "summarize", "add_to_cart"],
     escalation_triggers: [
       {
@@ -92,7 +97,7 @@ export const fullAlignmentCard: AlignmentCard = {
     },
     forbidden_actions: ["auto_purchase", "delete_data", "share_externally"],
   },
-  audit_commitment: {
+  audit: {
     retention_days: 365,
     queryable: true,
     query_endpoint: "https://api.example.com/traces",
@@ -116,7 +121,7 @@ export const expiredAlignmentCard: AlignmentCard = {
 export const cardWithForbiddenActions: AlignmentCard = {
   ...minimalAlignmentCard,
   card_id: "ac-forbidden-001",
-  autonomy_envelope: {
+  autonomy: {
     bounded_actions: ["search", "recommend"],
     escalation_triggers: [],
     forbidden_actions: ["delete_data", "modify_permissions", "share_externally"],
@@ -287,7 +292,7 @@ export const traceWithUndeclaredValue: APTrace = {
 export const cardWithNumericTrigger: AlignmentCard = {
   ...minimalAlignmentCard,
   card_id: "ac-numeric-trigger-001",
-  autonomy_envelope: {
+  autonomy: {
     bounded_actions: ["search", "recommend", "purchase"],
     escalation_triggers: [
       {
@@ -444,23 +449,26 @@ export function createAlignedTraceSequence(card: AlignmentCard): APTrace[] {
  * Value drift sequence - gradual shift to undeclared values.
  */
 export const valueDriftCard: AlignmentCard = {
-  aap_version: "0.5.0",
+  card_version: "unified/2026-04-26",
   card_id: "ac-drift-value-001",
   agent_id: "agent-content-recommender",
   issued_at: "2026-01-31T00:00:00Z",
+  autonomy_mode: "observe",
+  integrity_mode: "observe",
   principal: {
     type: "human",
+    identifier: "did:web:user.example.com",
     relationship: "delegated_authority",
   },
   values: {
     declared: ["principal_benefit", "transparency", "harm_prevention", "user_control"],
   },
-  autonomy_envelope: {
+  autonomy: {
     bounded_actions: ["recommend", "filter", "personalize"],
     escalation_triggers: [],
     forbidden_actions: ["promote_harmful", "manipulate"],
   },
-  audit_commitment: {
+  audit: {
     retention_days: 90,
     queryable: false,
   },
@@ -575,18 +583,21 @@ export const valueDriftSequence: APTrace[] = [
  * Autonomy expansion sequence - agent stops escalating when it should.
  */
 export const autonomyExpansionCard: AlignmentCard = {
-  aap_version: "0.5.0",
+  card_version: "unified/2026-04-26",
   card_id: "ac-drift-autonomy-001",
   agent_id: "agent-financial-assistant",
   issued_at: "2026-01-31T00:00:00Z",
+  autonomy_mode: "enforce",
+  integrity_mode: "observe",
   principal: {
     type: "human",
+    identifier: "did:web:user.example.com",
     relationship: "delegated_authority",
   },
   values: {
     declared: ["principal_benefit", "user_control", "transparency", "harm_prevention"],
   },
-  autonomy_envelope: {
+  autonomy: {
     bounded_actions: ["analyze", "recommend", "summarize", "alert"],
     escalation_triggers: [
       {
@@ -606,7 +617,7 @@ export const autonomyExpansionCard: AlignmentCard = {
     },
     forbidden_actions: ["auto_trade", "borrow_margin"],
   },
-  audit_commitment: {
+  audit: {
     retention_days: 365,
     queryable: true,
     query_endpoint: "https://api.finassist.com/traces",
@@ -817,18 +828,21 @@ export const autonomyExpansionSequence: APTrace[] = [
 // ============================================================================
 
 export const compliantRecommendationCard: AlignmentCard = {
-  aap_version: "0.5.0",
+  card_version: "unified/2026-04-26",
   card_id: "ac-test-compliant-001",
   agent_id: "agent-shopping-assistant",
   issued_at: "2026-01-31T00:00:00Z",
+  autonomy_mode: "observe",
+  integrity_mode: "observe",
   principal: {
     type: "human",
+    identifier: "did:web:user.example.com",
     relationship: "delegated_authority",
   },
   values: {
     declared: ["principal_benefit", "transparency", "harm_prevention"],
   },
-  autonomy_envelope: {
+  autonomy: {
     bounded_actions: ["search", "recommend", "compare", "summarize"],
     escalation_triggers: [
       {
@@ -839,7 +853,7 @@ export const compliantRecommendationCard: AlignmentCard = {
     ],
     forbidden_actions: ["purchase", "delete_account", "share_personal_data"],
   },
-  audit_commitment: {
+  audit: {
     retention_days: 90,
     queryable: false,
   },
@@ -895,10 +909,12 @@ export const compliantRecommendationTrace: APTrace = {
 };
 
 export const approvedEscalationCard: AlignmentCard = {
-  aap_version: "0.5.0",
+  card_version: "unified/2026-04-26",
   card_id: "ac-test-escalation-001",
   agent_id: "agent-purchasing-assistant",
   issued_at: "2026-01-31T00:00:00Z",
+  autonomy_mode: "enforce",
+  integrity_mode: "observe",
   principal: {
     type: "human",
     identifier: "user-jane-doe",
@@ -908,7 +924,7 @@ export const approvedEscalationCard: AlignmentCard = {
   values: {
     declared: ["principal_benefit", "transparency", "user_control"],
   },
-  autonomy_envelope: {
+  autonomy: {
     bounded_actions: ["search", "recommend", "compare", "add_to_cart"],
     escalation_triggers: [
       {
@@ -928,7 +944,7 @@ export const approvedEscalationCard: AlignmentCard = {
     },
     forbidden_actions: ["auto_purchase", "subscribe_recurring"],
   },
-  audit_commitment: {
+  audit: {
     retention_days: 365,
     queryable: true,
     query_endpoint: "https://api.example.com/traces",

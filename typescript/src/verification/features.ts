@@ -7,7 +7,7 @@
 
 import { MIN_WORD_LENGTH } from "../constants";
 import type { AlignmentCard } from "../schemas/alignment-card";
-import { declaredValueIds } from "../schemas/alignment-card";
+import { cardAutonomy, declaredValueIds } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
 
 /** Sparse feature vector represented as a record. */
@@ -92,17 +92,18 @@ export function extractCardFeatures(card: AlignmentCard): FeatureVector {
   }
 
   // Action features (aligned with Python: action_name:{action})
-  for (const action of card.autonomy_envelope.bounded_actions) {
+  const autonomy = cardAutonomy(card);
+  for (const action of autonomy.bounded_actions) {
     features[`action_name:${action}`] = 1.0;
   }
 
   // Forbidden action features
-  for (const action of card.autonomy_envelope.forbidden_actions ?? []) {
+  for (const action of autonomy.forbidden_actions ?? []) {
     features[`forbidden:${action}`] = 1.0;
   }
 
   // Escalation trigger features
-  for (const trigger of card.autonomy_envelope.escalation_triggers) {
+  for (const trigger of autonomy.escalation_triggers ?? []) {
     features[`escalation:${trigger.action}`] = 1.0;
     const conditionTokens = tokenize(trigger.condition);
     for (const token of conditionTokens) {
