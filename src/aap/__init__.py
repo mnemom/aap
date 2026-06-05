@@ -36,7 +36,13 @@ Quick Start:
 See docs/SPEC.md for the full protocol specification.
 """
 
-__version__ = "1.0.0"
+from importlib import metadata as _metadata
+
+try:
+    # Single source of truth: the installed distribution version (pyproject.toml).
+    __version__ = _metadata.version("agent-alignment-protocol")
+except _metadata.PackageNotFoundError:  # pragma: no cover - editable/source tree fallback
+    __version__ = "2.0.0"
 
 # EU AI Act compliance presets
 from aap.compliance import (

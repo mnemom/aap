@@ -143,7 +143,7 @@ import type {
 
 // ── Runtime assertions ─────────────────────────────────────────────────────
 
-describe("AAP 1.0.0 backward compatibility", () => {
+describe("AAP 2.0.0 backward compatibility", () => {
   describe("core verification functions exist and are callable", () => {
     it("verifyTrace", () => expect(typeof verifyTrace).toBe("function"));
     it("checkCoherence", () => expect(typeof checkCoherence).toBe("function"));

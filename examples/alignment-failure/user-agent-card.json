@@ -3,14 +3,12 @@
   "card_id": "ac-user-agent-001",
   "agent_id": "user-shopping-assistant",
   "issued_at": "2026-01-31T23:59:08.997064Z",
-  "expires_at": null,
   "autonomy_mode": "observe",
   "integrity_mode": "observe",
   "principal": {
     "type": "human",
-    "identifier": null,
-    "relationship": "delegated_authority",
-    "escalation_contact": null
+    "identifier": "did:web:user.example.com",
+    "relationship": "delegated_authority"
   },
   "values": {
     "declared": [
@@ -19,13 +17,11 @@
       "minimal_data",
       "price_comparison"
     ],
-    "definitions": null,
     "conflicts_with": [
       "deceptive_marketing",
       "hidden_fees",
       "upselling"
-    ],
-    "hierarchy": null
+    ]
   },
   "autonomy": {
     "bounded_actions": [
@@ -34,7 +30,6 @@
       "recommend"
     ],
     "escalation_triggers": [],
-    "max_autonomous_value": null,
     "forbidden_actions": [
       "share_data_with_vendors",
       "accept_kickbacks"
@@ -44,8 +39,6 @@
     "trace_format": "ap-trace-v1",
     "retention_days": 90,
     "queryable": true,
-    "query_endpoint": "https://user-agent.example.com/api/traces",
-    "tamper_evidence": null
-  },
-  "extensions": null
+    "query_endpoint": "https://user-agent.example.com/api/traces"
+  }
 }

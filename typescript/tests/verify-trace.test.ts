@@ -5,7 +5,7 @@
  * Tests cover: valid traces, all violation types, warnings, and edge cases.
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   verifyTrace,
   isCardExpired,
@@ -985,5 +985,101 @@ describe("isCardExpired", () => {
     };
 
     expect(isCardExpired(nullExpiryCard)).toBe(false);
+  });
+});
+
+// ============================================================================
+// TAMPER-EVIDENCE WARNING (Py<->TS parity, MNE-190)
+//
+// verifyTrace must emit a console.warn when the card declares a strong
+// tamper_evidence mode (signed | merkle) that the SDK does not cryptographically
+// enforce. This reads audit.tamper_evidence via the shared cardAudit() helper,
+// mirroring the Python engine's _card_audit(...).get("tamper_evidence"). These
+// tests lock that behavior so the helper can't silently rot back to dead code.
+// ============================================================================
+
+describe("verifyTrace — tamper_evidence warning", () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warnSpy.mockRestore();
+  });
+
+  it("warns when a unified card declares audit.tamper_evidence = merkle", () => {
+    const card: AlignmentCard = {
+      ...minimalAlignmentCard,
+      audit: {
+        retention_days: 90,
+        queryable: true,
+        query_endpoint: "https://api.example.com/traces",
+        tamper_evidence: "merkle",
+      },
+    };
+
+    verifyTrace(minimalTrace, card);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0][0]).toContain("tamper_evidence");
+    expect(warnSpy.mock.calls[0][0]).toContain("merkle");
+  });
+
+  it("warns when a unified card declares audit.tamper_evidence = signed", () => {
+    const card: AlignmentCard = {
+      ...minimalAlignmentCard,
+      audit: {
+        retention_days: 90,
+        queryable: true,
+        query_endpoint: "https://api.example.com/traces",
+        tamper_evidence: "signed",
+      },
+    };
+
+    verifyTrace(minimalTrace, card);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0][0]).toContain("signed");
+  });
+
+  it("warns for the legacy audit_commitment fallback shape", () => {
+    // A legacy-shaped card object (audit_commitment, no top-level audit). The
+    // cardAudit() helper must fall back to it so older cards still warn.
+    const legacyCard = {
+      ...minimalAlignmentCard,
+      audit: undefined,
+      audit_commitment: {
+        retention_days: 90,
+        queryable: false,
+        tamper_evidence: "merkle",
+      },
+    } as unknown as AlignmentCard;
+
+    verifyTrace(minimalTrace, legacyCard);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0][0]).toContain("merkle");
+  });
+
+  it("does NOT warn for append_only (a non-cryptographic mode)", () => {
+    const card: AlignmentCard = {
+      ...minimalAlignmentCard,
+      audit: {
+        retention_days: 90,
+        queryable: false,
+        tamper_evidence: "append_only",
+      },
+    };
+
+    verifyTrace(minimalTrace, card);
+
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it("does NOT warn when no tamper_evidence is declared", () => {
+    verifyTrace(minimalTrace, minimalAlignmentCard);
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });

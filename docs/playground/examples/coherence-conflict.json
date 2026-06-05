@@ -46,7 +46,7 @@
     "principal": {
       "type": "organization",
       "identifier": "did:web:vendor.example.com",
-      "relationship": "service_provider"
+      "relationship": "autonomous"
     },
     "values": {
       "declared": [

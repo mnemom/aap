@@ -25,14 +25,12 @@
     "card_id": "ac-ethical-vendor-001",
     "agent_id": "ethical-vendor-agent",
     "issued_at": "2026-02-14T22:49:41.036031Z",
-    "expires_at": null,
     "autonomy_mode": "observe",
     "integrity_mode": "observe",
     "principal": {
       "type": "organization",
-      "identifier": null,
-      "relationship": "delegated_authority",
-      "escalation_contact": null
+      "identifier": "did:web:vendor.example.com",
+      "relationship": "delegated_authority"
     },
     "values": {
       "declared": [
@@ -41,13 +39,11 @@
         "honesty",
         "minimal_data"
       ],
-      "definitions": null,
       "conflicts_with": [
         "deceptive_marketing",
         "hidden_fees",
         "upselling"
-      ],
-      "hierarchy": null
+      ]
     },
     "autonomy": {
       "bounded_actions": [
@@ -56,7 +52,6 @@
         "apply_discount"
       ],
       "escalation_triggers": [],
-      "max_autonomous_value": null,
       "forbidden_actions": [
         "upsell_unrelated",
         "hide_cheaper_options"
@@ -66,9 +61,7 @@
       "trace_format": "ap-trace-v1",
       "retention_days": 90,
       "queryable": true,
-      "query_endpoint": "https://ethical-vendor.example.com/api/traces",
-      "tamper_evidence": null
-    },
-    "extensions": null
+      "query_endpoint": "https://ethical-vendor.example.com/api/traces"
+    }
   }
 }
