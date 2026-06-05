@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/mnemom/aap/compare/v1.3.0...v2.0.0) (2026-06-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* the SDK card shape and the TS card types changed (AutonomyEnvelope->Autonomy, AuditCommitment->Audit, AuditStorage/StorageType removed, AlignmentMode added, EU_COMPLIANCE_AUDIT_COMMITMENT->EU_COMPLIANCE_AUDIT). Published as agent-alignment-protocol (PyPI) and @mnemom/agent-alignment-protocol (npm); needs a human release decision (versions set to 2.0.0, not published).
+
+### Added
+
+* migrate alignment-card to unified / ADR-039 shape (MNE-190) ([#69](https://github.com/mnemom/aap/issues/69)) ([64576e2](https://github.com/mnemom/aap/commit/64576e215d8d494e160eea5df02fe63b671a286d))
+
 ## [1.3.0](https://github.com/mnemom/aap/compare/v1.2.0...v1.3.0) (2026-06-02)
 
 
