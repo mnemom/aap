@@ -1,0 +1,65 @@
+# Capability manifest for the mnemom-adw worker on mnemom/aap.
+# aap is the PUBLIC, dual-language SDK `agent-alignment-protocol`: a Python package (src/aap)
+# plus a parallel TypeScript port (typescript/). Because it is PUBLIC this is SUPERVISED
+# (merge_strategy: external): the worker drives the CI checks green + labels the PR `agent`,
+# then STOPS — a human reviews + merges. No autonomous merge into the public SDK.
+#
+# stack = python (the root toolchain: pyproject.toml lives at the repo root). The verbs
+# below ALSO exercise the TypeScript port under typescript/ so a fix to EITHER language is
+# validated end to end. package_manager = uv (matches adw-zte.yml's setup-uv); the TS verbs
+# call npm explicitly from the typescript/ subdir.
+stack: python
+package_manager: uv
+merge_strategy: external
+
+# Dual-language verbs — the REAL commands, taken from .github/workflows/ci.yml +
+# .github/workflows/publish.yml and the two package configs (pyproject.toml,
+# typescript/package.json). Each verb is self-contained (installs its own deps first, the
+# way docs'/platform's verbs do `npm ci` inline) because adw-zte.yml only installs the
+# worker, not the target's deps. Both languages are run where it makes sense:
+#   - lint:      ruff check (Python). typescript/package.json has NO lint script, so lint is
+#                Python-only; the TS side is covered by typecheck + test below. Matches CI's
+#                "Lint" job (ruff check).
+#   - typecheck: tsc --noEmit for the TS port (CI's "TypeScript" job runs this). Python is
+#                statically guarded by ruff (lint) plus the strict mypy config in
+#                pyproject.toml; the PR-gating CI jobs don't run mypy, so typecheck here is
+#                the TS compile, which is the part CI actually gates.
+#   - test:      pytest (Python — picks up coverage addopts from pyproject) AND vitest (TS).
+#                Each half installs deps first (pip install -e '.[dev]' / npm ci) and uses
+#                the NON-watching runner (vitest run, never the watcher).
+#   - build:     the Python sdist+wheel via `python -m build` (hatchling backend; exactly
+#                what publish.yml does, incl. the `pip install build`) AND the TS bundle via
+#                tsup (npm run build → dist/). Proves both publishable artifacts build.
+# All four verified green from a clean checkout at repo root before this manifest landed.
+# Deps + artifacts (.venv/, *.egg-info, dist/, coverage.xml, typescript/node_modules/,
+# typescript/dist/) are gitignored and must never be committed.
+commands:
+  lint: pip install ruff && ruff check src/ tests/
+  typecheck: cd typescript && npm ci && npm run typecheck
+  test: pip install -e '.[dev]' && pytest && (cd typescript && npm ci && npm run test)
+  build: pip install build && python -m build && (cd typescript && npm ci && npm run build)
+
+# aap is a library/SDK (a Python package + a TS package) with NO visual UI, so there are no
+# user-visible UX surfaces — keep this empty so the visual-validation phase stays OFF
+# (mirrors how mnemom-platform's narrow cli glob keeps UX off for a non-visual target).
+# ADW_UX_GATE is also advisory in adw-zte.yml as belt-and-suspenders.
+ux_path_globs: []
+
+# Required CI checks the worker drives green before handing off — the EXACT contexts main's
+# branch protection requires to merge, verified via:
+#   gh api repos/mnemom/aap/branches/main/protection/required_status_checks
+#   → ["Python 3.10","Python 3.11","Python 3.12","Lint","TypeScript","CodeQL"]
+# CodeQL is ALSO branch-protection-required but is non-driveable security analysis (a
+# separate GitHub App's check, not one of the per-language jobs the worker can fix). Like
+# docs/website treat CodeQL as an abort-to-human security gate and OMIT it here — a CodeQL
+# finding needs a human; the worker can't "drive it green."
+required_checks:
+  - "Lint"
+  - "Python 3.10"
+  - "Python 3.11"
+  - "Python 3.12"
+  - "TypeScript"
+
+# Publish/release is owned by the repo's own pipeline (publish.yml + release-please),
+# never the worker.
+targets: []
