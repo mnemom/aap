@@ -1,9 +1,11 @@
 {
-  "aap_version": "0.5.0",
+  "card_version": "unified/2026-04-26",
   "card_id": "ac-vendor-agent-001",
   "agent_id": "vendor-sales-agent",
   "issued_at": "2026-01-31T23:59:08.997485Z",
   "expires_at": null,
+  "autonomy_mode": "observe",
+  "integrity_mode": "observe",
   "principal": {
     "type": "organization",
     "identifier": null,
@@ -23,7 +25,7 @@
     ],
     "hierarchy": null
   },
-  "autonomy_envelope": {
+  "autonomy": {
     "bounded_actions": [
       "present_products",
       "offer_upgrades",
@@ -41,10 +43,9 @@
       "price_match_competitor"
     ]
   },
-  "audit_commitment": {
+  "audit": {
     "trace_format": "ap-trace-v1",
     "retention_days": 30,
-    "storage": null,
     "queryable": false,
     "query_endpoint": null,
     "tamper_evidence": null

@@ -31,7 +31,7 @@ function makeCard(
       identifier: principalIdentifier,
     },
     values: { declared, conflicts_with },
-    autonomy_envelope: {
+    autonomy: {
       bounded_actions,
       escalation_triggers: [],
     },
@@ -296,7 +296,7 @@ describe("analyzeFaultLines", () => {
             card_id: "ac-fl-empty-a",
             agent_id: "agent-empty-a",
             values: { declared: ["unique_val"] },
-            autonomy_envelope: { bounded_actions: [], escalation_triggers: [] },
+            autonomy: { bounded_actions: [], escalation_triggers: [] },
           },
         },
         {
@@ -306,7 +306,7 @@ describe("analyzeFaultLines", () => {
             card_id: "ac-fl-empty-b",
             agent_id: "agent-empty-b",
             values: { declared: [] },
-            autonomy_envelope: { bounded_actions: [], escalation_triggers: [] },
+            autonomy: { bounded_actions: [], escalation_triggers: [] },
           },
         },
       ];

@@ -24,17 +24,17 @@ def make_card(
 ) -> dict[str, Any]:
     """Create a minimal alignment card dict for fleet tests."""
     card: dict[str, Any] = {
-        "aap_version": "0.5.0",
+        "card_version": "unified/2026-04-26",
         "card_id": f"ac-fleet-{agent_id}",
         "agent_id": f"agent-{agent_id}",
         "issued_at": "2026-01-01T00:00:00Z",
         "principal": {"type": "human", "relationship": "delegated_authority"},
         "values": {"declared": declared},
-        "autonomy_envelope": {
+        "autonomy": {
             "bounded_actions": ["search", "recommend"],
             "escalation_triggers": [],
         },
-        "audit_commitment": {"retention_days": 90, "queryable": False},
+        "audit": {"retention_days": 90, "queryable": False},
     }
     if conflicts_with:
         card["values"]["conflicts_with"] = conflicts_with

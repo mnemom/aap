@@ -62,12 +62,15 @@ function createUserAgentCard(): A2AAgentCard {
       },
     ],
     alignment: {
-      aap_version: "0.5.0",
+      card_version: "unified/2026-04-26",
       card_id: "ac-user-shopping-001",
       agent_id: "user-shopping-assistant",
       issued_at: now,
+      autonomy_mode: "observe",
+      integrity_mode: "observe",
       principal: {
         type: "human",
+        identifier: "did:web:example.com",
         relationship: "delegated_authority",
       },
       values: {
@@ -79,7 +82,7 @@ function createUserAgentCard(): A2AAgentCard {
         ],
         conflicts_with: ["deceptive_marketing", "hidden_fees", "upselling"],
       },
-      autonomy_envelope: {
+      autonomy: {
         bounded_actions: [
           "search",
           "compare",
@@ -100,7 +103,7 @@ function createUserAgentCard(): A2AAgentCard {
           "share_browsing_history",
         ],
       },
-      audit_commitment: {
+      audit: {
         trace_format: "ap-trace-v1",
         retention_days: 30,
         queryable: true,
@@ -141,12 +144,15 @@ function createVendorAgentCard(): A2AAgentCard {
       },
     ],
     alignment: {
-      aap_version: "0.5.0",
+      card_version: "unified/2026-04-26",
       card_id: "ac-vendor-deals-001",
       agent_id: "vendor-deals-agent",
       issued_at: now,
+      autonomy_mode: "observe",
+      integrity_mode: "observe",
       principal: {
         type: "organization",
+        identifier: "did:web:example.com",
         relationship: "delegated_authority",
       },
       values: {
@@ -158,7 +164,7 @@ function createVendorAgentCard(): A2AAgentCard {
         ],
         conflicts_with: ["price_undercutting"],
       },
-      autonomy_envelope: {
+      autonomy: {
         bounded_actions: [
           "search",
           "recommend",
@@ -174,7 +180,7 @@ function createVendorAgentCard(): A2AAgentCard {
         ],
         forbidden_actions: ["price_match_competitor"],
       },
-      audit_commitment: {
+      audit: {
         trace_format: "ap-trace-v1",
         retention_days: 90,
         queryable: true,
@@ -211,12 +217,15 @@ function createCompatibleVendorCard(): A2AAgentCard {
       },
     ],
     alignment: {
-      aap_version: "0.5.0",
+      card_version: "unified/2026-04-26",
       card_id: "ac-ethical-vendor-001",
       agent_id: "ethical-vendor-agent",
       issued_at: now,
+      autonomy_mode: "observe",
+      integrity_mode: "observe",
       principal: {
         type: "organization",
+        identifier: "did:web:example.com",
         relationship: "delegated_authority",
       },
       values: {
@@ -228,12 +237,12 @@ function createCompatibleVendorCard(): A2AAgentCard {
         ],
         conflicts_with: ["deceptive_marketing", "hidden_fees", "upselling"],
       },
-      autonomy_envelope: {
+      autonomy: {
         bounded_actions: ["search", "recommend", "apply_discount"],
         escalation_triggers: [],
         forbidden_actions: ["upsell_unrelated", "hide_cheaper_options"],
       },
-      audit_commitment: {
+      audit: {
         trace_format: "ap-trace-v1",
         retention_days: 90,
         queryable: true,

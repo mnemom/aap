@@ -1,7 +1,7 @@
 /**
- * Backward compatibility smoke test — API surface lock for 1.0.0
+ * Backward compatibility smoke test — API surface lock for 2.0.0
  *
- * Imports every public export from the 1.0.0 API surface and asserts
+ * Imports every public export from the 2.0.0 API surface and asserts
  * existence + basic type shape. Catches accidental breaking changes:
  *
  *   - Removed export       → compile error (import fails)
@@ -11,6 +11,12 @@
  *
  * When adding new exports:     add them here.
  * When making breaking changes: bump major version first (ADR-006).
+ *
+ * 2.0.0 — unified / ADR-039 card migration (MNE-190): the legacy
+ * `AutonomyEnvelope`/`AuditCommitment`/`AuditStorage`/`StorageType` card types
+ * were renamed/removed (`Autonomy`, `Audit`), `AlignmentMode` was added, and
+ * `EU_COMPLIANCE_AUDIT_COMMITMENT` was renamed to `EU_COMPLIANCE_AUDIT`. This
+ * is the breaking surface change the major bump exists for (ADR-006).
  *
  * Scale Step 30 — M3: API Contracts & SDK Stability
  */
@@ -53,7 +59,7 @@ import {
   ALGORITHM_VERSION,
   VIOLATION_SEVERITY,
   // EU compliance presets
-  EU_COMPLIANCE_AUDIT_COMMITMENT,
+  EU_COMPLIANCE_AUDIT,
   EU_COMPLIANCE_EXTENSIONS,
   EU_COMPLIANCE_VALUES,
 } from "../src/index.js";
@@ -62,21 +68,20 @@ import {
 //    file won't compile) ────────────────────────────────────────────────────
 
 import type {
-  // Card schema
+  // Card schema (unified / ADR-039)
   AlignmentCard,
+  AlignmentMode,
   Principal,
   PrincipalType,
   RelationshipType,
   Values,
   ValueDefinition,
   HierarchyType,
-  AutonomyEnvelope,
+  Autonomy,
   EscalationTrigger,
   TriggerAction,
   MonetaryValue,
-  AuditCommitment,
-  AuditStorage,
-  StorageType,
+  Audit,
   TamperEvidence,
   // Trace schema
   APTrace,
@@ -176,7 +181,7 @@ describe("AAP 1.0.0 backward compatibility", () => {
   });
 
   describe("EU compliance presets are defined", () => {
-    it("EU_COMPLIANCE_AUDIT_COMMITMENT", () => expect(typeof EU_COMPLIANCE_AUDIT_COMMITMENT).toBe("object"));
+    it("EU_COMPLIANCE_AUDIT", () => expect(typeof EU_COMPLIANCE_AUDIT).toBe("object"));
     it("EU_COMPLIANCE_EXTENSIONS", () => expect(typeof EU_COMPLIANCE_EXTENSIONS).toBe("object"));
     it("EU_COMPLIANCE_VALUES", () => expect(typeof EU_COMPLIANCE_VALUES).toBe("object"));
   });
@@ -189,6 +194,9 @@ describe("AAP 1.0.0 backward compatibility", () => {
       // If we got here, all type imports resolved successfully.
       // Use a few types to prevent TS from optimizing them away.
       const _cardShape: AlignmentCard | null = null;
+      const _modeShape: AlignmentMode | null = null;
+      const _autonomyShape: Autonomy | null = null;
+      const _auditShape: Audit | null = null;
       const _traceShape: APTrace | null = null;
       const _resultShape: VerificationResult | null = null;
       const _coherenceShape: CoherenceResult | null = null;

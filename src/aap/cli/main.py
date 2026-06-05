@@ -193,21 +193,25 @@ def _create_card_from_values(
     agent_id: str | None = None,
     card_id: str | None = None,
 ) -> dict[str, Any]:
-    """Create a minimal Alignment Card from a list of values."""
+    """Create a minimal Alignment Card (unified / ADR-039) from a list of values."""
     now = datetime.now(timezone.utc)
+    resolved_agent_id = agent_id or f"agent-{uuid.uuid4().hex[:8]}"
     return {
-        "aap_version": "0.5.0",
+        "card_version": "unified/2026-04-26",
         "card_id": card_id or f"ac-{uuid.uuid4().hex[:12]}",
-        "agent_id": agent_id or f"agent-{uuid.uuid4().hex[:8]}",
+        "agent_id": resolved_agent_id,
         "issued_at": now.isoformat(),
+        "autonomy_mode": "observe",
+        "integrity_mode": "observe",
         "principal": {
             "type": "human",
+            "identifier": resolved_agent_id,
             "relationship": "delegated_authority",
         },
         "values": {
             "declared": value_list,
         },
-        "autonomy_envelope": {
+        "autonomy": {
             "bounded_actions": ["search", "recommend", "compare", "summarize", "respond"],
             "escalation_triggers": [
                 {
@@ -222,7 +226,7 @@ def _create_card_from_values(
                 },
             ],
         },
-        "audit_commitment": {
+        "audit": {
             "trace_format": "ap-trace-v1",
             "retention_days": 90,
             "queryable": False,
@@ -268,6 +272,13 @@ def _create_card_interactive(agent_id: str | None = None, card_id: str | None = 
         default="human",
     )
 
+    # Principal identifier (required by the unified schema when type != unspecified)
+    default_identifier = agent_id or f"agent-{uuid.uuid4().hex[:8]}"
+    principal_identifier = click.prompt(
+        "Principal identifier (DID, email, org ID)",
+        default=default_identifier,
+    )
+
     # Relationship type
     relationship = click.prompt(
         "Relationship type",
@@ -291,18 +302,21 @@ def _create_card_interactive(agent_id: str | None = None, card_id: str | None = 
 
     now = datetime.now(timezone.utc)
     return {
-        "aap_version": "0.5.0",
+        "card_version": "unified/2026-04-26",
         "card_id": card_id or f"ac-{uuid.uuid4().hex[:12]}",
-        "agent_id": agent_id or f"agent-{uuid.uuid4().hex[:8]}",
+        "agent_id": agent_id or default_identifier,
         "issued_at": now.isoformat(),
+        "autonomy_mode": "observe",
+        "integrity_mode": "observe",
         "principal": {
             "type": principal_type,
+            "identifier": principal_identifier,
             "relationship": relationship,
         },
         "values": {
             "declared": selected_values,
         },
-        "autonomy_envelope": {
+        "autonomy": {
             "bounded_actions": bounded_actions,
             "escalation_triggers": [
                 {
@@ -312,7 +326,7 @@ def _create_card_interactive(agent_id: str | None = None, card_id: str | None = 
                 },
             ],
         },
-        "audit_commitment": {
+        "audit": {
             "trace_format": "ap-trace-v1",
             "retention_days": retention_days,
             "queryable": False,

@@ -34,7 +34,7 @@ def sample_card() -> dict[str, Any]:
         "values": {
             "declared": ["principal_benefit", "transparency", "efficiency"],
         },
-        "autonomy_envelope": {
+        "autonomy": {
             "bounded_actions": [
                 "recommend_product",
                 "search_items",
@@ -360,7 +360,7 @@ class TestAutoVerify:
         strict_card = {
             "card_id": "strict-card",
             "values": {"declared": ["safety"]},
-            "autonomy_envelope": {
+            "autonomy": {
                 "bounded_actions": ["safe_action"],  # Note: not 'unsafe_action'
             },
         }
@@ -387,7 +387,7 @@ class TestAutoVerify:
         strict_card = {
             "card_id": "strict-card",
             "values": {"declared": []},
-            "autonomy_envelope": {"bounded_actions": ["other_action"]},
+            "autonomy": {"bounded_actions": ["other_action"]},
         }
 
         @trace_decision(

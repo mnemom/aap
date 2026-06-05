@@ -48,6 +48,24 @@ from aap.verification.models import (
 )
 
 
+def _card_autonomy(card: dict[str, Any]) -> dict[str, Any]:
+    """Read the autonomy section from a card.
+
+    Prefers the unified / ADR-039 ``autonomy`` key, falling back to the legacy
+    AAP 0.5.0 ``autonomy_envelope`` for interop with older cards.
+    """
+    return card.get("autonomy") or card.get("autonomy_envelope") or {}
+
+
+def _card_audit(card: dict[str, Any]) -> dict[str, Any]:
+    """Read the audit section from a card.
+
+    Prefers the unified / ADR-039 ``audit`` key, falling back to the legacy
+    AAP 0.5.0 ``audit_commitment`` for interop with older cards.
+    """
+    return card.get("audit") or card.get("audit_commitment") or {}
+
+
 def action_matches_list(action_name: str, action_list: list[str]) -> bool:
     """Check if a (possibly compound) action name matches any entry in a list.
 
@@ -121,7 +139,7 @@ def verify_trace(
         raise ValueError("trace must contain 'decision.values_applied' field")
 
     # Warn if tamper_evidence is declared but not cryptographically enforced
-    tamper_evidence = (card.get("audit") or {}).get("commitment", {}).get("tamper_evidence")
+    tamper_evidence = _card_audit(card).get("tamper_evidence")
     if tamper_evidence in ("signed", "merkle"):
         import warnings as _warnings
         _warnings.warn(
@@ -164,8 +182,9 @@ def verify_trace(
                 trace_field="card.expires_at",
             ))
 
-    # Extract envelope for remaining checks
-    envelope = card.get("autonomy_envelope", {})
+    # Extract the autonomy section for remaining checks (unified `autonomy`,
+    # legacy `autonomy_envelope` fallback).
+    envelope = _card_autonomy(card)
     action = trace.get("action", {})
 
     # Check autonomy compliance
@@ -688,7 +707,8 @@ def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:
             if isinstance(metadata, dict):
                 actual = metadata.get(field)
         if actual is None:
-            actual = (trace.get("action") or {}).get("parameters", {}).get(field)
+            params = (trace.get("action") or {}).get("parameters") or {}
+            actual = params.get(field)
         if actual is None:
             return False
 

@@ -159,7 +159,7 @@ class TestCardFeatureExtraction:
     def test_bounded_action_features(self, extractor: FeatureExtractor):
         """Bounded actions should produce features."""
         card = {
-            "autonomy_envelope": {
+            "autonomy": {
                 "bounded_actions": ["search", "recommend", "summarize"],
             },
             "values": {"declared": []},
@@ -174,7 +174,7 @@ class TestCardFeatureExtraction:
     def test_value_features(self, extractor: FeatureExtractor):
         """Declared values should produce features."""
         card = {
-            "autonomy_envelope": {"bounded_actions": []},
+            "autonomy": {"bounded_actions": []},
             "values": {"declared": ["principal_benefit", "transparency"]},
         }
 
@@ -190,7 +190,7 @@ class TestCardFeatureExtraction:
                 "type": "human",
                 "relationship": "delegated_authority",
             },
-            "autonomy_envelope": {"bounded_actions": []},
+            "autonomy": {"bounded_actions": []},
             "values": {"declared": []},
         }
 
@@ -202,9 +202,9 @@ class TestCardFeatureExtraction:
     def test_audit_features(self, extractor: FeatureExtractor):
         """Audit commitment should produce features."""
         card = {
-            "autonomy_envelope": {"bounded_actions": []},
+            "autonomy": {"bounded_actions": []},
             "values": {"declared": []},
-            "audit_commitment": {
+            "audit": {
                 "queryable": True,
                 "tamper_evidence": "merkle",
             },

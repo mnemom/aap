@@ -690,7 +690,7 @@ describe("verifyTrace", () => {
     it("should handle empty bounded_actions list", () => {
       const emptyBoundedCard: AlignmentCard = {
         ...minimalAlignmentCard,
-        autonomy_envelope: {
+        autonomy: {
           bounded_actions: [],
           escalation_triggers: [],
         },
@@ -708,8 +708,8 @@ describe("verifyTrace", () => {
     it("should handle empty escalation_triggers list", () => {
       const noTriggersCard: AlignmentCard = {
         ...minimalAlignmentCard,
-        autonomy_envelope: {
-          ...minimalAlignmentCard.autonomy_envelope,
+        autonomy: {
+          ...minimalAlignmentCard.autonomy,
           escalation_triggers: [],
         },
       };
@@ -772,7 +772,7 @@ describe("verifyTrace", () => {
     it("should handle card without forbidden_actions", () => {
       const noForbiddenCard: AlignmentCard = {
         ...minimalAlignmentCard,
-        autonomy_envelope: {
+        autonomy: {
           bounded_actions: ["search", "recommend"],
           escalation_triggers: [],
           // No forbidden_actions field
@@ -842,7 +842,7 @@ describe("verifyTrace", () => {
     it("should match action by prefix when bounded_action has colon description", () => {
       const card: AlignmentCard = {
         ...minimalAlignmentCard,
-        autonomy_envelope: {
+        autonomy: {
           bounded_actions: ["exec: execute shell commands", "read: read files"],
           escalation_triggers: [],
         },
@@ -863,7 +863,7 @@ describe("verifyTrace", () => {
     it("should match compound action name when all components are in bounded_actions", () => {
       const card: AlignmentCard = {
         ...minimalAlignmentCard,
-        autonomy_envelope: {
+        autonomy: {
           bounded_actions: ["exec: execute shell commands", "read: read files"],
           escalation_triggers: [],
         },
@@ -903,7 +903,7 @@ describe("verifyTrace", () => {
     it("should detect forbidden action matched by prefix", () => {
       const card: AlignmentCard = {
         ...minimalAlignmentCard,
-        autonomy_envelope: {
+        autonomy: {
           bounded_actions: ["search", "recommend"],
           escalation_triggers: [],
           forbidden_actions: ["delete_data: permanently delete user data"],
@@ -930,7 +930,7 @@ describe("verifyTrace", () => {
     it("should fail compound action when one component is not bounded", () => {
       const card: AlignmentCard = {
         ...minimalAlignmentCard,
-        autonomy_envelope: {
+        autonomy: {
           bounded_actions: ["exec: execute shell commands", "read: read files"],
           escalation_triggers: [],
         },

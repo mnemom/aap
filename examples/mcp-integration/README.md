@@ -129,18 +129,21 @@ After running, you'll have:
 
 ```json
 {
-  "aap_version": "0.5.0",
+  "card_version": "unified/2026-04-26",
   "card_id": "ac-mcp-filesystem-001",
   "agent_id": "mcp-filesystem-server",
+  "autonomy_mode": "enforce",
+  "integrity_mode": "observe",
   "principal": {
     "type": "human",
+    "identifier": "did:web:user.example.com",
     "relationship": "delegated_authority"
   },
   "values": {
     "declared": ["user_control", "transparency", "harm_prevention", "minimal_data"],
     "conflicts_with": ["data_exfiltration", "unauthorized_access"]
   },
-  "autonomy_envelope": {
+  "autonomy": {
     "bounded_actions": ["read_file", "list_directory", "file_info"],
     "escalation_triggers": [
       {
@@ -151,10 +154,11 @@ After running, you'll have:
     ],
     "forbidden_actions": ["delete_file", "execute_command", "chmod"]
   },
-  "audit_commitment": {
+  "audit": {
     "trace_format": "ap-trace-v1",
     "retention_days": 90,
-    "queryable": true
+    "queryable": true,
+    "query_endpoint": "mcp://filesystem/alignment/traces"
   }
 }
 ```

@@ -359,8 +359,9 @@ def verify_trace(trace: dict, card: dict) -> dict:
                 "description": f"Could not parse expires_at: {expires_at}",
             })
 
-    # Extract envelope
-    envelope = card.get("autonomy_envelope", {})
+    # Extract the autonomy section (unified `autonomy`, legacy
+    # `autonomy_envelope` fallback)
+    envelope = card.get("autonomy") or card.get("autonomy_envelope") or {}
     action = trace.get("action", {})
 
     # Check autonomy compliance
@@ -733,19 +734,22 @@ def js_compute_similarity_history(card_json: str, traces_json: str) -> str:
 async function loadExamples() {
     // Minimal card example - used by drift detection scenarios
     EXAMPLES.cards.minimal = {
-        "aap_version": "0.5.0",
+        "card_version": "unified/2026-04-26",
         "card_id": "ac-demo-001",
         "agent_id": "demo-agent-001",
         "issued_at": new Date().toISOString(),
+        "autonomy_mode": "observe",
+        "integrity_mode": "observe",
         "principal": {
             "type": "human",
+            "identifier": "did:web:example.com",
             "relationship": "delegated_authority"
         },
         "values": {
             "declared": ["principal_benefit", "transparency"],
             "conflicts_with": ["profit_maximization", "engagement"]
         },
-        "autonomy_envelope": {
+        "autonomy": {
             "bounded_actions": ["search", "recommend", "summarize"],
             "escalation_triggers": [
                 {
@@ -761,7 +765,7 @@ async function loadExamples() {
             ],
             "forbidden_actions": ["delete_data", "send_payment"]
         },
-        "audit_commitment": {
+        "audit": {
             "retention_days": 90,
             "queryable": false
         }
@@ -769,11 +773,13 @@ async function loadExamples() {
 
     // Full card example
     EXAMPLES.cards.full = {
-        "aap_version": "0.5.0",
+        "card_version": "unified/2026-04-26",
         "card_id": "ac-demo-002",
         "agent_id": "did:web:agent.example.com",
         "issued_at": new Date().toISOString(),
         "expires_at": new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        "autonomy_mode": "enforce",
+        "integrity_mode": "enforce",
         "principal": {
             "type": "human",
             "identifier": "did:web:user.example.com",
@@ -785,7 +791,7 @@ async function loadExamples() {
             "conflicts_with": ["profit_maximization", "comprehensive_analytics"],
             "hierarchy": "lexicographic"
         },
-        "autonomy_envelope": {
+        "autonomy": {
             "bounded_actions": ["search", "recommend", "summarize", "draft_email"],
             "escalation_triggers": [
                 {
@@ -805,7 +811,7 @@ async function loadExamples() {
                 "currency": "USD"
             }
         },
-        "audit_commitment": {
+        "audit": {
             "trace_format": "ap-trace-v1",
             "retention_days": 365,
             "queryable": true,
@@ -815,19 +821,22 @@ async function loadExamples() {
 
     // Restrictive card
     EXAMPLES.cards.restrictive = {
-        "aap_version": "0.5.0",
+        "card_version": "unified/2026-04-26",
         "card_id": "ac-restrictive-001",
         "agent_id": "secure-agent-001",
         "issued_at": new Date().toISOString(),
+        "autonomy_mode": "observe",
+        "integrity_mode": "observe",
         "principal": {
             "type": "human",
+            "identifier": "did:web:example.com",
             "relationship": "delegated_authority"
         },
         "values": {
             "declared": ["minimal_data", "privacy", "user_control"],
             "conflicts_with": ["data_driven", "comprehensive_analytics", "engagement_optimization"]
         },
-        "autonomy_envelope": {
+        "autonomy": {
             "bounded_actions": ["search"],
             "escalation_triggers": [
                 {
@@ -838,7 +847,7 @@ async function loadExamples() {
             ],
             "forbidden_actions": ["track_user", "share_data", "store_history", "send_payment", "delete_data"]
         },
-        "audit_commitment": {
+        "audit": {
             "retention_days": 30,
             "queryable": false
         }

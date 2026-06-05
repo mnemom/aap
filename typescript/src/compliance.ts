@@ -8,14 +8,14 @@
  * @example
  * ```typescript
  * import {
- *   EU_COMPLIANCE_AUDIT_COMMITMENT,
+ *   EU_COMPLIANCE_AUDIT,
  *   EU_COMPLIANCE_EXTENSIONS,
  *   EU_COMPLIANCE_VALUES,
  * } from "agent-alignment-protocol";
  *
  * const card: AlignmentCard = {
  *   ...,
- *   audit_commitment: { ...EU_COMPLIANCE_AUDIT_COMMITMENT },
+ *   audit: { ...EU_COMPLIANCE_AUDIT },
  *   values: { declared: EU_COMPLIANCE_VALUES, ... },
  *   extensions: { ...EU_COMPLIANCE_EXTENSIONS },
  * };
@@ -26,8 +26,11 @@
  * qualified legal counsel for your specific compliance obligations.
  */
 
-/** Audit commitment values that satisfy Article 50(4) audit trail requirements. */
-export const EU_COMPLIANCE_AUDIT_COMMITMENT = {
+/**
+ * Audit values that satisfy Article 50(4) audit trail requirements.
+ * Spread into the unified card's `audit` section.
+ */
+export const EU_COMPLIANCE_AUDIT = {
   retention_days: 90,
   queryable: true,
   query_endpoint: "https://audit.example.com/traces",

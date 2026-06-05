@@ -40,7 +40,7 @@ __version__ = "1.0.0"
 
 # EU AI Act compliance presets
 from aap.compliance import (
-    EU_COMPLIANCE_AUDIT_COMMITMENT,
+    EU_COMPLIANCE_AUDIT,
     EU_COMPLIANCE_EXTENSIONS,
     EU_COMPLIANCE_VALUES,
 )
@@ -53,10 +53,11 @@ from aap.schemas import (
     AlignmentCard,
     AlignmentCardRequest,
     AlignmentCardResponse,
+    AlignmentMode,
     Alternative,
     APTrace,
-    AuditCommitment,
-    AutonomyEnvelope,
+    Audit,
+    Autonomy,
     CoherenceResultMessage,
     Decision,
     Escalation,
@@ -148,16 +149,17 @@ __all__ = [
     "DriftAnalysis",
     "DriftDirection",
     "DriftIndicator",
-    # Alignment Card
+    # Alignment Card (unified / ADR-039)
     "AlignmentCard",
+    "AlignmentMode",
     "Principal",
     "PrincipalType",
     "RelationshipType",
     "Values",
-    "AutonomyEnvelope",
+    "Autonomy",
     "EscalationTrigger",
     "TriggerAction",
-    "AuditCommitment",
+    "Audit",
     # AP-Trace
     "APTrace",
     "Action",
@@ -174,7 +176,7 @@ __all__ = [
     "CoherenceResultMessage",
     "ProposedCollaboration",
     # EU AI Act Compliance
-    "EU_COMPLIANCE_AUDIT_COMMITMENT",
+    "EU_COMPLIANCE_AUDIT",
     "EU_COMPLIANCE_EXTENSIONS",
     "EU_COMPLIANCE_VALUES",
 ]

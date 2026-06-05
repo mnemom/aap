@@ -2,35 +2,70 @@
   "description": "Two agents with conflicting values attempting to collaborate",
   "scenario": "A user's privacy-focused personal assistant needs to delegate a task to a vendor's data-driven recommendation agent",
   "my_card": {
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-personal-assistant-001",
     "agent_id": "user-assistant-v1",
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "human",
+      "identifier": "did:web:example.com",
       "relationship": "delegated_authority"
     },
     "values": {
-      "declared": ["principal_benefit", "minimal_data", "privacy", "user_control"],
-      "conflicts_with": ["comprehensive_analytics", "data_driven", "engagement_optimization"]
+      "declared": [
+        "principal_benefit",
+        "minimal_data",
+        "privacy",
+        "user_control"
+      ],
+      "conflicts_with": [
+        "comprehensive_analytics",
+        "data_driven",
+        "engagement_optimization"
+      ]
     },
-    "autonomy_envelope": {
-      "bounded_actions": ["search", "recommend", "delegate"],
-      "forbidden_actions": ["share_personal_data", "track_behavior"]
+    "autonomy": {
+      "bounded_actions": [
+        "search",
+        "recommend",
+        "delegate"
+      ],
+      "forbidden_actions": [
+        "share_personal_data",
+        "track_behavior"
+      ]
     }
   },
   "their_card": {
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-vendor-recommender-001",
     "agent_id": "vendor-recommender-v1",
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "organization",
       "identifier": "did:web:vendor.example.com",
       "relationship": "service_provider"
     },
     "values": {
-      "declared": ["comprehensive_analytics", "data_driven", "engagement_optimization", "revenue_generation"],
-      "conflicts_with": ["minimal_data"]
+      "declared": [
+        "comprehensive_analytics",
+        "data_driven",
+        "engagement_optimization",
+        "revenue_generation"
+      ],
+      "conflicts_with": [
+        "minimal_data"
+      ]
     },
-    "autonomy_envelope": {
-      "bounded_actions": ["analyze", "recommend", "personalize", "track"],
+    "autonomy": {
+      "bounded_actions": [
+        "analyze",
+        "recommend",
+        "personalize",
+        "track"
+      ],
       "forbidden_actions": []
     }
   },

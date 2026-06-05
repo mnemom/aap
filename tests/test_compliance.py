@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from aap.compliance import (
-    EU_COMPLIANCE_AUDIT_COMMITMENT,
+    EU_COMPLIANCE_AUDIT,
     EU_COMPLIANCE_EXTENSIONS,
     EU_COMPLIANCE_VALUES,
 )
-from aap.schemas import AlignmentCard, AuditCommitment, AutonomyEnvelope, Principal, Values
+from aap.schemas import AlignmentCard, Audit, Autonomy, Principal, Values
 
 # Standard AAP values that the presets should draw from
 STANDARD_VALUES = {
@@ -22,28 +22,28 @@ STANDARD_VALUES = {
 }
 
 
-class TestEUComplianceAuditCommitment:
-    """Tests for EU_COMPLIANCE_AUDIT_COMMITMENT preset."""
+class TestEUComplianceAudit:
+    """Tests for EU_COMPLIANCE_AUDIT preset."""
 
     def test_retention_at_least_90_days(self):
-        assert EU_COMPLIANCE_AUDIT_COMMITMENT["retention_days"] >= 90
+        assert EU_COMPLIANCE_AUDIT["retention_days"] >= 90
 
     def test_queryable_is_true(self):
-        assert EU_COMPLIANCE_AUDIT_COMMITMENT["queryable"] is True
+        assert EU_COMPLIANCE_AUDIT["queryable"] is True
 
     def test_tamper_evidence_set(self):
-        assert EU_COMPLIANCE_AUDIT_COMMITMENT["tamper_evidence"] in {
+        assert EU_COMPLIANCE_AUDIT["tamper_evidence"] in {
             "append_only",
             "signed",
             "merkle",
         }
 
     def test_trace_format_set(self):
-        assert EU_COMPLIANCE_AUDIT_COMMITMENT["trace_format"] == "ap-trace-v1"
+        assert EU_COMPLIANCE_AUDIT["trace_format"] == "ap-trace-v1"
 
-    def test_produces_valid_audit_commitment(self):
-        """Preset values produce a valid AuditCommitment model."""
-        commitment = AuditCommitment(**EU_COMPLIANCE_AUDIT_COMMITMENT)
+    def test_produces_valid_audit(self):
+        """Preset values produce a valid Audit model."""
+        commitment = Audit(**EU_COMPLIANCE_AUDIT)
         assert commitment.retention_days == 90
         assert commitment.queryable is True
         assert commitment.tamper_evidence == "append_only"
@@ -96,27 +96,30 @@ class TestPresetsProduceValidCard:
 
     def test_full_card_with_presets(self):
         card = AlignmentCard(
-            aap_version="0.5.0",
+            card_version="unified/2026-04-26",
             card_id="ac-test-eu-001",
             agent_id="test-eu-agent",
             issued_at="2026-02-13T00:00:00Z",
+            autonomy_mode="enforce",
+            integrity_mode="enforce",
             principal=Principal(
                 type="organization",
+                identifier="Example Corp (EU)",
                 relationship="delegated_authority",
             ),
             values=Values(
-                declared=EU_COMPLIANCE_VALUES,
+                declared=list(EU_COMPLIANCE_VALUES),
             ),
-            autonomy_envelope=AutonomyEnvelope(
+            autonomy=Autonomy(
                 bounded_actions=["search", "recommend"],
                 escalation_triggers=[],
             ),
-            audit_commitment=AuditCommitment(**EU_COMPLIANCE_AUDIT_COMMITMENT),
+            audit=Audit(**EU_COMPLIANCE_AUDIT),
             extensions=EU_COMPLIANCE_EXTENSIONS,
         )
         dumped = card.model_dump(mode="json")
 
-        assert dumped["audit_commitment"]["retention_days"] == 90
-        assert dumped["audit_commitment"]["queryable"] is True
+        assert dumped["audit"]["retention_days"] == 90
+        assert dumped["audit"]["queryable"] is True
         assert dumped["extensions"]["eu_ai_act"]["article_50_compliant"] is True
         assert dumped["values"]["declared"] == list(EU_COMPLIANCE_VALUES)

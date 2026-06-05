@@ -1,11 +1,25 @@
 /**
- * Alignment Card schema - Agent alignment declaration.
+ * Alignment Card schema - Agent alignment declaration (unified / ADR-039).
  *
- * Defines the Alignment Card structure per SPEC Section 4. An Alignment Card
- * is a structured document declaring an agent's alignment posture.
+ * Defines the unified Alignment Card structure accepted by the Mnemom platform
+ * and `mnemom card validate`. It renames the legacy AAP 0.5.0
+ * `autonomy_envelope`->`autonomy` and `audit_commitment`->`audit`, replaces
+ * `aap_version` with the date-anchored `card_version`, and adds the two
+ * top-level master switches `autonomy_mode` + `integrity_mode`. Semantics are
+ * preserved; the migration is largely a rename.
  *
- * @see SPEC.md Section 4 for complete specification.
+ * @see https://docs.mnemom.ai/specifications/alignment-card-schema
  */
+
+/**
+ * Master-switch mode shared by `autonomy_mode` and `integrity_mode`
+ * (unified / ADR-039). Strictest wins on composition:
+ * `enforce > nudge > observe > off`.
+ */
+export type AlignmentMode = "off" | "observe" | "nudge" | "enforce";
+
+/** Current unified alignment-card schema version (date-anchored identifier). */
+export const CARD_VERSION = "unified/2026-04-26";
 
 /** Type of principal the agent serves. */
 export type PrincipalType = "human" | "organization" | "agent" | "unspecified";
@@ -22,17 +36,14 @@ export type HierarchyType = "lexicographic" | "weighted" | "contextual";
 /** Action to take when escalation trigger matches. */
 export type TriggerAction = "escalate" | "deny" | "log";
 
-/** Audit log storage type. */
-export type StorageType = "local" | "remote" | "distributed";
-
 /** Tamper-evidence mechanism for audit logs. */
 export type TamperEvidence = "append_only" | "signed" | "merkle";
 
-/** Principal relationship declaration (SPEC Section 4.3). */
+/** Principal relationship declaration (unified / ADR-039 §principal). */
 export interface Principal {
   /** Type of principal */
   type: PrincipalType;
-  /** Principal identifier (DID, email, org ID) */
+  /** Principal identifier (DID, email, org ID). Required when type != "unspecified". */
   identifier?: string | null;
   /** Nature of authority delegation */
   relationship: RelationshipType;
@@ -40,13 +51,13 @@ export interface Principal {
   escalation_contact?: string | null;
 }
 
-/** Definition of a custom value. */
+/** Definition of a custom value (unified / ADR-039 §values). */
 export interface ValueDefinition {
-  /** Human-readable name */
-  name: string;
+  /** Human-readable name (optional; the definitions map key is the value id) */
+  name?: string;
   /** What this value means operationally */
   description: string;
-  /** Priority for lexicographic ordering (higher = more important) */
+  /** Priority for lexicographic/weighted ordering (higher = more important) */
   priority?: number;
 }
 
@@ -79,7 +90,7 @@ export interface Values {
    * descriptors — e.g. `fiduciary_precision`, `organizational_clarity`. These
    * describe WHAT the agent is in its role and belong in `extensions.clpi.role`
    * or other `extensions` metadata. Capability names (e.g. `read_documents`)
-   * belong in `autonomy_envelope.bounded_actions`.
+   * belong in `autonomy.bounded_actions`.
    *
    * Each entry is either a bare-string id (`"honesty"`) or a parameterized
    * object (`{id, domain?, intensity?}`). Use {@link declaredValueIds} to
@@ -95,9 +106,9 @@ export interface Values {
   hierarchy?: HierarchyType | null;
 }
 
-/** Condition that triggers escalation (SPEC Section 4.5). */
+/** Condition that triggers escalation (unified / ADR-039 §autonomy). */
 export interface EscalationTrigger {
-  /** Condition expression (see SPEC Section 4.6) */
+  /** Condition expression */
   condition: string;
   /** Action to take when trigger matches */
   action: TriggerAction;
@@ -113,34 +124,34 @@ export interface MonetaryValue {
   currency?: string;
 }
 
-/** Autonomy bounds and escalation triggers (SPEC Section 4.5). */
-export interface AutonomyEnvelope {
+/**
+ * Autonomy bounds and escalation triggers (unified / ADR-039 §autonomy).
+ *
+ * Renamed from the legacy AAP 0.5.0 `autonomy_envelope`; semantics preserved.
+ * Only `bounded_actions` is required in the unified shape.
+ */
+export interface Autonomy {
   /** Actions permitted without escalation */
   bounded_actions: string[];
   /** Conditions requiring escalation */
-  escalation_triggers: EscalationTrigger[];
+  escalation_triggers?: EscalationTrigger[];
   /** Maximum transaction value without escalation */
   max_autonomous_value?: MonetaryValue | null;
   /** Actions never permitted */
   forbidden_actions?: string[] | null;
 }
 
-/** Audit log storage configuration. */
-export interface AuditStorage {
-  /** Storage type */
-  type: StorageType;
-  /** Storage endpoint or location */
-  location?: string | null;
-}
-
-/** Audit trail commitments (SPEC Section 4.7). */
-export interface AuditCommitment {
+/**
+ * Audit trail commitments (unified / ADR-039 §audit).
+ *
+ * Renamed from the legacy AAP 0.5.0 `audit_commitment`; semantics preserved.
+ * The legacy `storage` sub-object is not part of the unified shape.
+ */
+export interface Audit {
   /** Trace format identifier */
   trace_format?: string;
   /** Minimum retention period in days */
   retention_days: number;
-  /** Storage configuration */
-  storage?: AuditStorage | null;
   /** Whether traces can be queried externally */
   queryable: boolean;
   /** Endpoint for trace queries (required if queryable=true) */
@@ -150,14 +161,15 @@ export interface AuditCommitment {
 }
 
 /**
- * Alignment Card - Agent alignment declaration (SPEC Section 4).
+ * Alignment Card - Agent alignment declaration (unified / ADR-039).
  *
  * A structured document declaring an agent's alignment posture. It MUST be
- * machine-readable (JSON) and SHOULD be human-readable.
+ * machine-readable (JSON) and SHOULD be human-readable. This is the unified
+ * card shape accepted by `mnemom card validate` and the Mnemom platform.
  */
 export interface AlignmentCard {
-  /** AAP specification version */
-  aap_version?: string;
+  /** Unified alignment-card schema version (date-anchored identifier) */
+  card_version?: string;
   /** Unique identifier for this card (UUID or URI) */
   card_id: string;
   /** Identifier for the agent (DID, URL, or UUID) */
@@ -166,19 +178,47 @@ export interface AlignmentCard {
   issued_at: string;
   /** When this card expires (ISO 8601) */
   expires_at?: string | null;
+  /** Master switch for the action-policing pipeline */
+  autonomy_mode?: AlignmentMode;
+  /** Master switch for the values/conscience pipeline */
+  integrity_mode?: AlignmentMode;
   /** Principal relationship declaration */
   principal: Principal;
   /** Value declarations */
   values: Values;
   /** Autonomy bounds and escalation triggers */
-  autonomy_envelope: AutonomyEnvelope;
+  autonomy: Autonomy;
   /** Audit trail commitments */
-  audit_commitment: AuditCommitment;
+  audit: Audit;
   /** Protocol-specific extensions */
   extensions?: Record<string, unknown> | null;
 }
 
 // Utility functions
+
+/**
+ * Read the autonomy section from a card. Prefers the unified / ADR-039
+ * `autonomy` key, falling back to the legacy AAP 0.5.0 `autonomy_envelope`
+ * for interop with older card objects.
+ */
+export function cardAutonomy(card: AlignmentCard): Autonomy {
+  const c = card as AlignmentCard & {
+    autonomy_envelope?: Autonomy;
+  };
+  return c.autonomy ?? c.autonomy_envelope ?? { bounded_actions: [] };
+}
+
+/**
+ * Read the audit section from a card. Prefers the unified / ADR-039 `audit`
+ * key, falling back to the legacy AAP 0.5.0 `audit_commitment` for interop
+ * with older card objects.
+ */
+export function cardAudit(card: AlignmentCard): Audit | undefined {
+  const c = card as AlignmentCard & {
+    audit_commitment?: Audit;
+  };
+  return c.audit ?? c.audit_commitment;
+}
 
 /** Check if an alignment card has expired. */
 export function isCardExpired(card: AlignmentCard): boolean {
@@ -231,7 +271,7 @@ export function appliedValueIds(
 
 /** Check if an action is in the bounded actions list. */
 export function isActionBounded(card: AlignmentCard, action: string): boolean {
-  return card.autonomy_envelope.bounded_actions.includes(action);
+  return cardAutonomy(card).bounded_actions.includes(action);
 }
 
 /** Check if an action is forbidden. */
@@ -239,5 +279,5 @@ export function isActionForbidden(
   card: AlignmentCard,
   action: string,
 ): boolean {
-  return (card.autonomy_envelope.forbidden_actions ?? []).includes(action);
+  return (cardAutonomy(card).forbidden_actions ?? []).includes(action);
 }

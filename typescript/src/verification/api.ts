@@ -19,7 +19,7 @@ import {
   OUTLIER_STD_DEV_THRESHOLD,
 } from "../constants";
 import type { AlignmentCard } from "../schemas/alignment-card";
-import { appliedValueIds, declaredValueIds } from "../schemas/alignment-card";
+import { appliedValueIds, cardAutonomy, declaredValueIds } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
 import {
   computeCentroid,
@@ -147,8 +147,9 @@ export function verifyTrace(
     }
   }
 
-  // Extract envelope for remaining checks
-  const envelope = card.autonomy_envelope;
+  // Extract the autonomy section for remaining checks (unified `autonomy`,
+  // legacy `autonomy_envelope` fallback).
+  const envelope = cardAutonomy(card);
   const action = trace.action;
 
   // Check autonomy compliance
@@ -884,7 +885,7 @@ export function analyzeFaultLines(
   for (const { agentId, card } of cards) {
     agentBoundedActions.set(
       agentId,
-      card.autonomy_envelope?.bounded_actions ?? [],
+      cardAutonomy(card).bounded_actions ?? [],
     );
   }
 

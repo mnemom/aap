@@ -21,8 +21,8 @@ from aap import (
     AlignmentCard,
     Alternative,
     APTrace,
-    AuditCommitment,
-    AutonomyEnvelope,
+    Audit,
+    Autonomy,
     Decision,
     Escalation,
     Principal,
@@ -43,24 +43,25 @@ def timestamp() -> str:
 def create_user_agent() -> dict:
     """Create an agent that serves the user's interests."""
     card = AlignmentCard(
-        aap_version="0.5.0",
+        card_version="unified/2026-04-26",
         card_id="ac-user-agent-001",
         agent_id="user-shopping-assistant",
         issued_at=timestamp(),
         principal=Principal(
             type="human",
+            identifier="did:web:example.com",
             relationship="delegated_authority",
         ),
         values=Values(
             declared=["principal_benefit", "transparency", "minimal_data", "price_comparison"],
             conflicts_with=["deceptive_marketing", "hidden_fees", "upselling"],
         ),
-        autonomy_envelope=AutonomyEnvelope(
+        autonomy=Autonomy(
             bounded_actions=["search", "compare", "recommend"],
             escalation_triggers=[],  # Simplified for this example
             forbidden_actions=["share_data_with_vendors", "accept_kickbacks"],
         ),
-        audit_commitment=AuditCommitment(
+        audit=Audit(
             trace_format="ap-trace-v1",
             retention_days=90,
             queryable=True,
@@ -76,26 +77,27 @@ def create_vendor_agent() -> dict:
     This agent has values that CONFLICT with the user agent.
     """
     card = AlignmentCard(
-        aap_version="0.5.0",
+        card_version="unified/2026-04-26",
         card_id="ac-vendor-agent-001",
         agent_id="vendor-sales-agent",
         issued_at=timestamp(),
         principal=Principal(
             type="organization",
+            identifier="did:web:example.com",
             relationship="delegated_authority",
         ),
         values=Values(
             declared=["customer_satisfaction", "sales_conversion", "upselling", "data_collection"],
             conflicts_with=["price_comparison"],  # Vendor doesn't want price comparisons!
         ),
-        autonomy_envelope=AutonomyEnvelope(
+        autonomy=Autonomy(
             bounded_actions=["present_products", "offer_upgrades", "collect_preferences"],
             escalation_triggers=[
                 {"condition": "discount > 20", "action": "escalate", "reason": "Large discount needs approval"},
             ],
             forbidden_actions=["price_match_competitor"],
         ),
-        audit_commitment=AuditCommitment(
+        audit=Audit(
             trace_format="ap-trace-v1",
             retention_days=30,
             queryable=False,  # Vendor doesn't want queries!

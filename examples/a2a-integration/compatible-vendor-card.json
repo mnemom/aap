@@ -21,12 +21,15 @@
     }
   ],
   "alignment": {
-    "aap_version": "0.5.0",
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-ethical-vendor-001",
     "agent_id": "ethical-vendor-agent",
     "issued_at": "2026-02-14T22:49:52.909Z",
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "organization",
+      "identifier": "did:web:example.com",
       "relationship": "delegated_authority"
     },
     "values": {
@@ -42,7 +45,7 @@
         "upselling"
       ]
     },
-    "autonomy_envelope": {
+    "autonomy": {
       "bounded_actions": [
         "search",
         "recommend",
@@ -54,7 +57,7 @@
         "hide_cheaper_options"
       ]
     },
-    "audit_commitment": {
+    "audit": {
       "trace_format": "ap-trace-v1",
       "retention_days": 90,
       "queryable": true,

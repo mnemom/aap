@@ -71,21 +71,27 @@ As agent capabilities become symmetric—equal access to information, equal reas
 
 ### Alignment Card
 
-A structured declaration of an agent's alignment posture:
+A structured declaration of an agent's alignment posture, in the unified /
+ADR-039 shape accepted by `mnemom card validate` and the Mnemom platform:
 
 ```json
 {
-  "aap_version": "0.5.0",
+  "card_version": "unified/2026-04-26",
+  "card_id": "ac-my-agent-001",
   "agent_id": "did:web:my-agent.example.com",
+  "issued_at": "2026-04-26T00:00:00Z",
+  "autonomy_mode": "enforce",
+  "integrity_mode": "enforce",
   "principal": {
     "type": "human",
+    "identifier": "did:web:user.example.com",
     "relationship": "delegated_authority"
   },
   "values": {
     "declared": ["principal_benefit", "transparency", "minimal_data"],
     "conflicts_with": ["deceptive_marketing", "hidden_fees"]
   },
-  "autonomy_envelope": {
+  "autonomy": {
     "bounded_actions": ["search", "compare", "recommend"],
     "escalation_triggers": [
       {
@@ -96,13 +102,22 @@ A structured declaration of an agent's alignment posture:
     ],
     "forbidden_actions": ["share_credentials", "subscribe_to_services"]
   },
-  "audit_commitment": {
+  "audit": {
     "trace_format": "ap-trace-v1",
     "retention_days": 90,
-    "queryable": true
+    "queryable": true,
+    "query_endpoint": "https://my-agent.example.com/api/traces"
   }
 }
 ```
+
+> **Migration note (v2.0.0):** the card moved from the AAP 0.5.0 shape
+> (`aap_version`, `autonomy_envelope`, `audit_commitment`) to the unified /
+> ADR-039 shape above. The TS types renamed accordingly: `AutonomyEnvelope` →
+> `Autonomy`, `AuditCommitment` → `Audit` (and `AuditStorage`/`StorageType`
+> were removed); a new `AlignmentMode` type backs `autonomy_mode` /
+> `integrity_mode`; and `EU_COMPLIANCE_AUDIT_COMMITMENT` is now
+> `EU_COMPLIANCE_AUDIT`.
 
 ### AP-Trace
 

@@ -38,12 +38,15 @@ from aap.schemas.ap_trace import PrincipalResponse
 def create_mcp_server_alignment() -> AlignmentCard:
     """Create alignment card for the MCP filesystem server."""
     return AlignmentCard(
-        aap_version="0.5.0",
+        card_version="unified/2026-04-26",
         card_id="ac-mcp-filesystem-001",
         agent_id="mcp-filesystem-server",
         issued_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        autonomy_mode="enforce",
+        integrity_mode="observe",
         principal={
             "type": "human",
+            "identifier": "did:web:user.example.com",
             "relationship": "delegated_authority",
         },
         values={
@@ -59,7 +62,7 @@ def create_mcp_server_alignment() -> AlignmentCard:
                 "destructive_operations",
             ],
         },
-        autonomy_envelope={
+        autonomy={
             "bounded_actions": ["read_file", "list_directory", "file_info"],
             "escalation_triggers": [
                 {
@@ -75,7 +78,7 @@ def create_mcp_server_alignment() -> AlignmentCard:
             ],
             "forbidden_actions": ["delete_file", "execute_command", "chmod"],
         },
-        audit_commitment={
+        audit={
             "trace_format": "ap-trace-v1",
             "retention_days": 90,
             "queryable": True,
@@ -304,14 +307,17 @@ def main():
     print(f"    Server: {server_alignment.agent_id}")
     print(f"    Card ID: {server_alignment.card_id}")
     print(f"    Values: {server_alignment.values.declared}")
-    print(f"    Bounded tools: {server_alignment.autonomy_envelope.bounded_actions}")
-    print(f"    Forbidden tools: {server_alignment.autonomy_envelope.forbidden_actions}")
+    print(f"    Bounded tools: {server_alignment.autonomy.bounded_actions}")
+    print(f"    Forbidden tools: {server_alignment.autonomy.forbidden_actions}")
     print()
 
-    # Save alignment card
+    # Save alignment card. Use to_dict() (exclude_none) so the emitted file is
+    # the clean unified shape — the platform validator treats an explicit
+    # `null` on optional fields like values.definitions / values.hierarchy as
+    # "present but invalid", so we omit them rather than write nulls.
     card_path = Path(__file__).parent / "server-alignment-card.json"
     with open(card_path, "w") as f:
-        json.dump(server_alignment.model_dump(mode="json"), f, indent=2)
+        json.dump(server_alignment.to_dict(), f, indent=2)
     print(f"    Saved: {card_path.name}")
     print()
 

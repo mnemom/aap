@@ -12,19 +12,31 @@
     ]
   },
   "card": {
-    "aap_version": "0.5.0",
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-test-compliant-001",
     "agent_id": "agent-shopping-assistant",
     "issued_at": "2026-01-31T00:00:00Z",
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "human",
+      "identifier": "did:web:user.example.com",
       "relationship": "delegated_authority"
     },
     "values": {
-      "declared": ["principal_benefit", "transparency", "harm_prevention"]
+      "declared": [
+        "principal_benefit",
+        "transparency",
+        "harm_prevention"
+      ]
     },
-    "autonomy_envelope": {
-      "bounded_actions": ["search", "recommend", "compare", "summarize"],
+    "autonomy": {
+      "bounded_actions": [
+        "search",
+        "recommend",
+        "compare",
+        "summarize"
+      ],
       "escalation_triggers": [
         {
           "condition": "action_type == \"purchase\"",
@@ -32,9 +44,13 @@
           "reason": "Purchases require user approval"
         }
       ],
-      "forbidden_actions": ["purchase", "delete_account", "share_personal_data"]
+      "forbidden_actions": [
+        "purchase",
+        "delete_account",
+        "share_personal_data"
+      ]
     },
-    "audit_commitment": {
+    "audit": {
       "retention_days": 90,
       "queryable": false
     }
@@ -57,7 +73,7 @@
           "score": 0.92,
           "scoring_factors": {
             "principal_benefit": 0.95,
-            "transparency": 0.90,
+            "transparency": 0.9,
             "harm_prevention": 0.85
           }
         },
@@ -66,8 +82,8 @@
           "description": "Budget headphones - lower benefit to principal due to fewer features",
           "score": 0.75,
           "scoring_factors": {
-            "principal_benefit": 0.70,
-            "transparency": 0.80,
+            "principal_benefit": 0.7,
+            "transparency": 0.8,
             "harm_prevention": 0.95
           }
         },
@@ -76,16 +92,23 @@
           "description": "Sponsored headphones - lacks transparency due to paid placement, potential harm to principal interests",
           "score": 0.45,
           "scoring_factors": {
-            "principal_benefit": 0.40,
-            "transparency": 0.30,
-            "harm_prevention": 0.50
+            "principal_benefit": 0.4,
+            "transparency": 0.3,
+            "harm_prevention": 0.5
           },
-          "flags": ["sponsored_content", "transparency_concern"]
+          "flags": [
+            "sponsored_content",
+            "transparency_concern"
+          ]
         }
       ],
       "selected": "product-A",
       "selection_reasoning": "Applying principal_benefit value: Product A best serves the user's stated needs for noise cancellation and comfort. Applying transparency value: openly disclosing that product-C is sponsored content and deprioritizing it accordingly. Applying harm_prevention value: ensuring recommendation quality by prioritizing highly-reviewed products over paid placements. This recommendation maximizes benefit to the principal while maintaining full transparency about the decision process.",
-      "values_applied": ["principal_benefit", "transparency", "harm_prevention"],
+      "values_applied": [
+        "principal_benefit",
+        "transparency",
+        "harm_prevention"
+      ],
       "confidence": 0.88
     },
     "escalation": {

@@ -71,21 +71,27 @@ As agent capabilities become symmetric—equal access to information, equal reas
 
 ### Alignment Card
 
-A structured declaration of an agent's alignment posture:
+A structured declaration of an agent's alignment posture, in the unified /
+ADR-039 shape accepted by `mnemom card validate` and the Mnemom platform:
 
 ```json
 {
-  "aap_version": "1.0.0",
+  "card_version": "unified/2026-04-26",
+  "card_id": "ac-my-agent-001",
   "agent_id": "did:web:my-agent.example.com",
+  "issued_at": "2026-04-26T00:00:00Z",
+  "autonomy_mode": "enforce",
+  "integrity_mode": "enforce",
   "principal": {
     "type": "human",
+    "identifier": "did:web:user.example.com",
     "relationship": "delegated_authority"
   },
   "values": {
     "declared": ["principal_benefit", "transparency", "minimal_data"],
     "conflicts_with": ["deceptive_marketing", "hidden_fees"]
   },
-  "autonomy_envelope": {
+  "autonomy": {
     "bounded_actions": ["search", "compare", "recommend"],
     "escalation_triggers": [
       {
@@ -96,13 +102,22 @@ A structured declaration of an agent's alignment posture:
     ],
     "forbidden_actions": ["share_credentials", "subscribe_to_services"]
   },
-  "audit_commitment": {
+  "audit": {
     "trace_format": "ap-trace-v1",
     "retention_days": 90,
-    "queryable": true
+    "queryable": true,
+    "query_endpoint": "https://my-agent.example.com/api/traces"
   }
 }
 ```
+
+> **Migration note (v2.0.0):** earlier releases used the AAP 0.5.0 card shape
+> (`aap_version`, `autonomy_envelope`, `audit_commitment`). The card has moved
+> to the unified / ADR-039 shape above: `autonomy_envelope` → `autonomy`,
+> `audit_commitment` → `audit`, `aap_version` → `card_version`, plus the
+> top-level `autonomy_mode` / `integrity_mode` master switches and a required
+> `principal.identifier` when `principal.type != "unspecified"`. See the
+> [Alignment Card Schema](https://docs.mnemom.ai/specifications/alignment-card-schema).
 
 ### AP-Trace
 
@@ -345,7 +360,7 @@ AAP aligns with and supports compliance for the following international standard
 | **[IEEE 7001-2021](https://standards.ieee.org/ieee/7001/6929/)** — Transparency of Autonomous Systems | AAP's core design goal — making agent decisions observable — directly implements IEEE 7001 transparency requirements |
 | **[IEEE 3152-2024](https://standards.ieee.org/ieee/3152/11718/)** — Transparent Human and Machine Agency Identification | Alignment Card `agent_id`, `principal` block, and relationship types map to IEEE 3152 agency identification |
 | **[Singapore IMDA Model AI Governance Framework for Agentic AI](https://www.imda.gov.sg/-/media/imda/files/about/emerging-tech-and-research/artificial-intelligence/mgf-for-agentic-ai.pdf)** (Jan 2026) | Alignment Card + Value Coherence Handshake address IMDA's agentic AI governance principles for multi-agent coordination |
-| **[EU AI Act Article 50](https://artificialintelligenceact.eu/article/50/)** — Transparency Obligations (enforcement Aug 2026) | Alignment Card `principal` + disclosure fields, AP-Trace structured audit trails, and `audit_commitment.retention_days` support Article 50 compliance. See [EU AI Act Compliance Guide](https://docs.mnemom.ai/guides/eu-compliance) |
+| **[EU AI Act Article 50](https://artificialintelligenceact.eu/article/50/)** — Transparency Obligations (enforcement Aug 2026) | Alignment Card `principal` + disclosure fields, AP-Trace structured audit trails, and `audit.retention_days` support Article 50 compliance. See [EU AI Act Compliance Guide](https://docs.mnemom.ai/guides/eu-compliance) |
 
 ## Contributing
 

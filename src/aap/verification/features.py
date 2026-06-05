@@ -295,8 +295,9 @@ class FeatureExtractor:
         """
         features: dict[str, float] = {}
 
-        # Bounded action features
-        envelope = card.get("autonomy_envelope", {})
+        # Bounded action features (unified `autonomy`, legacy
+        # `autonomy_envelope` fallback for interop with older cards)
+        envelope = card.get("autonomy") or card.get("autonomy_envelope") or {}
         for action in envelope.get("bounded_actions", []):
             features[f"action_name:{action}"] = 1.0
 
@@ -315,8 +316,8 @@ class FeatureExtractor:
         if principal_type:
             features[f"principal_type:{principal_type}"] = 1.0
 
-        # Audit commitment features
-        audit = card.get("audit_commitment", {})
+        # Audit features (unified `audit`, legacy `audit_commitment` fallback)
+        audit = card.get("audit") or card.get("audit_commitment") or {}
         if audit.get("queryable"):
             features["audit:queryable"] = 1.0
         tamper_evidence = audit.get("tamper_evidence")

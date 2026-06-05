@@ -86,7 +86,7 @@ describe("extractCardFeatures", () => {
     it("should handle card with empty bounded_actions", () => {
       const emptyCard: AlignmentCard = {
         ...minimalAlignmentCard,
-        autonomy_envelope: {
+        autonomy: {
           bounded_actions: [],
           escalation_triggers: [],
         },

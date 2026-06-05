@@ -160,7 +160,7 @@ class TestSSMAnalyzeAgainstCard:
         return {
             "card_id": "card-001",
             "values": {"declared": ["principal_benefit", "transparency"]},
-            "autonomy_envelope": {"bounded_actions": ["recommend", "suggest"]},
+            "autonomy": {"bounded_actions": ["recommend", "suggest"]},
         }
 
     def test_empty_traces_returns_empty_result(self, sample_card):

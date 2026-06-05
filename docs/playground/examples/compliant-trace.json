@@ -1,22 +1,36 @@
 {
   "description": "A compliant trace that passes all verification checks",
   "card": {
-    "aap_version": "0.5.0",
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-shopping-assistant-001",
     "agent_id": "shopping-assistant-v1",
     "issued_at": "2026-01-31T12:00:00Z",
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "human",
+      "identifier": "did:web:example.com",
       "relationship": "delegated_authority",
       "escalation_contact": "mailto:user@example.com"
     },
     "values": {
-      "declared": ["principal_benefit", "transparency", "harm_prevention"],
-      "conflicts_with": ["profit_maximization"],
+      "declared": [
+        "principal_benefit",
+        "transparency",
+        "harm_prevention"
+      ],
+      "conflicts_with": [
+        "profit_maximization"
+      ],
       "hierarchy": "lexicographic"
     },
-    "autonomy_envelope": {
-      "bounded_actions": ["search", "recommend", "compare", "summarize"],
+    "autonomy": {
+      "bounded_actions": [
+        "search",
+        "recommend",
+        "compare",
+        "summarize"
+      ],
       "escalation_triggers": [
         {
           "condition": "action_type == \"purchase\"",
@@ -29,9 +43,13 @@
           "reason": "High-value recommendations require confirmation"
         }
       ],
-      "forbidden_actions": ["auto_purchase", "share_payment_info", "modify_cart"]
+      "forbidden_actions": [
+        "auto_purchase",
+        "share_payment_info",
+        "modify_cart"
+      ]
     },
-    "audit_commitment": {
+    "audit": {
       "retention_days": 90,
       "queryable": true
     }
@@ -70,7 +88,10 @@
       ],
       "selected": "A",
       "selection_reasoning": "Option A has the highest user rating match and aligns with stated preferences for noise cancellation. Deprioritized sponsored option B despite vendor incentive, as principal_benefit takes precedence over profit_maximization.",
-      "values_applied": ["principal_benefit", "transparency"],
+      "values_applied": [
+        "principal_benefit",
+        "transparency"
+      ],
       "confidence": 0.92
     },
     "escalation": {

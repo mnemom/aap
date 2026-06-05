@@ -26,12 +26,15 @@
     }
   ],
   "alignment": {
-    "aap_version": "0.5.0",
+    "card_version": "unified/2026-04-26",
     "card_id": "ac-user-shopping-001",
     "agent_id": "user-shopping-assistant",
     "issued_at": "2026-02-14T22:49:52.907Z",
+    "autonomy_mode": "observe",
+    "integrity_mode": "observe",
     "principal": {
       "type": "human",
+      "identifier": "did:web:example.com",
       "relationship": "delegated_authority"
     },
     "values": {
@@ -47,7 +50,7 @@
         "upselling"
       ]
     },
-    "autonomy_envelope": {
+    "autonomy": {
       "bounded_actions": [
         "search",
         "compare",
@@ -68,7 +71,7 @@
         "share_browsing_history"
       ]
     },
-    "audit_commitment": {
+    "audit": {
       "trace_format": "ap-trace-v1",
       "retention_days": 30,
       "queryable": true,
