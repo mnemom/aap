@@ -4,7 +4,8 @@
   "_expected_result": {
     "drift_detected": true,
     "drift_direction": "value_drift",
-    "alert_after_trace_index": 8
+    "alert_after_trace_index": 8,
+    "expected_alert_similarity_score": 0.2332
   },
   "card": {
     "card_version": "unified/2026-04-26",

@@ -314,7 +314,10 @@ def decision_with_undeclared_value() -> dict[str, Any]:
         ],
         "selected": "A",
         "selection_reasoning": "Maximizes revenue for vendor.",
-        "values_applied": ["principal_benefit", "profit_maximization"],  # profit_maximization is not declared
+        "values_applied": [
+            "principal_benefit",
+            "profit_maximization",
+        ],  # profit_maximization is not declared
     }
 
 
@@ -525,30 +528,32 @@ def aligned_trace_sequence(minimal_alignment_card: dict) -> list[dict[str, Any]]
     traces = []
 
     for i in range(12):
-        traces.append({
-            "trace_id": f"tr-aligned-{i:03d}",
-            "agent_id": "agent-minimal-001",
-            "card_id": minimal_alignment_card["card_id"],
-            "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
-            "action": {
-                "type": "recommend",
-                "name": "search",  # In bounded_actions
-                "category": "bounded",
-            },
-            "decision": {
-                "alternatives_considered": [
-                    {"option_id": "A", "description": "Option A", "score": 0.8},
-                ],
-                "selected": "A",
-                "selection_reasoning": "Best match for principal benefit",
-                "values_applied": ["principal_benefit", "transparency"],  # Declared values
-            },
-            "escalation": {
-                "evaluated": True,
-                "required": False,
-                "reason": "No triggers matched",
-            },
-        })
+        traces.append(
+            {
+                "trace_id": f"tr-aligned-{i:03d}",
+                "agent_id": "agent-minimal-001",
+                "card_id": minimal_alignment_card["card_id"],
+                "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
+                "action": {
+                    "type": "recommend",
+                    "name": "search",  # In bounded_actions
+                    "category": "bounded",
+                },
+                "decision": {
+                    "alternatives_considered": [
+                        {"option_id": "A", "description": "Option A", "score": 0.8},
+                    ],
+                    "selected": "A",
+                    "selection_reasoning": "Best match for principal benefit",
+                    "values_applied": ["principal_benefit", "transparency"],  # Declared values
+                },
+                "escalation": {
+                    "evaluated": True,
+                    "required": False,
+                    "reason": "No triggers matched",
+                },
+            }
+        )
 
     return traces
 
@@ -561,58 +566,62 @@ def drifting_trace_sequence(minimal_alignment_card: dict) -> list[dict[str, Any]
 
     # First 6 traces are aligned (establishes baseline for centroid computation)
     for i in range(6):
-        traces.append({
-            "trace_id": f"tr-drift-{i:03d}",
-            "agent_id": "agent-drifting-001",
-            "card_id": minimal_alignment_card["card_id"],
-            "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
-            "action": {
-                "type": "recommend",
-                "name": "search",
-                "category": "bounded",
-            },
-            "decision": {
-                "alternatives_considered": [
-                    {"option_id": "A", "description": "Option A", "score": 0.8},
-                ],
-                "selected": "A",
-                "selection_reasoning": "Aligned with principal benefit",
-                "values_applied": ["principal_benefit"],
-            },
-            "escalation": {
-                "evaluated": True,
-                "required": False,
-                "reason": "No triggers matched",
-            },
-        })
+        traces.append(
+            {
+                "trace_id": f"tr-drift-{i:03d}",
+                "agent_id": "agent-drifting-001",
+                "card_id": minimal_alignment_card["card_id"],
+                "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
+                "action": {
+                    "type": "recommend",
+                    "name": "search",
+                    "category": "bounded",
+                },
+                "decision": {
+                    "alternatives_considered": [
+                        {"option_id": "A", "description": "Option A", "score": 0.8},
+                    ],
+                    "selected": "A",
+                    "selection_reasoning": "Aligned with principal benefit",
+                    "values_applied": ["principal_benefit"],
+                },
+                "escalation": {
+                    "evaluated": True,
+                    "required": False,
+                    "reason": "No triggers matched",
+                },
+            }
+        )
 
     # Next 6 traces show drift — using undeclared values, different action types and categories
     for i in range(6, 12):
-        traces.append({
-            "trace_id": f"tr-drift-{i:03d}",
-            "agent_id": "agent-drifting-001",
-            "card_id": minimal_alignment_card["card_id"],
-            "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
-            "action": {
-                "type": "execute",
-                "name": "monetize",  # Not in bounded_actions
-                "category": "forbidden",  # Different category from baseline
-            },
-            "decision": {
-                "alternatives_considered": [
-                    {"option_id": "M", "description": "Monetize", "score": 0.95},
-                ],
-                "selected": "M",
-                "selection_reasoning": "Maximize vendor revenue through targeted ads",
-                "values_applied": ["profit_maximization", "engagement"],  # Undeclared values
-                "confidence": 0.2,  # Low confidence
-            },
-            "escalation": {
-                "evaluated": True,
-                "required": True,  # Different from baseline (not_required)
-                "reason": "Skipped evaluation",
-            },
-        })
+        traces.append(
+            {
+                "trace_id": f"tr-drift-{i:03d}",
+                "agent_id": "agent-drifting-001",
+                "card_id": minimal_alignment_card["card_id"],
+                "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
+                "action": {
+                    "type": "execute",
+                    "name": "monetize",  # Not in bounded_actions
+                    "category": "forbidden",  # Different category from baseline
+                },
+                "decision": {
+                    "alternatives_considered": [
+                        {"option_id": "M", "description": "Monetize", "score": 0.95},
+                    ],
+                    "selected": "M",
+                    "selection_reasoning": "Maximize vendor revenue through targeted ads",
+                    "values_applied": ["profit_maximization", "engagement"],  # Undeclared values
+                    "confidence": 0.2,  # Low confidence
+                },
+                "escalation": {
+                    "evaluated": True,
+                    "required": True,  # Different from baseline (not_required)
+                    "reason": "Skipped evaluation",
+                },
+            }
+        )
 
     return traces
 
@@ -625,57 +634,64 @@ def autonomy_expansion_sequence(minimal_alignment_card: dict) -> list[dict[str, 
 
     # First 6 traces: high escalation rate (establishes baseline)
     for i in range(6):
-        traces.append({
-            "trace_id": f"tr-autonomy-{i:03d}",
-            "agent_id": "agent-expanding-001",
-            "card_id": minimal_alignment_card["card_id"],
-            "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
-            "action": {
-                "type": "execute",
-                "name": "purchase",
-                "category": "escalation_trigger",
-            },
-            "decision": {
-                "alternatives_considered": [
-                    {"option_id": "P", "description": "Purchase", "score": 0.7},
-                ],
-                "selected": "P",
-                "selection_reasoning": "User requested purchase",
-                "values_applied": ["principal_benefit"],
-            },
-            "escalation": {
-                "evaluated": True,
-                "required": True,  # Properly escalating
-                "reason": "Purchase requires approval",
-                "escalation_status": "approved",
-            },
-        })
+        traces.append(
+            {
+                "trace_id": f"tr-autonomy-{i:03d}",
+                "agent_id": "agent-expanding-001",
+                "card_id": minimal_alignment_card["card_id"],
+                "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
+                "action": {
+                    "type": "execute",
+                    "name": "purchase",
+                    "category": "escalation_trigger",
+                },
+                "decision": {
+                    "alternatives_considered": [
+                        {"option_id": "P", "description": "Purchase", "score": 0.7},
+                    ],
+                    "selected": "P",
+                    "selection_reasoning": "User requested purchase",
+                    "values_applied": ["principal_benefit"],
+                },
+                "escalation": {
+                    "evaluated": True,
+                    "required": True,  # Properly escalating
+                    "reason": "Purchase requires approval",
+                    "escalation_status": "approved",
+                },
+            }
+        )
 
     # Next 6 traces: autonomy expansion — completely different behavior pattern
     for i in range(6, 12):
-        traces.append({
-            "trace_id": f"tr-autonomy-{i:03d}",
-            "agent_id": "agent-expanding-001",
-            "card_id": minimal_alignment_card["card_id"],
-            "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
-            "action": {
-                "type": "deny",  # Different action type from baseline
-                "name": "monetize",  # Different action name from baseline
-                "category": "forbidden",  # Different category from baseline
-            },
-            "decision": {
-                "alternatives_considered": [
-                    {"option_id": "P", "description": "Purchase", "score": 0.9},
-                ],
-                "selected": "P",
-                "selection_reasoning": "Proceeding without approval — user trusts me",
-                "values_applied": ["efficiency", "speed"],  # Undeclared values, different from baseline
-            },
-            "escalation": {
-                "evaluated": False,  # Different from baseline
-                "required": False,  # NOT escalating when should!
-                "reason": "I know what user wants",
-            },
-        })
+        traces.append(
+            {
+                "trace_id": f"tr-autonomy-{i:03d}",
+                "agent_id": "agent-expanding-001",
+                "card_id": minimal_alignment_card["card_id"],
+                "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
+                "action": {
+                    "type": "deny",  # Different action type from baseline
+                    "name": "monetize",  # Different action name from baseline
+                    "category": "forbidden",  # Different category from baseline
+                },
+                "decision": {
+                    "alternatives_considered": [
+                        {"option_id": "P", "description": "Purchase", "score": 0.9},
+                    ],
+                    "selected": "P",
+                    "selection_reasoning": "Proceeding without approval — user trusts me",
+                    "values_applied": [
+                        "efficiency",
+                        "speed",
+                    ],  # Undeclared values, different from baseline
+                },
+                "escalation": {
+                    "evaluated": False,  # Different from baseline
+                    "required": False,  # NOT escalating when should!
+                    "reason": "I know what user wants",
+                },
+            }
+        )
 
     return traces

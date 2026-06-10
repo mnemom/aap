@@ -79,6 +79,7 @@ class TestMainHelp:
         assert result.exit_code == 0
         # Check for semver pattern (e.g., "0.1.0", "0.1.1")
         import re
+
         assert re.search(r"\d+\.\d+\.\d+", result.output)
 
 
@@ -146,9 +147,12 @@ class TestInitCommand:
             main,
             [
                 "init",
-                "--values", "transparency",
-                "--agent-id", "my-custom-agent",
-                "--output", str(output_path),
+                "--values",
+                "transparency",
+                "--agent-id",
+                "my-custom-agent",
+                "--output",
+                str(output_path),
             ],
         )
         assert result.exit_code == 0
@@ -380,9 +384,12 @@ class TestCheckCoherenceCommand:
             main,
             [
                 "check-coherence",
-                "--my-card", str(card_a_path),
-                "--their-card", str(card_b_path),
-                "--task-values", "principal_benefit,transparency",
+                "--my-card",
+                str(card_a_path),
+                "--their-card",
+                str(card_b_path),
+                "--task-values",
+                "principal_benefit,transparency",
             ],
         )
         assert "Score:" in result.output
@@ -462,9 +469,12 @@ class TestDriftCommand:
             main,
             [
                 "drift",
-                "--card", str(temp_card),
-                "--traces", str(temp_trace_dir),
-                "--threshold", "0.5",
+                "--card",
+                str(temp_card),
+                "--traces",
+                str(temp_trace_dir),
+                "--threshold",
+                "0.5",
             ],
         )
         assert "Analyzing" in result.output
@@ -480,9 +490,12 @@ class TestDriftCommand:
             main,
             [
                 "drift",
-                "--card", str(temp_card),
-                "--traces", str(temp_trace_dir),
-                "--sustained", "5",
+                "--card",
+                str(temp_card),
+                "--traces",
+                str(temp_trace_dir),
+                "--sustained",
+                "5",
             ],
         )
         assert "Analyzing" in result.output

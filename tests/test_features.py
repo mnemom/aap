@@ -235,18 +235,14 @@ class TestContentFeatureExtraction:
     def test_word_frequency_normalized(self, extractor: FeatureExtractor):
         """Word frequencies should be normalized."""
         # Using internal method for direct testing
-        features = extractor._extract_content_features(
-            "test test test other word"
-        )
+        features = extractor._extract_content_features("test test test other word")
 
         # 'test' appears 3/5 times, 'other' 1/5, 'word' 1/5
         assert features.get("test", 0) > features.get("other", 0)
 
     def test_stopwords_filtered(self, extractor: FeatureExtractor):
         """Stopwords should be filtered out."""
-        features = extractor._extract_content_features(
-            "the quick brown fox and the lazy dog"
-        )
+        features = extractor._extract_content_features("the quick brown fox and the lazy dog")
 
         # 'the', 'and' are stopwords
         assert "the" not in features
@@ -258,9 +254,7 @@ class TestContentFeatureExtraction:
 
     def test_short_words_filtered(self, extractor: FeatureExtractor):
         """Words shorter than MIN_WORD_LENGTH should be filtered."""
-        features = extractor._extract_content_features(
-            "an AI to do it"
-        )
+        features = extractor._extract_content_features("an AI to do it")
 
         # 'an', 'AI', 'to', 'do', 'it' are all <= 2 chars
         # Only words with length >= MIN_WORD_LENGTH (3) should remain

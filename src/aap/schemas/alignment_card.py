@@ -74,15 +74,12 @@ class RelationshipType(str, Enum):
 class Principal(BaseModel):
     """Principal relationship declaration (unified / ADR-039 §principal)."""
 
-    type: PrincipalType = Field(
-        ..., description="Type of principal"
-    )
+    type: PrincipalType = Field(..., description="Type of principal")
     identifier: str | None = Field(
-        None, description="Principal identifier (DID, email, org ID). Required when type != 'unspecified'."
+        None,
+        description="Principal identifier (DID, email, org ID). Required when type != 'unspecified'.",
     )
-    relationship: RelationshipType = Field(
-        ..., description="Nature of authority delegation"
-    )
+    relationship: RelationshipType = Field(..., description="Nature of authority delegation")
     escalation_contact: str | None = Field(
         None, description="Endpoint for escalation notifications"
     )
@@ -129,25 +126,27 @@ class ValueDefinition(BaseModel):
 class Values(BaseModel):
     """Value declarations (unified / ADR-039 §values)."""
 
-    declared: list[str] = Field(
-        ..., description="List of value identifiers"
-    )
+    declared: list[str] = Field(..., description="List of value identifiers")
     definitions: dict[str, ValueDefinition] | None = Field(
         None, description="Definitions for non-standard values"
     )
     conflicts_with: list[str] | None = Field(
         None, description="Values this agent refuses to coordinate with"
     )
-    hierarchy: HierarchyType | None = Field(
-        None, description="How value conflicts are resolved"
-    )
+    hierarchy: HierarchyType | None = Field(None, description="How value conflicts are resolved")
 
     @model_validator(mode="after")
     def custom_values_must_be_defined(self) -> Values:
         """Non-standard values must have definitions."""
         standard_values = {
-            "principal_benefit", "transparency", "minimal_data",
-            "harm_prevention", "honesty", "user_control", "privacy", "fairness",
+            "principal_benefit",
+            "transparency",
+            "minimal_data",
+            "harm_prevention",
+            "honesty",
+            "user_control",
+            "privacy",
+            "fairness",
         }
         if self.definitions:
             for value in self.declared:
@@ -172,15 +171,9 @@ class TriggerAction(str, Enum):
 class EscalationTrigger(BaseModel):
     """Condition that triggers escalation (unified / ADR-039 §autonomy)."""
 
-    condition: str = Field(
-        ..., description="Condition expression"
-    )
-    action: TriggerAction = Field(
-        ..., description="Action to take when trigger matches"
-    )
-    reason: str = Field(
-        ..., description="Human-readable explanation"
-    )
+    condition: str = Field(..., description="Condition expression")
+    action: TriggerAction = Field(..., description="Action to take when trigger matches")
+    reason: str = Field(..., description="Human-readable explanation")
 
 
 class MonetaryValue(BaseModel):
@@ -198,18 +191,14 @@ class Autonomy(BaseModel):
     list) to match the unified spec, where only ``bounded_actions`` is required.
     """
 
-    bounded_actions: list[str] = Field(
-        ..., description="Actions permitted without escalation"
-    )
+    bounded_actions: list[str] = Field(..., description="Actions permitted without escalation")
     escalation_triggers: list[EscalationTrigger] = Field(
         default_factory=list, description="Conditions requiring escalation"
     )
     max_autonomous_value: MonetaryValue | None = Field(
         None, description="Maximum transaction value without escalation"
     )
-    forbidden_actions: list[str] | None = Field(
-        None, description="Actions never permitted"
-    )
+    forbidden_actions: list[str] | None = Field(None, description="Actions never permitted")
 
     @model_validator(mode="after")
     def bounded_and_forbidden_disjoint(self) -> Autonomy:
@@ -240,21 +229,13 @@ class Audit(BaseModel):
     unified shape (the platform validator rejects ``audit.storage``).
     """
 
-    trace_format: str = Field(
-        default="ap-trace-v1", description="Trace format identifier"
-    )
-    retention_days: int = Field(
-        ..., ge=0, description="Minimum retention period in days"
-    )
-    queryable: bool = Field(
-        ..., description="Whether traces can be queried externally"
-    )
+    trace_format: str = Field(default="ap-trace-v1", description="Trace format identifier")
+    retention_days: int = Field(..., ge=0, description="Minimum retention period in days")
+    queryable: bool = Field(..., description="Whether traces can be queried externally")
     query_endpoint: str | None = Field(
         None, description="Endpoint for trace queries (required if queryable=true)"
     )
-    tamper_evidence: TamperEvidence | None = Field(
-        None, description="Tamper-evidence mechanism"
-    )
+    tamper_evidence: TamperEvidence | None = Field(None, description="Tamper-evidence mechanism")
 
     @model_validator(mode="after")
     def queryable_requires_endpoint(self) -> Audit:
@@ -307,18 +288,10 @@ class AlignmentCard(BaseModel):
         default=CARD_VERSION,
         description="Unified alignment-card schema version (date-anchored identifier)",
     )
-    card_id: str = Field(
-        ..., description="Unique identifier for this card (UUID or URI)"
-    )
-    agent_id: str = Field(
-        ..., description="Identifier for the agent (DID, URL, or UUID)"
-    )
-    issued_at: datetime = Field(
-        ..., description="When this card was issued"
-    )
-    expires_at: datetime | None = Field(
-        None, description="When this card expires"
-    )
+    card_id: str = Field(..., description="Unique identifier for this card (UUID or URI)")
+    agent_id: str = Field(..., description="Identifier for the agent (DID, URL, or UUID)")
+    issued_at: datetime = Field(..., description="When this card was issued")
+    expires_at: datetime | None = Field(None, description="When this card expires")
     autonomy_mode: AlignmentMode = Field(
         default=AlignmentMode.OBSERVE,
         description="Master switch for the action-policing pipeline",
@@ -327,21 +300,11 @@ class AlignmentCard(BaseModel):
         default=AlignmentMode.OBSERVE,
         description="Master switch for the values/conscience pipeline",
     )
-    principal: Principal = Field(
-        ..., description="Principal relationship declaration"
-    )
-    values: Values = Field(
-        ..., description="Value declarations"
-    )
-    autonomy: Autonomy = Field(
-        ..., description="Autonomy bounds and escalation triggers"
-    )
-    audit: Audit = Field(
-        ..., description="Audit trail commitments"
-    )
-    extensions: dict[str, Any] | None = Field(
-        None, description="Protocol-specific extensions"
-    )
+    principal: Principal = Field(..., description="Principal relationship declaration")
+    values: Values = Field(..., description="Value declarations")
+    autonomy: Autonomy = Field(..., description="Autonomy bounds and escalation triggers")
+    audit: Audit = Field(..., description="Audit trail commitments")
+    extensions: dict[str, Any] | None = Field(None, description="Protocol-specific extensions")
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary suitable for JSON serialization."""

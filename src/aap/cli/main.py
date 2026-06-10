@@ -159,11 +159,7 @@ def init_cmd(
         # Validate values
         invalid_values = [v for v in value_list if v not in STANDARD_VALUES]
         if invalid_values:
-            click.echo(
-                warning(
-                    f"Non-standard values will require definitions: {invalid_values}"
-                )
-            )
+            click.echo(warning(f"Non-standard values will require definitions: {invalid_values}"))
 
         card_dict = _create_card_from_values(value_list, agent_id, card_id)
 
@@ -234,7 +230,9 @@ def _create_card_from_values(
     }
 
 
-def _create_card_interactive(agent_id: str | None = None, card_id: str | None = None) -> dict[str, Any]:
+def _create_card_interactive(
+    agent_id: str | None = None, card_id: str | None = None
+) -> dict[str, Any]:
     """Create an Alignment Card through interactive prompts."""
     click.echo(bold("\nAAP Alignment Card Creator\n"))
 
@@ -425,14 +423,24 @@ def verify_cmd(card: str, trace: str | None, traces: str | None, verbose: bool) 
             passed += 1
             if result.warnings:
                 warnings_count += len(result.warnings)
-                click.echo(warning(f"{trace_path.name}: Passed with {len(result.warnings)} warning(s) {Colors.CYAN}{sim_display}{Colors.RESET}"))
+                click.echo(
+                    warning(
+                        f"{trace_path.name}: Passed with {len(result.warnings)} warning(s) {Colors.CYAN}{sim_display}{Colors.RESET}"
+                    )
+                )
                 for w in result.warnings:
                     click.echo(f"    {w.type}: {w.description}")
             else:
-                click.echo(success(f"{trace_path.name}: Passed {Colors.CYAN}{sim_display}{Colors.RESET}"))
+                click.echo(
+                    success(f"{trace_path.name}: Passed {Colors.CYAN}{sim_display}{Colors.RESET}")
+                )
         else:
             failed += 1
-            click.echo(error(f"{trace_path.name}: {len(result.violations)} violation(s) {Colors.CYAN}{sim_display}{Colors.RESET}"))
+            click.echo(
+                error(
+                    f"{trace_path.name}: {len(result.violations)} violation(s) {Colors.CYAN}{sim_display}{Colors.RESET}"
+                )
+            )
             for v in result.violations:
                 click.echo(f"    {Colors.RED}{v.type.value}{Colors.RESET}: {v.description}")
 
@@ -452,7 +460,9 @@ def verify_cmd(card: str, trace: str | None, traces: str | None, verbose: bool) 
         click.echo(error(f"Failed:   {failed}"))
 
     if verbose:
-        click.echo(f"\n{Colors.CYAN}Verification checks: card_reference, card_expiration, autonomy, forbidden, escalation, values, behavioral_similarity{Colors.RESET}")
+        click.echo(
+            f"\n{Colors.CYAN}Verification checks: card_reference, card_expiration, autonomy, forbidden, escalation, values, behavioral_similarity{Colors.RESET}"
+        )
 
     sys.exit(0 if failed == 0 else 1)
 
@@ -631,8 +641,12 @@ def drift_cmd(
     for i, alert in enumerate(alerts, 1):
         click.echo(f"{Colors.RED}Alert {i}{Colors.RESET}")
         if alert.trace_ids:
-            click.echo(f"  Traces involved: {', '.join(alert.trace_ids[:3])}{'...' if len(alert.trace_ids) > 3 else ''}")
-        click.echo(f"  Direction: {Colors.YELLOW}{alert.analysis.drift_direction.value}{Colors.RESET}")
+            click.echo(
+                f"  Traces involved: {', '.join(alert.trace_ids[:3])}{'...' if len(alert.trace_ids) > 3 else ''}"
+            )
+        click.echo(
+            f"  Direction: {Colors.YELLOW}{alert.analysis.drift_direction.value}{Colors.RESET}"
+        )
         click.echo(f"  Similarity: {alert.analysis.similarity_score:.2f}")
         click.echo(f"  Sustained: {alert.analysis.sustained_traces} traces")
 

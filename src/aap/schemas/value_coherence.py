@@ -37,12 +37,8 @@ class TaskContext(BaseModel):
     """Context about the task for which alignment is being checked."""
 
     task_type: str = Field(..., description="Type of task being proposed")
-    values_required: list[str] | None = Field(
-        None, description="Values required for this task"
-    )
-    data_categories: list[str] | None = Field(
-        None, description="Categories of data involved"
-    )
+    values_required: list[str] | None = Field(None, description="Values required for this task")
+    data_categories: list[str] | None = Field(None, description="Categories of data involved")
 
 
 class AlignmentCardRequest(BaseModel):
@@ -68,15 +64,9 @@ class AlignmentCardRequest(BaseModel):
         default="alignment_card_request",
         description="Message type identifier",
     )
-    request_id: str = Field(
-        ..., description="Unique request identifier"
-    )
-    requester: RequesterInfo = Field(
-        ..., description="Information about requesting agent"
-    )
-    task_context: TaskContext | None = Field(
-        None, description="Context about the proposed task"
-    )
+    request_id: str = Field(..., description="Unique request identifier")
+    requester: RequesterInfo = Field(..., description="Information about requesting agent")
+    task_context: TaskContext | None = Field(None, description="Context about the proposed task")
     timestamp: datetime = Field(
         default_factory=datetime.utcnow,
         description="When request was made",
@@ -107,15 +97,9 @@ class AlignmentCardResponse(BaseModel):
         default="alignment_card_response",
         description="Message type identifier",
     )
-    request_id: str = Field(
-        ..., description="Request ID being responded to"
-    )
-    alignment_card: dict[str, Any] = Field(
-        ..., description="Responder's Alignment Card"
-    )
-    signature: Signature | None = Field(
-        None, description="Optional signature for authentication"
-    )
+    request_id: str = Field(..., description="Request ID being responded to")
+    alignment_card: dict[str, Any] = Field(..., description="Responder's Alignment Card")
+    signature: Signature | None = Field(None, description="Optional signature for authentication")
     timestamp: datetime = Field(
         default_factory=datetime.utcnow,
         description="When response was made",
@@ -155,12 +139,8 @@ class ProposedCollaboration(BaseModel):
     values_intersection: list[str] | None = Field(
         None, description="Values both agents should apply"
     )
-    data_sharing: DataSharing | None = Field(
-        None, description="Data sharing specification"
-    )
-    autonomy_scope: AutonomyScope | None = Field(
-        None, description="Scope of autonomous actions"
-    )
+    data_sharing: DataSharing | None = Field(None, description="Data sharing specification")
+    autonomy_scope: AutonomyScope | None = Field(None, description="Scope of autonomous actions")
 
 
 class ValueCoherenceCheck(BaseModel):
@@ -184,15 +164,9 @@ class ValueCoherenceCheck(BaseModel):
         default="value_coherence_check",
         description="Message type identifier",
     )
-    request_id: str = Field(
-        ..., description="Request ID"
-    )
-    initiator_card_id: str = Field(
-        ..., description="Initiator's Alignment Card ID"
-    )
-    responder_card_id: str = Field(
-        ..., description="Responder's Alignment Card ID"
-    )
+    request_id: str = Field(..., description="Request ID")
+    initiator_card_id: str = Field(..., description="Initiator's Alignment Card ID")
+    responder_card_id: str = Field(..., description="Responder's Alignment Card ID")
     proposed_collaboration: ProposedCollaboration = Field(
         ..., description="Proposed collaboration details"
     )
@@ -238,15 +212,9 @@ class ValueAlignmentDetail(BaseModel):
 class Coherence(BaseModel):
     """Coherence assessment."""
 
-    compatible: bool = Field(
-        ..., description="Whether agents are compatible"
-    )
-    score: float = Field(
-        ..., ge=0.0, le=1.0, description="Coherence score"
-    )
-    value_alignment: ValueAlignmentDetail = Field(
-        ..., description="Detailed alignment analysis"
-    )
+    compatible: bool = Field(..., description="Whether agents are compatible")
+    score: float = Field(..., ge=0.0, le=1.0, description="Coherence score")
+    value_alignment: ValueAlignmentDetail = Field(..., description="Detailed alignment analysis")
 
 
 class ResolutionType(str, Enum):
@@ -315,18 +283,10 @@ class CoherenceResultMessage(BaseModel):
         default="coherence_result",
         description="Message type identifier",
     )
-    request_id: str = Field(
-        ..., description="Request ID being responded to"
-    )
-    coherence: Coherence = Field(
-        ..., description="Coherence assessment"
-    )
-    proceed: bool = Field(
-        ..., description="Whether to proceed with coordination"
-    )
-    conditions: list[str] | None = Field(
-        None, description="Conditions for proceeding (if any)"
-    )
+    request_id: str = Field(..., description="Request ID being responded to")
+    coherence: Coherence = Field(..., description="Coherence assessment")
+    proceed: bool = Field(..., description="Whether to proceed with coordination")
+    conditions: list[str] | None = Field(None, description="Conditions for proceeding (if any)")
     proposed_resolution: ProposedResolution | None = Field(
         None, description="Proposed resolution (if conflicts exist)"
     )

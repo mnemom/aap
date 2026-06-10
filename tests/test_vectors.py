@@ -15,12 +15,14 @@ Design principles:
 from __future__ import annotations
 
 import json
+from datetime import timezone
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from aap import detect_drift, verify_trace
+from aap.verification.features import FeatureExtractor, cosine_similarity
 from aap.verification.models import ViolationType
 
 VECTORS_DIR = Path(__file__).parent / "vectors"
@@ -93,8 +95,7 @@ class TestInvalidTraceVectors:
 
         # Check description contains expected text
         forbidden_violations = [
-            v for v in result.violations
-            if v.type == ViolationType.FORBIDDEN_ACTION
+            v for v in result.violations if v.type == ViolationType.FORBIDDEN_ACTION
         ]
         assert any(
             expected["violations"][0]["description_contains"] in v.description
@@ -152,8 +153,7 @@ class TestDriftCaseVectors:
         # Check that drift was detected
         # The exact alert index may vary based on thresholds
         assert any(
-            alert.analysis.drift_direction.value in ["value_drift", "unknown"]
-            for alert in alerts
+            alert.analysis.drift_direction.value in ["value_drift", "unknown"] for alert in alerts
         )
 
     def test_autonomy_expansion_sequence(self, drift_cases_dir: Path):
@@ -208,6 +208,173 @@ class TestVectorDiscovery:
                 assert "card" in vector
                 assert "traces" in vector
                 assert "_expected_result" in vector
+
+
+# ===========================================================================
+# Golden Parity Tests (Python↔TS cross-language conformance)
+# ===========================================================================
+
+
+class TestGoldenParitySDK:
+    """Verify that the Python SDK produces results consistent with the TypeScript SDK.
+
+    Both SDKs must:
+    - Agree on the verify_trace result schema (same fields present)
+    - Produce the same similarity_score for identical inputs (deterministic)
+    - Produce UTC-aware timestamps
+    - Not include flag:* features in trace feature vectors
+    - Detect the same drift events on shared drift sequences
+    """
+
+    def test_verify_trace_similarity_score_present_and_bounded(self):
+        """verify_trace must return a similarity_score in [0, 1]."""
+        vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
+        result = verify_trace(vector["trace"], vector["card"])
+
+        assert hasattr(result, "similarity_score")
+        assert 0.0 <= result.similarity_score <= 1.0
+
+    def test_verify_trace_similarity_score_matches_cosine(self):
+        """verify_trace similarity_score must equal cosine(trace_features, card_features).
+
+        Both Python and TypeScript SDKs now use the same formula, so the score
+        must be deterministic and identical across languages for the same input.
+        """
+        vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
+
+        extractor = FeatureExtractor()
+        trace_vec = extractor.extract_trace_features(vector["trace"])
+        card_vec = extractor.extract_card_features(vector["card"])
+        expected = round(cosine_similarity(trace_vec, card_vec), 4)
+
+        result = verify_trace(vector["trace"], vector["card"])
+        assert result.similarity_score == expected
+
+    def test_verify_trace_timestamp_is_utc_aware(self):
+        """verify_trace timestamp must be timezone-aware UTC."""
+        vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
+        result = verify_trace(vector["trace"], vector["card"])
+
+        assert result.timestamp.tzinfo is not None
+        assert (
+            result.timestamp.tzinfo == timezone.utc
+            or result.timestamp.utcoffset().total_seconds() == 0
+        )
+
+    def test_verify_trace_behavioral_similarity_in_checks(self):
+        """behavioral_similarity must appear in checks_performed."""
+        vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
+        result = verify_trace(vector["trace"], vector["card"])
+
+        assert "behavioral_similarity" in result.verification_metadata.checks_performed
+
+    def test_verify_trace_low_behavioral_similarity_warning(self):
+        """Compliant trace should still emit low_behavioral_similarity warning (fixture-documented)."""
+        vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
+        result = verify_trace(vector["trace"], vector["card"])
+
+        # The fixture documents this warning is expected for structurally-valid traces
+        # because trace-to-card cosine similarity is depressed by asymmetric feature spaces.
+        assert result.verified is True
+        warning_types = [w.type for w in result.warnings]
+        assert "low_behavioral_similarity" in warning_types
+
+    def test_verify_trace_recommended_action_present_and_correct(self):
+        """verify_trace must return recommended_action matching violations/warnings state."""
+        vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
+        result = verify_trace(vector["trace"], vector["card"])
+
+        assert hasattr(result, "recommended_action")
+        assert result.recommended_action in ("proceed", "review", "deny")
+        if result.violations:
+            assert result.recommended_action == "deny"
+        elif result.warnings:
+            assert result.recommended_action == "review"
+        else:
+            assert result.recommended_action == "proceed"
+
+    def test_feature_extractor_no_flag_features(self):
+        """Python trace feature extractor must not produce flag:* features.
+
+        The compliant_recommendation trace has flags on one alternative. This test
+        asserts Python's extractor ignores them, matching the TS SDK's revised behavior.
+        """
+        vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
+
+        extractor = FeatureExtractor()
+        features = extractor.extract_trace_features(vector["trace"])
+
+        flag_keys = [k for k in features if k.startswith("flag:")]
+        assert flag_keys == [], f"Unexpected flag features: {flag_keys}"
+
+    def test_detect_drift_scores_are_bounded(self):
+        """detect_drift similarity scores must be in [0, 1] (value_drift sequence)."""
+        vector = load_vector(VECTORS_DIR / "drift_cases" / "value_drift_sequence.json")
+        alerts = detect_drift(vector["card"], vector["traces"])
+
+        assert len(alerts) >= 1
+        for alert in alerts:
+            assert 0.0 <= alert.analysis.similarity_score <= 1.0
+
+    def test_detect_drift_similarity_score_parity(self):
+        """detect_drift alert similarity_score must match first-principles cosine (AC3).
+
+        Replicates DivergenceDetector's baseline computation so any extractor
+        regression is caught before it can cause threshold-straddling divergence
+        between Python and TS.
+        """
+        from aap.verification.constants import (
+            DEFAULT_SIMILARITY_THRESHOLD,
+            DEFAULT_SUSTAINED_TURNS_THRESHOLD,
+        )
+        from aap.verification.features import compute_centroid
+
+        vector = load_vector(VECTORS_DIR / "drift_cases" / "value_drift_sequence.json")
+        traces = sorted(vector["traces"], key=lambda t: t.get("timestamp", ""))
+        n = len(traces)
+        s = DEFAULT_SUSTAINED_TURNS_THRESHOLD
+        baseline_size = max(s, min(10, n // 4))
+
+        extractor = FeatureExtractor()
+        centroid = compute_centroid(
+            [extractor.extract_trace_features(t) for t in traces[:baseline_size]]
+        )
+
+        streak, expected_score = [], None
+        for trace in traces[baseline_size:]:
+            sim = cosine_similarity(extractor.extract_trace_features(trace), centroid)
+            if sim < DEFAULT_SIMILARITY_THRESHOLD:
+                streak.append(sim)
+                if len(streak) == s:
+                    expected_score = round(sim, 4)
+                    break
+            else:
+                streak = []
+
+        assert expected_score is not None, "Fixture produced no alert-triggering trace"
+
+        # detect_drift must produce the same score (exact — same extractor, same formula)
+        alerts = detect_drift(vector["card"], vector["traces"])
+        assert len(alerts) >= 1
+        assert alerts[0].analysis.similarity_score == expected_score
+
+        # Cross-language fixture constant must also match within ±0.005
+        fixture_expected = vector["_expected_result"].get("expected_alert_similarity_score")
+        assert fixture_expected is not None, (
+            "expected_alert_similarity_score missing from fixture _expected_result"
+        )
+        assert abs(expected_score - fixture_expected) <= 0.005, (
+            f"Python computed {expected_score} but fixture records {fixture_expected}; "
+            "update fixture constant or fix extractor parity"
+        )
+
+    def test_detect_drift_timestamp_is_utc_aware(self):
+        """DriftAlert.detection_timestamp must be timezone-aware UTC."""
+        vector = load_vector(VECTORS_DIR / "drift_cases" / "value_drift_sequence.json")
+        alerts = detect_drift(vector["card"], vector["traces"])
+
+        for alert in alerts:
+            assert alert.detection_timestamp.tzinfo is not None
 
 
 # ===========================================================================

@@ -157,7 +157,28 @@ describe("extractTraceFeatures", () => {
       expect(features["escalation:not_required"]).toBeDefined();
     });
 
-    it("should extract escalation status when present", () => {
+    it("should extract escalation:evaluated when evaluated=true", () => {
+      // minimalTrace has escalation.evaluated = true
+      const features = extractTraceFeatures(minimalTrace);
+
+      expect(features["escalation:evaluated"]).toBe(1.0);
+    });
+
+    it("should NOT extract escalation:evaluated when evaluated=false", () => {
+      const unevaluatedTrace: APTrace = {
+        ...minimalTrace,
+        escalation: {
+          evaluated: false,
+          required: false,
+        },
+      };
+
+      const features = extractTraceFeatures(unevaluatedTrace);
+
+      expect(features["escalation:evaluated"]).toBeUndefined();
+    });
+
+    it("should NOT extract escalation_status as a feature (SDK parity with Python)", () => {
       const escalatedTrace: APTrace = {
         ...minimalTrace,
         escalation: {
@@ -169,11 +190,32 @@ describe("extractTraceFeatures", () => {
 
       const features = extractTraceFeatures(escalatedTrace);
 
-      expect(features["escalation:approved"]).toBeDefined();
+      // escalation_status is deliberately excluded to match the Python extractor
+      expect(features["escalation:approved"]).toBeUndefined();
     });
   });
 
-  describe("content features excluded", () => {
+  describe("confidence feature", () => {
+    it("should extract confidence as a float feature", () => {
+      const features = extractTraceFeatures(minimalTrace);
+
+      // minimalTrace has confidence: 0.85
+      expect(features["confidence"]).toBe(0.85);
+    });
+
+    it("should NOT add confidence feature when confidence is undefined", () => {
+      const noConfTrace: APTrace = {
+        ...minimalTrace,
+        decision: { ...minimalTrace.decision, confidence: undefined },
+      };
+
+      const features = extractTraceFeatures(noConfTrace);
+
+      expect(features["confidence"]).toBeUndefined();
+    });
+  });
+
+  describe("content and flag features excluded", () => {
     it("should NOT extract content from selection_reasoning", () => {
       const features = extractTraceFeatures(minimalTrace);
 
@@ -183,17 +225,7 @@ describe("extractTraceFeatures", () => {
       expect(contentKeys.length).toBe(0);
     });
 
-    it("should NOT extract content from alternative descriptions", () => {
-      const features = extractTraceFeatures(minimalTrace);
-
-      // Only flag: features should come from alternatives, not content:
-      const contentKeys = Object.keys(features).filter((k) => k.startsWith("content:"));
-      expect(contentKeys.length).toBe(0);
-    });
-  });
-
-  describe("flag features", () => {
-    it("should extract flags from alternatives", () => {
+    it("should NOT extract flag features from alternatives (SDK parity with Python)", () => {
       const traceWithFlags: APTrace = {
         ...minimalTrace,
         decision: {
@@ -211,8 +243,9 @@ describe("extractTraceFeatures", () => {
 
       const features = extractTraceFeatures(traceWithFlags);
 
-      expect(features["flag:sponsored_content"]).toBeDefined();
-      expect(features["flag:transparency_concern"]).toBeDefined();
+      // flag:* features are deliberately excluded to match the Python extractor
+      const flagKeys = Object.keys(features).filter((k) => k.startsWith("flag:"));
+      expect(flagKeys.length).toBe(0);
     });
   });
 

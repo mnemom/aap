@@ -139,10 +139,7 @@ class TestDivergenceDetection:
         detector = DivergenceDetector(sustained_turns_threshold=3)
         ts = _timestamps(12)
         # 12 identical traces: baseline centroid == each trace => similarity ~1.0
-        traces = [
-            _make_trace(f"t{i}", timestamp=ts[i])
-            for i in range(12)
-        ]
+        traces = [_make_trace(f"t{i}", timestamp=ts[i]) for i in range(12)]
         alerts = detector.detect(card, traces)
         assert alerts == []
 
@@ -152,15 +149,9 @@ class TestDivergenceDetection:
         ts = _timestamps(12)
 
         # First 6 traces: consistent baseline behavior
-        baseline_traces = [
-            _make_trace(f"t{i}", timestamp=ts[i])
-            for i in range(6)
-        ]
+        baseline_traces = [_make_trace(f"t{i}", timestamp=ts[i]) for i in range(6)]
         # Next 6 traces: completely different behavior
-        drift_traces = [
-            _make_drift_trace(f"t{i}", timestamp=ts[i])
-            for i in range(6, 12)
-        ]
+        drift_traces = [_make_drift_trace(f"t{i}", timestamp=ts[i]) for i in range(6, 12)]
         all_traces = baseline_traces + drift_traces
         alerts = detector.detect(card, all_traces)
         assert len(alerts) >= 1
@@ -210,6 +201,7 @@ class TestDivergenceDetection:
 
         # Shuffle the order
         import random
+
         shuffled = traces.copy()
         random.seed(42)
         random.shuffle(shuffled)
@@ -240,10 +232,7 @@ class TestSimilarityHistory:
         """History should have one entry per trace."""
         detector = DivergenceDetector()
         card = {"card_id": "c1", "values": {"declared": ["v1"]}}
-        traces = [
-            {"trace_id": f"t{i}", "decision": {"values_applied": ["v1"]}}
-            for i in range(5)
-        ]
+        traces = [{"trace_id": f"t{i}", "decision": {"values_applied": ["v1"]}} for i in range(5)]
         history = detector.compute_similarity_history(card, traces)
         assert len(history) == 5
 
@@ -301,18 +290,21 @@ class TestDriftDirection:
         card = {"card_id": "c1", "values": {"declared": []}}
         ts = _timestamps(12)
         # Baseline: some features
-        traces = [
-            _make_trace(f"t{i}", timestamp=ts[i], values_applied=[])
-            for i in range(6)
-        ]
+        traces = [_make_trace(f"t{i}", timestamp=ts[i], values_applied=[]) for i in range(6)]
         # Drift: different action but same empty values
         for i in range(6, 12):
-            traces.append(_make_trace(
-                f"t{i}", timestamp=ts[i],
-                action_name="export", action_type="execute",
-                category="forbidden", values_applied=[],
-                escalation_required=True, escalation_evaluated=False,
-            ))
+            traces.append(
+                _make_trace(
+                    f"t{i}",
+                    timestamp=ts[i],
+                    action_name="export",
+                    action_type="execute",
+                    category="forbidden",
+                    values_applied=[],
+                    escalation_required=True,
+                    escalation_evaluated=False,
+                )
+            )
         alerts = detector.detect(card, traces)
         if alerts:
             assert alerts[0].analysis.drift_direction == DriftDirection.UNKNOWN
@@ -326,10 +318,7 @@ class TestDriftIndicators:
         detector = DivergenceDetector(sustained_turns_threshold=3)
         card = {"card_id": "c1", "values": {"declared": ["v1"]}}
         ts = _timestamps(12)
-        traces = [
-            _make_trace(f"t{i}", timestamp=ts[i], values_applied=["v1"])
-            for i in range(6)
-        ]
+        traces = [_make_trace(f"t{i}", timestamp=ts[i], values_applied=["v1"]) for i in range(6)]
         for i in range(6, 12):
             traces.append(_make_drift_trace(f"t{i}", timestamp=ts[i]))
         alerts = detector.detect(card, traces)
@@ -345,10 +334,7 @@ class TestDetectDivergenceFunction:
         """detect_divergence function should work same as class method."""
         card = {"card_id": "c1", "values": {"declared": ["v1"]}}
         ts = _timestamps(12)
-        traces = [
-            _make_trace(f"t{i}", timestamp=ts[i], values_applied=["v1"])
-            for i in range(6)
-        ]
+        traces = [_make_trace(f"t{i}", timestamp=ts[i], values_applied=["v1"]) for i in range(6)]
         for i in range(6, 12):
             traces.append(_make_drift_trace(f"t{i}", timestamp=ts[i]))
         alerts_func = detect_divergence(card, traces)
@@ -363,7 +349,8 @@ class TestDetectDivergenceFunction:
         traces = [_make_trace(f"t{i}", timestamp=ts[i]) for i in range(10)]
         # With high sustained threshold, no alerts
         alerts = detect_divergence(
-            card, traces,
+            card,
+            traces,
             similarity_threshold=0.3,
             sustained_threshold=20,
         )
@@ -391,10 +378,7 @@ class TestDivergenceEdgeCases:
         detector = DivergenceDetector()
         card = {}  # Empty card
         ts = _timestamps(12)
-        traces = [
-            _make_trace(f"t{i}", timestamp=ts[i], values_applied=["v1"])
-            for i in range(12)
-        ]
+        traces = [_make_trace(f"t{i}", timestamp=ts[i], values_applied=["v1"]) for i in range(12)]
         # Should not raise
         alerts = detector.detect(card, traces)
         assert isinstance(alerts, list)
@@ -405,10 +389,7 @@ class TestDivergenceEdgeCases:
         card = {"card_id": "c1", "values": {"declared": ["v1"]}}
         ts = _timestamps(16)
         # 6 baseline traces
-        traces = [
-            _make_trace(f"t{i}", timestamp=ts[i], values_applied=["v1"])
-            for i in range(6)
-        ]
+        traces = [_make_trace(f"t{i}", timestamp=ts[i], values_applied=["v1"]) for i in range(6)]
         # 10 drifting traces (maximally divergent)
         for i in range(6, 16):
             traces.append(_make_drift_trace(f"t{i}", timestamp=ts[i]))
