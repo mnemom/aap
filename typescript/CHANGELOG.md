@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-06-10
+
+### Fixed
+
+* **verify (Python + TypeScript):** `extract_card_features` / `extractCardFeatures` now emit the **union** of both SDKs' prior feature sets, making card vectors identical across languages.
+  - Python gains: `conflict:{id}`, `forbidden:{action}`, `escalation:{action}`, `condition:{token}` (weight 0.5)
+  - TypeScript gains: `audit:queryable`, `audit:tamper_{mode}`
+  - On any fixture, Python and TS now produce the same `similarity_score` (within ≤1e-9 float tolerance).
+
+* **verify:** `similarity_score` divergence eliminated. Before this fix, on the `compliant_recommendation` fixture Python returned `0.4501` while TypeScript returned `0.3642` (Δ0.086). Near the `BEHAVIORAL_SIMILARITY_THRESHOLD` of `0.5` this divergence could flip `recommended_action` between `"review"` and `"proceed"` for the same trace depending on which SDK was used. Both SDKs now return `0.3642` for that fixture.
+
+* **verify (Python):** `verification_metadata.similarity_details` shape aligned with TypeScript. The Python payload previously emitted `{similarities, trace_ids, mean_similarity, min_similarity, trend}`; it now emits `{similarity_score, method, algorithm_version}` — the same shape TypeScript has always produced. See **Migration** below if your code reads this field.
+
+* **tests:** Replaced the self-referential cross-language parity gate in `golden-parity.test.ts`. The prior test computed its expected value with TS extractors and compared TS to itself, making it structurally incapable of detecting Python ↔ TypeScript divergence. Both SDKs now assert against a language-independent `expected_similarity_score` stored in each fixture file. Any future extractor drift between SDKs is CI-visible. ([#75](https://github.com/mnemom/aap/issues/75), Linear MNE-370)
+
+### ⚠ Similarity scores are NOT comparable across this boundary
+
+`ALGORITHM_VERSION` remains `"1.2.0"` in this patch because drift detection (which uses `ALGORITHM_VERSION` to guard stale baselines) is unaffected. However, `verify_trace` **similarity scores computed before 2.0.1 are not numerically comparable to scores computed after**: the Python extractor now emits more features, changing cosine denominators. If you store raw `similarity_score` values and compare them over time, treat the 2.0.1 upgrade as a score reset point.
+
+### Migration
+
+**`similarity_details` shape change (Python SDK only):**
+
+```python
+# Before 2.0.1 — Python similarity_details shape:
+details = result.verification_metadata.similarity_details
+mean = details["mean_similarity"]   # KeyError after upgrade
+sims = details["similarities"]      # KeyError after upgrade
+
+# After 2.0.1 — aligned shape (same as TypeScript):
+details = result.verification_metadata.similarity_details
+score  = details["similarity_score"]   # float
+method = details["method"]             # "cosine"
+ver    = details["algorithm_version"]  # e.g. "1.2.0"
+```
+
+TypeScript consumers: `similarity_details` shape is unchanged.
+
+---
+
 ## [2.0.0](https://github.com/mnemom/aap/compare/v1.3.0...v2.0.0) (2026-06-05)
 
 
