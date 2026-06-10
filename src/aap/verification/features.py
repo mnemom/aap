@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from collections import Counter
 from typing import Any
 
@@ -185,6 +186,63 @@ STOPWORDS: frozenset[str] = frozenset(
         "now",
         "again",
         "once",
+    }
+)
+
+# ---------------------------------------------------------------------------
+# Stopwords for structural condition-token extraction (cross-SDK parity).
+# Must match the TypeScript STOPWORDS set in features.ts EXACTLY so that
+# `condition:{token}` features are byte-for-byte identical across both SDKs.
+# ---------------------------------------------------------------------------
+_STRUCTURAL_STOPWORDS: frozenset[str] = frozenset(
+    {
+        "the",
+        "a",
+        "an",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "must",
+        "shall",
+        "can",
+        "this",
+        "that",
+        "these",
+        "those",
+        "it",
+        "its",
+        "as",
+        "if",
+        "then",
+        "else",
     }
 )
 
@@ -399,6 +457,19 @@ class FeatureExtractor:
 
         return features
 
+    def _tokenize_structural(self, text: str) -> list[str]:
+        """Tokenize a structural text field (e.g. escalation condition).
+
+        Mirrors TypeScript tokenize() exactly: lowercase, strip non-alphanumeric,
+        split on whitespace, filter by MIN_WORD_LENGTH and _STRUCTURAL_STOPWORDS.
+        """
+        normalized = re.sub(r"[^a-z0-9\s]", " ", text.lower())
+        return [
+            word
+            for word in normalized.split()
+            if len(word) >= MIN_WORD_LENGTH and word not in _STRUCTURAL_STOPWORDS
+        ]
+
     def extract_card_features(self, card: dict[str, Any]) -> dict[str, float]:
         """Extract features from an Alignment Card.
 
@@ -420,6 +491,24 @@ class FeatureExtractor:
         values = card.get("values", {})
         for value in values.get("declared", []):
             features[f"value:{value}"] = 1.0
+
+        # Conflict features (union parity with TypeScript)
+        for conflict in values.get("conflicts_with", []):
+            features[f"conflict:{conflict}"] = 1.0
+
+        # Forbidden action features (union parity with TypeScript)
+        for action in envelope.get("forbidden_actions", []):
+            features[f"forbidden:{action}"] = 1.0
+
+        # Escalation trigger features (union parity with TypeScript)
+        for trigger in envelope.get("escalation_triggers", []):
+            trigger_action = trigger.get("action")
+            if trigger_action:
+                features[f"escalation:{trigger_action}"] = 1.0
+            condition = trigger.get("condition", "")
+            if condition:
+                for token in self._tokenize_structural(condition):
+                    features[f"condition:{token}"] = features.get(f"condition:{token}", 0.0) + 0.5
 
         # Principal relationship features
         principal = card.get("principal", {})

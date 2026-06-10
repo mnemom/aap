@@ -324,7 +324,11 @@ def verify_trace(
             algorithm_version=ALGORITHM_VERSION,
             checks_performed=checks_performed,
             duration_ms=round(duration_ms, 2),
-            similarity_details=similarity_result,
+            similarity_details={
+                "similarity_score": round(similarity_score, 4),
+                "method": "cosine",
+                "algorithm_version": ALGORITHM_VERSION,
+            },
         ),
     )
 

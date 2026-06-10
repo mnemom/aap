@@ -9,7 +9,8 @@
         "severity": "critical",
         "description_contains": "delete_data"
       }
-    ]
+    ],
+    "expected_similarity_score": 0.121
   },
   "card": {
     "card_version": "unified/2026-04-26",

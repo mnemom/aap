@@ -250,6 +250,43 @@ class TestGoldenParitySDK:
         result = verify_trace(vector["trace"], vector["card"])
         assert result.similarity_score == expected
 
+    def test_verify_trace_similarity_score_matches_fixture(self):
+        """verify_trace similarity_score must equal the language-independent fixture constant.
+
+        Both Python and TypeScript assert against this same stored value (AC3),
+        so any cross-language extractor divergence becomes CI-visible.
+        """
+        vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
+        expected = vector["_expected_result"]["expected_similarity_score"]
+        result = verify_trace(vector["trace"], vector["card"])
+        assert abs(result.similarity_score - expected) <= 1e-9, (
+            f"similarity_score {result.similarity_score} != fixture expected {expected}"
+        )
+
+    @pytest.mark.parametrize(
+        "fixture_path",
+        [
+            "valid_traces/compliant_recommendation.json",
+            "valid_traces/approved_escalation.json",
+            "invalid_traces/forbidden_action.json",
+            "invalid_traces/missed_escalation.json",
+            "invalid_traces/undeclared_value.json",
+        ],
+    )
+    def test_all_fixtures_similarity_score_matches_stored(self, fixture_path: str):
+        """Every fixture with expected_similarity_score must match in both SDKs (AC3 full coverage).
+
+        Any cross-language extractor divergence on any fixture becomes CI-visible.
+        """
+        vector = load_vector(VECTORS_DIR / fixture_path)
+        stored = vector.get("_expected_result", {}).get("expected_similarity_score")
+        if stored is None:
+            pytest.skip(f"{fixture_path} has no expected_similarity_score")
+        result = verify_trace(vector["trace"], vector["card"])
+        assert abs(result.similarity_score - stored) <= 1e-9, (
+            f"{fixture_path}: similarity_score {result.similarity_score} != stored {stored}"
+        )
+
     def test_verify_trace_timestamp_is_utc_aware(self):
         """verify_trace timestamp must be timezone-aware UTC."""
         vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")

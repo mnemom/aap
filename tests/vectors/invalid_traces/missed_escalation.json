@@ -9,7 +9,8 @@
         "severity": "high",
         "description_contains": "purchase"
       }
-    ]
+    ],
+    "expected_similarity_score": 0.1133
   },
   "card": {
     "card_version": "unified/2026-04-26",

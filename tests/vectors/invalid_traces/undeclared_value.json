@@ -9,7 +9,8 @@
         "severity": "medium",
         "description_contains": "profit_maximization"
       }
-    ]
+    ],
+    "expected_similarity_score": 0.1138
   },
   "card": {
     "card_version": "unified/2026-04-26",

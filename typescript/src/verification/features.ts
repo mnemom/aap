@@ -7,7 +7,7 @@
 
 import { MIN_WORD_LENGTH } from "../constants";
 import type { AlignmentCard } from "../schemas/alignment-card";
-import { cardAutonomy, declaredValueIds } from "../schemas/alignment-card";
+import { cardAutonomy, cardAudit, declaredValueIds } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
 
 /** Sparse feature vector represented as a record. */
@@ -115,6 +115,15 @@ export function extractCardFeatures(card: AlignmentCard): FeatureVector {
   // Principal features (matching Python SDK naming)
   features[`principal_type:${card.principal.type}`] = 1.0;
   features[`relationship:${card.principal.relationship}`] = 1.0;
+
+  // Audit features (union parity with Python SDK)
+  const audit = cardAudit(card);
+  if (audit?.queryable) {
+    features["audit:queryable"] = 1.0;
+  }
+  if (audit?.tamper_evidence) {
+    features[`audit:tamper_${audit.tamper_evidence}`] = 1.0;
+  }
 
   return features;
 }

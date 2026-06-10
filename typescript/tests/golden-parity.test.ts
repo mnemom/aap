@@ -20,8 +20,6 @@ import {
   verifyTrace,
   detectDrift,
   extractTraceFeatures,
-  extractCardFeatures,
-  cosineSimilarity,
 } from "../src";
 import type { AlignmentCard, APTrace } from "../src";
 
@@ -66,15 +64,13 @@ describe("golden fixture: compliant_recommendation (verify_trace parity)", () =>
     );
   });
 
-  it("similarity_score should match Python cosine(trace_features, card_features) exactly", () => {
-    // Both SDKs use identical feature vectors and the same cosine formula,
-    // so the TS result must equal what Python computes for the same input.
-    const traceFeatures = extractTraceFeatures(fixture.trace);
-    const cardFeatures = extractCardFeatures(fixture.card);
-    const expected = Math.round(cosineSimilarity(traceFeatures, cardFeatures) * 10000) / 10000;
-
+  it("similarity_score should match fixture-stored expected value (cross-language AC3)", () => {
+    // Both Python and TypeScript assert against this same constant, so
+    // cross-language extractor drift is CI-visible. See AC3 in issue #75.
+    const expected = (fixture._expected_result as Record<string, unknown>)
+      .expected_similarity_score as number;
     const result = verifyTrace(fixture.trace, fixture.card);
-    expect(result.similarity_score).toBe(expected);
+    expect(Math.abs(result.similarity_score - expected)).toBeLessThanOrEqual(1e-9);
   });
 
   it("should emit low_behavioral_similarity warning (fixture expects it)", () => {
@@ -94,6 +90,36 @@ describe("golden fixture: compliant_recommendation (verify_trace parity)", () =>
     expect(result.timestamp).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
     expect(result.timestamp.endsWith("Z")).toBe(true);
   });
+});
+
+// ============================================================================
+// AC3 full coverage — all fixtures with expected_similarity_score
+// ============================================================================
+
+describe("AC3: all fixtures similarity_score matches stored expected value", () => {
+  const ALL_FIXTURES = [
+    "valid_traces/compliant_recommendation.json",
+    "valid_traces/approved_escalation.json",
+    "invalid_traces/forbidden_action.json",
+    "invalid_traces/missed_escalation.json",
+    "invalid_traces/undeclared_value.json",
+  ];
+
+  for (const fixturePath of ALL_FIXTURES) {
+    it(`${fixturePath} matches stored expected_similarity_score`, () => {
+      const v = loadVector(fixturePath) as {
+        trace: APTrace;
+        card: AlignmentCard;
+        _expected_result: Record<string, unknown>;
+      };
+      const stored = v._expected_result?.expected_similarity_score as number | undefined;
+      if (stored === undefined) return; // fixture not yet annotated — skip
+      const result = verifyTrace(v.trace, v.card);
+      expect(Math.abs(result.similarity_score - stored)).toBeLessThanOrEqual(
+        1e-9,
+      );
+    });
+  }
 });
 
 // ============================================================================
