@@ -593,7 +593,12 @@ describe("verifyTrace", () => {
           ],
         },
         autonomy: {
+          // Include the trace's bounded action ("recommend") so it passes the
+          // autonomy check — the warning under test only fires for traces that
+          // are structurally valid (no violations). The extra action_x* entries
+          // add card-only features that dilute cosine similarity below threshold.
           bounded_actions: [
+            "recommend",
             "action_x1", "action_x2", "action_x3", "action_x4", "action_x5",
             "action_x6", "action_x7", "action_x8", "action_x9", "action_x10",
           ],
