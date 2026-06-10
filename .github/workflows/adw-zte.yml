@@ -7,8 +7,12 @@
 name: ADW ZTE (Wintermute worker)
 
 on:
+  # Fire only on `labeled` — the label is the intended trigger. An unlabeled
+  # `opened` issue would spawn a run that immediately skips at the `if:` guard, and
+  # an issue created WITH an adw:* label fires BOTH `opened` and `labeled` (a
+  # double-trigger). `workflow_dispatch` covers the manual case. (MNE-251)
   issues:
-    types: [opened, labeled]
+    types: [labeled]
   issue_comment:
     types: [created]
   workflow_dispatch:
@@ -20,42 +24,92 @@ on:
         description: "Existing ADW id (optional, to resume)"
         required: false
       dry_run:
-        description: "Run the whole pipeline but STOP before merging"
+        # Dry-run is an EXPLICIT opt-in (MNE-389): only a manual dispatch that ticks
+        # this box runs --dry-run. Every other trigger (adw:* labels, `adw run` /
+        # `adw retry` comments, repository_dispatch, an unqualified dispatch) runs
+        # LIVE — merge on green — matching the docs-repo semantics.
+        description: "Dry run: run the whole pipeline but STOP before merging (default: off — runs are LIVE)"
         type: boolean
-        default: true
+        default: false
   repository_dispatch:
     types: [adw-zte]
 
-# One run per issue; never cancel in-progress (a kill mid-merge is dangerous).
-concurrency:
-  group: adw-zte-${{ github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
-  cancel-in-progress: false
-
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  checks: read
+  contents: read
 
 jobs:
-  zte:
-    # Only TRUSTED human triggers: the adw:zte / adw:ship labels (or a magic
-    # "adw" comment) from a repo owner/member/collaborator — never the bot's own
-    # [ADW-AGENTS] comments (loop guard), never PR comments. workflow_dispatch /
-    # repository_dispatch already require write access.
+  # Cheap pre-gate (no checkout, no concurrency): evaluates the trust / grammar /
+  # freeze guard and decides whether the heavy `zte` job runs. Because this job carries
+  # NO concurrency group, a guard-FAILING (noise) trigger — every non-command issue
+  # comment, including the worker's own [ADW-AGENTS] progress posts — is skipped HERE
+  # and never reaches a job that joins the per-issue concurrency group. Previously the
+  # group lived at the workflow level, so those skip-bound runs churned its single
+  # pending slot and could cancel a legitimate queued run (MNE-291). Only guard-PASSING
+  # runs reach `zte`.
+  #
+  # Only TRUSTED human triggers: the adw:zte / adw:ship / adw:sync / adw:rebase
+  # labels, or a RECOGNIZED `adw <command>` comment, from a repo owner / member /
+  # collaborator — never the bot's own [ADW-AGENTS] comments (loop guard), never PR
+  # comments, never on a frozen issue. workflow_dispatch / repository_dispatch
+  # already require write access.
+  #
+  # Comment grammar (free text like "adw fix lint issues" must NOT spawn a run): the
+  # comment body must START WITH exactly one recognized command line —
+  #   `adw run` / `adw zte`  → full pipeline
+  #   `adw ship`             → ship-only (merge the existing PR)
+  #   `adw retry`            → full pipeline (re-run from scratch)
+  #   `adw sync` / `adw rebase` → sync-only (re-sync the PR branch, no merge)
+  # Each is matched bare and with a trailing newline (both LF and CRLF, since the
+  # GitHub web UI submits CRLF line endings) so a one-line comment and a command
+  # followed by prose both qualify, while "adw fix ..." does not.
+  gate:
+    runs-on: ubuntu-latest
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'repository_dispatch' ||
       (github.event_name == 'issues' &&
         (contains(github.event.issue.labels.*.name, 'adw:zte') ||
-         contains(github.event.issue.labels.*.name, 'adw:ship')) &&
+         contains(github.event.issue.labels.*.name, 'adw:ship') ||
+         contains(github.event.issue.labels.*.name, 'adw:sync') ||
+         contains(github.event.issue.labels.*.name, 'adw:rebase')) &&
         !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) ||
       (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request == null &&
+        !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
         !contains(github.event.comment.body, '[ADW-AGENTS]') &&
-        startsWith(github.event.comment.body, 'adw') &&
+        (github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw zte' || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"')))) &&
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    outputs:
+      should_run: ${{ steps.decide.outputs.should_run }}
+    steps:
+      # The gate's `if:` already vetted the trigger; reaching this step means run.
+      - id: decide
+        run: echo "should_run=true" >> "$GITHUB_OUTPUT"
+
+  zte:
+    # Heavy worker job — runs only when the gate passed. A skipped gate (guard false)
+    # propagates to skip this job too, so it never starts and never joins the group.
+    # The per-issue concurrency lives HERE (job-level), not workflow-level: one run per
+    # issue, never cancel in-progress (a kill mid-merge is dangerous).
+    needs: gate
+    if: needs.gate.outputs.should_run == 'true'
+    # The heavy worker job carries the write scopes the gate doesn't need: it
+    # pushes branches, opens/merges PRs, and comments/labels issues. Declared
+    # here (job-level) so the cheap `gate` job stays read-only (MNE-321).
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      checks: read
+    concurrency:
+      group: adw-zte-${{ github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -71,7 +125,7 @@ jobs:
       # the worker can push branches, open/merge PRs, and comment/label issues.
       - name: Mint GitHub App token
         id: app
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         with:
           app-id: ${{ vars.ADW_APP_ID }}
           private-key: ${{ secrets.ADW_APP_PRIVATE_KEY }}
@@ -80,13 +134,20 @@ jobs:
             ${{ github.event.repository.name }}
             mnemom-adw
 
-      - uses: actions/checkout@v4
+      # The App installation token lives ~1h from this point. Record the mint time so
+      # the worker can checkpoint (commit+push pending work) BEFORE the cliff instead
+      # of silently losing commits when a >60min run outlives the token (MNE-393).
+      - name: Record token mint time
+        id: mint
+        run: echo "minted_at=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
 
-      - uses: astral-sh/setup-uv@v5
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -102,27 +163,95 @@ jobs:
 
       - name: Resolve context
         id: ctx
+        env:
+          # The raw comment body (only present on issue_comment events). Read via env so
+          # the command grammar is matched in shell, never interpolated into the script.
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          EVENT_NAME: ${{ github.event_name }}
+          # Issue number / adw id read via env so the (attacker-controllable on
+          # workflow_dispatch / repository_dispatch) values are never interpolated into
+          # the script body — they reach $GITHUB_OUTPUT only through quoted shell vars.
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
+          ADW_ID: ${{ github.event.inputs.adw_id || github.event.client_payload.adw_id }}
+          # Label-derived modes (issues / issue_comment carry the issue's labels).
+          HAS_SHIP_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:ship') }}
+          HAS_SYNC_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:sync') || contains(github.event.issue.labels.*.name, 'adw:rebase') }}
         run: |
-          echo "issue=${{ github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}" >> "$GITHUB_OUTPUT"
-          echo "adw_id=${{ github.event.inputs.adw_id || github.event.client_payload.adw_id }}" >> "$GITHUB_OUTPUT"
-          # Ship-only when the issue carries adw:ship (ship wins over adw:zte).
-          echo "ship_only=${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && contains(github.event.issue.labels.*.name, 'adw:ship') && 'true' || 'false' }}" >> "$GITHUB_OUTPUT"
+          echo "issue=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "adw_id=$ADW_ID" >> "$GITHUB_OUTPUT"
+
+          # Map the trigger to exactly one mode (ship_only | sync_only | full). The
+          # comment grammar (first token only) wins over labels when both are present;
+          # the `if:` guard already rejected free text, so only recognized commands
+          # reach here. `cmd` is the first whitespace-delimited word PAIR of the body.
+          ship_only=false
+          sync_only=false
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            cmd=$(printf '%s' "$COMMENT_BODY" | head -n1 | awk '{print $1, $2}')
+            case "$cmd" in
+              "adw ship")            ship_only=true ;;
+              "adw sync"|"adw rebase") sync_only=true ;;
+              # "adw run" / "adw zte" / "adw retry" → full pipeline (both false).
+            esac
+          else
+            # issues / dispatch: derive the mode from labels (ship wins over sync,
+            # both win over a full adw:zte run).
+            if [ "$HAS_SHIP_LABEL" = "true" ]; then
+              ship_only=true
+            elif [ "$HAS_SYNC_LABEL" = "true" ]; then
+              sync_only=true
+            fi
+          fi
+          echo "ship_only=$ship_only" >> "$GITHUB_OUTPUT"
+          echo "sync_only=$sync_only" >> "$GITHUB_OUTPUT"
 
       - name: Run the worker
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           GITHUB_PAT: ${{ steps.app.outputs.token }}
+          # Token-expiry hardening (MNE-393). The App token above lives ~1h; the
+          # worker uses the mint timestamp to checkpoint (commit+push) before the
+          # cliff (ADW_TOKEN_CLIFF_MIN, default 50min), and falls back to the
+          # workflow's own GITHUB_TOKEN for the LAST-GASP needs-human comment +
+          # `adw:needs-human` label when the App token is already dead. The job's
+          # permissions block (issues: write, pull-requests: write) is what scopes
+          # that fallback — do not drop those when editing this workflow.
+          ADW_TOKEN_MINTED_AT: ${{ steps.mint.outputs.minted_at }}
+          ADW_FALLBACK_TOKEN: ${{ github.token }}
           # work_root = the checkout, so the capability manifest + run state + any
           # worktrees resolve under the repo. cwd is already the repo (origin set).
           MNEMOM_ADW_HOME: ${{ github.workspace }}
           # Heavy phases (opus implement/resolve) get a longer per-call watchdog.
           ADW_AGENT_TIMEOUT_SEC_HEAVY: "1800"
-          # Visual validation runs but is ADVISORY (reported, never blocks the merge):
-          # reliable headless screenshotting isn't wired in CI yet, and the deterministic
-          # CI checks (Lint/Type Check/Test/Build/i18n) plus prod-gating are the real guard.
-          ADW_UX_GATE: advisory
+          # The issue number, adw id, and repo slug reach the worker only as quoted
+          # shell vars — never interpolated into the command body (they can carry
+          # attacker-controlled input on workflow_dispatch / repository_dispatch).
+          ISSUE: ${{ steps.ctx.outputs.issue }}
+          ADW_ID: ${{ steps.ctx.outputs.adw_id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # --adw-id's VALUE comes from "$ADW_ID"; this boolean only decides whether the
+          # literal --adw-id flag is emitted (a hostile adw_id can never become a flag).
+          WANT_ADW_ID: ${{ steps.ctx.outputs.ship_only != 'true' && steps.ctx.outputs.sync_only != 'true' && steps.ctx.outputs.adw_id != '' }}
+          # Dry-run is an explicit opt-in (MNE-389): ONLY a workflow_dispatch with
+          # dry_run=true passes --dry-run. Labels, comment commands, repository_dispatch,
+          # and an unqualified manual dispatch all run LIVE (merge on green) — previously
+          # everything except `dispatch + dry_run=false` was dry, so a comment-triggered
+          # `adw retry` could never complete the ship it was asked to complete. sync-only
+          # never takes --dry-run (a sync never merges). Evaluated to a literal boolean in
+          # env (not inline in the command) to keep the run: body free of any
+          # `${{ github.* }}` interpolation (MNE-311).
+          WANT_DRY_RUN: ${{ steps.ctx.outputs.sync_only != 'true' && github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
         run: |
-          mnemom-adw "${{ steps.ctx.outputs.issue }}" --repo "${{ github.repository }}" \
-            ${{ steps.ctx.outputs.ship_only != 'true' && steps.ctx.outputs.adw_id != '' && format('--adw-id {0}', steps.ctx.outputs.adw_id) || '' }} \
+          # ship-only / sync-only select LITERAL flags from trusted steps.ctx booleans
+          # (no user data), so they stay as conditional flag-selection expressions;
+          # --adw-id and --dry-run are gated on the boolean env vars above and pass the
+          # adw-id VALUE only as a quoted shell var.
+          adw_id_flag=""
+          [ "$WANT_ADW_ID" = "true" ] && adw_id_flag="--adw-id"
+          dry_run_flag=""
+          [ "$WANT_DRY_RUN" = "true" ] && dry_run_flag="--dry-run"
+          mnemom-adw "$ISSUE" --repo "$GITHUB_REPOSITORY" \
+            ${adw_id_flag:+"$adw_id_flag" "$ADW_ID"} \
             ${{ steps.ctx.outputs.ship_only == 'true' && '--ship-only' || '' }} \
-            ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '--dry-run' || '' }}
+            ${{ steps.ctx.outputs.sync_only == 'true' && '--sync-only' || '' }} \
+            ${dry_run_flag:+"$dry_run_flag"}
