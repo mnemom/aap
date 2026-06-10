@@ -1,0 +1,128 @@
+# ADW ZTE trigger — copy to <target-repo>/.github/workflows/adw-zte.yml
+#
+# GitHub Actions stands in for an inbound webhook server. It reacts to issue
+# events / manual dispatch and runs the mnemom-adw worker inside CI (un-nested,
+# so the agent's tools work normally — unlike a worker spawned inside an
+# interactive Claude session). See docs/ci-setup.md for the one-time setup.
+name: ADW ZTE (Wintermute worker)
+
+on:
+  issues:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to run on"
+        required: true
+      adw_id:
+        description: "Existing ADW id (optional, to resume)"
+        required: false
+      dry_run:
+        description: "Run the whole pipeline but STOP before merging"
+        type: boolean
+        default: true
+  repository_dispatch:
+    types: [adw-zte]
+
+# One run per issue; never cancel in-progress (a kill mid-merge is dangerous).
+concurrency:
+  group: adw-zte-${{ github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: read
+
+jobs:
+  zte:
+    # Only TRUSTED human triggers: the adw:zte / adw:ship labels (or a magic
+    # "adw" comment) from a repo owner/member/collaborator — never the bot's own
+    # [ADW-AGENTS] comments (loop guard), never PR comments. workflow_dispatch /
+    # repository_dispatch already require write access.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'issues' &&
+        (contains(github.event.issue.labels.*.name, 'adw:zte') ||
+         contains(github.event.issue.labels.*.name, 'adw:ship')) &&
+        !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request == null &&
+        !contains(github.event.comment.body, '[ADW-AGENTS]') &&
+        startsWith(github.event.comment.body, 'adw') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      # Claude auth (already an org/repo secret). The Agent SDK bundles its own
+      # `claude` binary, so no separate CLI install is needed.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      # A GitHub App token (not the default GITHUB_TOKEN) so the worker's pushes
+      # and PRs TRIGGER downstream CI — otherwise the ship loop waits forever on
+      # checks that never run. Scoped to this repo + the private worker repo.
+      # Uses the dedicated write-capable App (mnemom-adw) — NOT the read-only
+      # mnemom-ci-reader (vars.APP_ID). Needs contents+pull-requests+issues write so
+      # the worker can push branches, open/merge PRs, and comment/label issues.
+      - name: Mint GitHub App token
+        id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.ADW_APP_ID }}
+          private-key: ${{ secrets.ADW_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            ${{ github.event.repository.name }}
+            mnemom-adw
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "wintermute-eng-fleet[bot]"
+          git config user.email "wintermute-eng-fleet[bot]@users.noreply.github.com"
+
+      - name: Install the mnemom-adw worker (+ Agent SDK)
+        run: |
+          uv tool install --python 3.12 \
+            "mnemom-adw[sdk] @ git+https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository_owner }}/mnemom-adw.git@main"
+
+      - name: Resolve context
+        id: ctx
+        run: |
+          echo "issue=${{ github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}" >> "$GITHUB_OUTPUT"
+          echo "adw_id=${{ github.event.inputs.adw_id || github.event.client_payload.adw_id }}" >> "$GITHUB_OUTPUT"
+          # Ship-only when the issue carries adw:ship (ship wins over adw:zte).
+          echo "ship_only=${{ (github.event_name == 'issues' || github.event_name == 'issue_comment') && contains(github.event.issue.labels.*.name, 'adw:ship') && 'true' || 'false' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Run the worker
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GITHUB_PAT: ${{ steps.app.outputs.token }}
+          # work_root = the checkout, so the capability manifest + run state + any
+          # worktrees resolve under the repo. cwd is already the repo (origin set).
+          MNEMOM_ADW_HOME: ${{ github.workspace }}
+          # Heavy phases (opus implement/resolve) get a longer per-call watchdog.
+          ADW_AGENT_TIMEOUT_SEC_HEAVY: "1800"
+          # Visual validation runs but is ADVISORY (reported, never blocks the merge):
+          # reliable headless screenshotting isn't wired in CI yet, and the deterministic
+          # CI checks (Lint/Type Check/Test/Build/i18n) plus prod-gating are the real guard.
+          ADW_UX_GATE: advisory
+        run: |
+          mnemom-adw "${{ steps.ctx.outputs.issue }}" --repo "${{ github.repository }}" \
+            ${{ steps.ctx.outputs.ship_only != 'true' && steps.ctx.outputs.adw_id != '' && format('--adw-id {0}', steps.ctx.outputs.adw_id) || '' }} \
+            ${{ steps.ctx.outputs.ship_only == 'true' && '--ship-only' || '' }} \
+            ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true') && '--dry-run' || '' }}
