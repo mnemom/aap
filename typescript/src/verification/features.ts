@@ -128,35 +128,35 @@ export function extractTraceFeatures(trace: APTrace): FeatureVector {
   // Action features (aligned with Python: action:{type}, category:{category}, action_name:{name})
   features[`action:${trace.action.type}`] = 1.0;
   features[`category:${trace.action.category}`] = 1.0;
-  features[`action_name:${trace.action.name}`] = 1.0;
+  if (trace.action.name) {
+    features[`action_name:${trace.action.name}`] = 1.0;
+  }
 
   // Value features from decision
   for (const value of trace.decision.values_applied) {
     features[`value:${value}`] = 1.0;
   }
 
-  // Escalation features
+  // Escalation features (aligned with Python feature extractor)
   if (trace.escalation) {
+    if (trace.escalation.evaluated) {
+      features["escalation:evaluated"] = 1.0;
+    }
     features[
       `escalation:${trace.escalation.required ? "required" : "not_required"}`
     ] = 1.0;
-    if (trace.escalation.escalation_status) {
-      features[`escalation:${trace.escalation.escalation_status}`] = 1.0;
-    }
+  }
+
+  // Confidence feature (normalized float, aligned with Python)
+  if (trace.decision.confidence != null) {
+    features["confidence"] = trace.decision.confidence;
   }
 
   // Note: Content features from reasoning/alternatives are deliberately excluded.
   // Card features are purely structural, so content tokens dilute cosine
   // similarity without adding alignment signal. See CALIBRATION.md Section 3.5.
-
-  // Flag features from alternatives (structural, not content)
-  for (const alt of trace.decision.alternatives_considered) {
-    if (alt.flags) {
-      for (const flag of alt.flags) {
-        features[`flag:${flag}`] = 1.0;
-      }
-    }
-  }
+  // Flag features and escalation status are also excluded to match the Python
+  // feature extractor exactly (SDK parity, issue #72).
 
   return features;
 }

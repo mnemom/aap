@@ -11,6 +11,7 @@
 
 import {
   ALGORITHM_VERSION,
+  BEHAVIORAL_SIMILARITY_THRESHOLD,
   CONFLICT_PENALTY_MULTIPLIER,
   DEFAULT_SIMILARITY_THRESHOLD,
   DEFAULT_SUSTAINED_CHECKS_THRESHOLD,
@@ -24,6 +25,7 @@ import type { APTrace } from "../schemas/ap-trace";
 import {
   computeCentroid,
   cosineSimilarity,
+  extractCardFeatures,
   extractTraceFeatures,
 } from "./features";
 import {
@@ -256,6 +258,29 @@ export function verifyTrace(
     }
   }
 
+  // Compute behavioral similarity using feature cosine similarity (trace vs card)
+  checksPerformed.push("behavioral_similarity");
+  const similarityScore =
+    Math.round(
+      cosineSimilarity(extractTraceFeatures(trace), extractCardFeatures(card)) *
+        10000,
+    ) / 10000;
+
+  const similarityDetails: Record<string, unknown> = {
+    similarity_score: similarityScore,
+    method: "cosine",
+    algorithm_version: ALGORITHM_VERSION,
+  };
+
+  // Warn if structurally valid but behaviorally divergent
+  if (violations.length === 0 && similarityScore < BEHAVIORAL_SIMILARITY_THRESHOLD) {
+    warnings.push({
+      type: "low_behavioral_similarity",
+      description: `Trace passes structural checks but behavioral similarity (${similarityScore.toFixed(2)}) is below threshold (${BEHAVIORAL_SIMILARITY_THRESHOLD})`,
+      trace_field: "(computed)",
+    });
+  }
+
   const durationMs = performance.now() - startTime;
 
   const hasViolations = violations.length > 0;
@@ -273,10 +298,12 @@ export function verifyTrace(
     timestamp: new Date().toISOString(),
     violations,
     warnings,
+    similarity_score: similarityScore,
     verification_metadata: {
       algorithm_version: ALGORITHM_VERSION,
       checks_performed: checksPerformed,
       duration_ms: Math.round(durationMs * 100) / 100,
+      similarity_details: similarityDetails,
     },
   };
 }

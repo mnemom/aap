@@ -6,7 +6,7 @@ in SPEC.md Sections 7 (Verification) and 8 (Drift Detection).
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -115,8 +115,8 @@ class VerificationResult(BaseModel):
     trace_id: str = Field(..., description="ID of the verified trace")
     card_id: str = Field(..., description="ID of the Alignment Card used")
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
-        description="When verification was performed",
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When verification was performed (UTC)",
     )
     violations: list[Violation] = Field(
         default_factory=list, description="List of violations found"
@@ -169,8 +169,8 @@ class DriftAlert(BaseModel):
     agent_id: str = Field(..., description="Agent exhibiting drift")
     card_id: str = Field(..., description="Alignment Card being drifted from")
     detection_timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
-        description="When drift was detected",
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When drift was detected (UTC)",
     )
     analysis: DriftAnalysis = Field(..., description="Drift analysis details")
     recommendation: str = Field(

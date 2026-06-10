@@ -23,6 +23,9 @@ export const DEFAULT_SUSTAINED_CHECKS_THRESHOLD = 3;
 /** Score below which an action is flagged as "near boundary" warning */
 export const NEAR_BOUNDARY_THRESHOLD = 0.35;
 
+/** Warn when behavioral similarity is below this threshold even if structural checks pass. */
+export const BEHAVIORAL_SIMILARITY_THRESHOLD = 0.5;
+
 // Coherence Scoring
 // -----------------
 /** Minimum coherence score for automatic "proceed" recommendation */

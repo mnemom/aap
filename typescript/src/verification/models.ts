@@ -71,6 +71,8 @@ export interface VerificationMetadata {
   checks_performed: string[];
   /** Time taken to perform verification in milliseconds */
   duration_ms?: number | null;
+  /** SSM analysis details when behavioral similarity is computed */
+  similarity_details?: Record<string, unknown> | null;
 }
 
 /**
@@ -95,12 +97,14 @@ export interface VerificationResult {
   trace_id: string;
   /** ID of the Alignment Card used */
   card_id: string;
-  /** When verification was performed (ISO 8601) */
+  /** When verification was performed (ISO 8601 UTC) */
   timestamp: string;
   /** List of violations found */
   violations: Violation[];
   /** List of non-critical warnings */
   warnings: Warning[];
+  /** Behavioral similarity to Alignment Card (0.0–1.0) */
+  similarity_score: number;
   /** Metadata about the verification process */
   verification_metadata: VerificationMetadata;
 }
