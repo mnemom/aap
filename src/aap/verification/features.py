@@ -42,34 +42,151 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Stopwords for content feature extraction
 # ---------------------------------------------------------------------------
-STOPWORDS: frozenset[str] = frozenset({
-    # Articles
-    "a", "an", "the",
-    # Pronouns
-    "i", "me", "my", "myself", "we", "our", "ours", "ourselves",
-    "you", "your", "yours", "yourself", "yourselves",
-    "he", "him", "his", "himself", "she", "her", "hers", "herself",
-    "it", "its", "itself", "they", "them", "their", "theirs", "themselves",
-    "what", "which", "who", "whom", "this", "that", "these", "those",
-    # Common verbs
-    "am", "is", "are", "was", "were", "be", "been", "being",
-    "have", "has", "had", "having", "do", "does", "did", "doing",
-    "will", "would", "shall", "should", "can", "could", "may", "might", "must",
-    # Prepositions
-    "at", "by", "for", "from", "in", "into", "of", "on", "onto",
-    "to", "with", "without", "about", "above", "across", "after",
-    "against", "along", "among", "around", "before", "behind",
-    "below", "beneath", "beside", "between", "beyond", "during",
-    # Conjunctions
-    "and", "but", "or", "nor", "yet", "so",
-    "both", "either", "neither", "whether", "although", "because",
-    "since", "unless", "while", "whereas", "if", "then", "else",
-    # Adverbs
-    "not", "no", "never", "also", "very", "often", "however",
-    "too", "usually", "really", "already", "always", "just", "quite",
-    # Other function words
-    "as", "than", "how", "here", "there", "now", "again", "once",
-})
+STOPWORDS: frozenset[str] = frozenset(
+    {
+        # Articles
+        "a",
+        "an",
+        "the",
+        # Pronouns
+        "i",
+        "me",
+        "my",
+        "myself",
+        "we",
+        "our",
+        "ours",
+        "ourselves",
+        "you",
+        "your",
+        "yours",
+        "yourself",
+        "yourselves",
+        "he",
+        "him",
+        "his",
+        "himself",
+        "she",
+        "her",
+        "hers",
+        "herself",
+        "it",
+        "its",
+        "itself",
+        "they",
+        "them",
+        "their",
+        "theirs",
+        "themselves",
+        "what",
+        "which",
+        "who",
+        "whom",
+        "this",
+        "that",
+        "these",
+        "those",
+        # Common verbs
+        "am",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "having",
+        "do",
+        "does",
+        "did",
+        "doing",
+        "will",
+        "would",
+        "shall",
+        "should",
+        "can",
+        "could",
+        "may",
+        "might",
+        "must",
+        # Prepositions
+        "at",
+        "by",
+        "for",
+        "from",
+        "in",
+        "into",
+        "of",
+        "on",
+        "onto",
+        "to",
+        "with",
+        "without",
+        "about",
+        "above",
+        "across",
+        "after",
+        "against",
+        "along",
+        "among",
+        "around",
+        "before",
+        "behind",
+        "below",
+        "beneath",
+        "beside",
+        "between",
+        "beyond",
+        "during",
+        # Conjunctions
+        "and",
+        "but",
+        "or",
+        "nor",
+        "yet",
+        "so",
+        "both",
+        "either",
+        "neither",
+        "whether",
+        "although",
+        "because",
+        "since",
+        "unless",
+        "while",
+        "whereas",
+        "if",
+        "then",
+        "else",
+        # Adverbs
+        "not",
+        "no",
+        "never",
+        "also",
+        "very",
+        "often",
+        "however",
+        "too",
+        "usually",
+        "really",
+        "already",
+        "always",
+        "just",
+        "quite",
+        # Other function words
+        "as",
+        "than",
+        "how",
+        "here",
+        "there",
+        "now",
+        "again",
+        "once",
+    }
+)
 
 # ---------------------------------------------------------------------------
 # Try importing sklearn for TF-IDF (optional dependency)
@@ -185,9 +302,7 @@ class FeatureExtractor:
         # 60% word + 30% char + 10% metadata (0 when no metadata)
         return round(TFIDF_WORD_WEIGHT * word_sim + TFIDF_CHAR_WEIGHT * char_sim, 4)
 
-    def _sklearn_similarity_components(
-        self, text_a: str, text_b: str
-    ) -> tuple[float, float]:
+    def _sklearn_similarity_components(self, text_a: str, text_b: str) -> tuple[float, float]:
         """Return (word_similarity, char_similarity) via sklearn TF-IDF.
 
         Word-level: unigrams + bigrams, sublinear TF, max 500 features

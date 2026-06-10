@@ -41,7 +41,9 @@ def make_card(
     return card
 
 
-def make_entry(agent_id: str, declared: list[str], conflicts_with: list[str] | None = None) -> dict[str, Any]:
+def make_entry(
+    agent_id: str, declared: list[str], conflicts_with: list[str] | None = None
+) -> dict[str, Any]:
     """Create a fleet entry with agent_id and card."""
     return {"agent_id": agent_id, "card": make_card(agent_id, declared, conflicts_with)}
 
@@ -401,23 +403,51 @@ class TestShowcaseScenario:
     @pytest.fixture
     def showcase_cards(self) -> list[dict[str, Any]]:
         return [
-            make_entry("sentinel", [
-                "principal_benefit", "transparency", "harm_prevention",
-                "honesty", "data_integrity", "incident_containment",
-            ]),
-            make_entry("triage", [
-                "principal_benefit", "transparency", "harm_prevention",
-                "honesty", "accountability", "incident_containment",
-            ]),
-            make_entry("patch", [
-                "principal_benefit", "transparency", "harm_prevention",
-                "honesty", "accountability", "incident_containment",
-                "move_fast_break_things",
-            ], ["data_integrity"]),
-            make_entry("herald", [
-                "principal_benefit", "transparency", "harm_prevention",
-                "honesty", "accountability",
-            ]),
+            make_entry(
+                "sentinel",
+                [
+                    "principal_benefit",
+                    "transparency",
+                    "harm_prevention",
+                    "honesty",
+                    "data_integrity",
+                    "incident_containment",
+                ],
+            ),
+            make_entry(
+                "triage",
+                [
+                    "principal_benefit",
+                    "transparency",
+                    "harm_prevention",
+                    "honesty",
+                    "accountability",
+                    "incident_containment",
+                ],
+            ),
+            make_entry(
+                "patch",
+                [
+                    "principal_benefit",
+                    "transparency",
+                    "harm_prevention",
+                    "honesty",
+                    "accountability",
+                    "incident_containment",
+                    "move_fast_break_things",
+                ],
+                ["data_integrity"],
+            ),
+            make_entry(
+                "herald",
+                [
+                    "principal_benefit",
+                    "transparency",
+                    "harm_prevention",
+                    "honesty",
+                    "accountability",
+                ],
+            ),
         ]
 
     def test_fleet_score_computed(self, showcase_cards):
@@ -436,7 +466,9 @@ class TestShowcaseScenario:
     def test_divergence_report_includes_mfbt(self, showcase_cards):
         result = check_fleet_coherence(showcase_cards)
 
-        mfbt = next((d for d in result.divergence_report if d.value == "move_fast_break_things"), None)
+        mfbt = next(
+            (d for d in result.divergence_report if d.value == "move_fast_break_things"), None
+        )
         assert mfbt is not None
         assert "patch" in mfbt.agents_declaring
         assert len(mfbt.agents_missing) > 0

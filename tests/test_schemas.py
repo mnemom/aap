@@ -333,9 +333,7 @@ class TestAlignmentCard:
         in is_expired(). This test uses naive datetime to work around it.
         """
         # Use naive datetime to avoid comparison issues
-        minimal_alignment_card["expires_at"] = (
-            datetime.utcnow() + timedelta(days=30)
-        ).isoformat()
+        minimal_alignment_card["expires_at"] = (datetime.utcnow() + timedelta(days=30)).isoformat()
         card = AlignmentCard.model_validate(minimal_alignment_card)
         assert card.is_expired() is False
 
@@ -346,9 +344,7 @@ class TestAlignmentCard:
         in is_expired(). This test uses naive datetime to work around it.
         """
         # Use naive datetime to avoid comparison issues
-        minimal_alignment_card["expires_at"] = (
-            datetime.utcnow() - timedelta(days=1)
-        ).isoformat()
+        minimal_alignment_card["expires_at"] = (datetime.utcnow() - timedelta(days=1)).isoformat()
         card = AlignmentCard.model_validate(minimal_alignment_card)
         assert card.is_expired() is True
 

@@ -106,8 +106,7 @@ class TestVerifyTraceViolations:
         assert len(result.violations) >= 1
 
         mismatch_violations = [
-            v for v in result.violations
-            if v.type == ViolationType.CARD_MISMATCH
+            v for v in result.violations if v.type == ViolationType.CARD_MISMATCH
         ]
         assert len(mismatch_violations) == 1
         assert mismatch_violations[0].severity == Severity.CRITICAL
@@ -124,10 +123,7 @@ class TestVerifyTraceViolations:
         result = verify_trace(minimal_trace, expired_alignment_card)
 
         assert result.verified is False
-        expired_violations = [
-            v for v in result.violations
-            if v.type == ViolationType.CARD_EXPIRED
-        ]
+        expired_violations = [v for v in result.violations if v.type == ViolationType.CARD_EXPIRED]
         assert len(expired_violations) == 1
         assert expired_violations[0].severity == Severity.HIGH
 
@@ -144,8 +140,7 @@ class TestVerifyTraceViolations:
 
         assert result.verified is False
         forbidden_violations = [
-            v for v in result.violations
-            if v.type == ViolationType.FORBIDDEN_ACTION
+            v for v in result.violations if v.type == ViolationType.FORBIDDEN_ACTION
         ]
         assert len(forbidden_violations) == 1
         assert forbidden_violations[0].severity == Severity.CRITICAL
@@ -180,8 +175,7 @@ class TestVerifyTraceViolations:
 
         assert result.verified is False
         unbounded_violations = [
-            v for v in result.violations
-            if v.type == ViolationType.UNBOUNDED_ACTION
+            v for v in result.violations if v.type == ViolationType.UNBOUNDED_ACTION
         ]
         assert len(unbounded_violations) == 1
         assert unbounded_violations[0].severity == Severity.HIGH
@@ -196,8 +190,7 @@ class TestVerifyTraceViolations:
 
         assert result.verified is False
         value_violations = [
-            v for v in result.violations
-            if v.type == ViolationType.UNDECLARED_VALUE
+            v for v in result.violations if v.type == ViolationType.UNDECLARED_VALUE
         ]
         assert len(value_violations) >= 1
         assert value_violations[0].severity == Severity.MEDIUM
@@ -241,8 +234,7 @@ class TestVerifyTraceViolations:
 
         # Check for missed escalation
         missed_escalation = [
-            v for v in result.violations
-            if v.type == ViolationType.MISSED_ESCALATION
+            v for v in result.violations if v.type == ViolationType.MISSED_ESCALATION
         ]
         assert len(missed_escalation) >= 1
 
@@ -281,10 +273,7 @@ class TestVerifyTraceWarnings:
 
         # Should pass verification but have warnings
         assert result.verified is True
-        near_boundary_warnings = [
-            w for w in result.warnings
-            if w.type == "near_boundary"
-        ]
+        near_boundary_warnings = [w for w in result.warnings if w.type == "near_boundary"]
         assert len(near_boundary_warnings) >= 1
 
     def test_escalation_timeout_warning(
@@ -320,10 +309,7 @@ class TestVerifyTraceWarnings:
 
         result = verify_trace(trace, full_alignment_card)
 
-        timeout_warnings = [
-            w for w in result.warnings
-            if w.type == "escalation_timeout"
-        ]
+        timeout_warnings = [w for w in result.warnings if w.type == "escalation_timeout"]
         assert len(timeout_warnings) >= 1
 
 
@@ -413,10 +399,7 @@ class TestVerifyTraceEdgeCases:
         result = verify_trace(trace, minimal_alignment_card)
 
         # Should have warning about invalid expiry
-        expiry_warnings = [
-            w for w in result.warnings
-            if w.type == "invalid_expiry"
-        ]
+        expiry_warnings = [w for w in result.warnings if w.type == "invalid_expiry"]
         assert len(expiry_warnings) == 1
 
 
@@ -479,10 +462,7 @@ class TestVerifyTraceSimilarity:
 
         # If similarity is below threshold, should have warning
         if result.similarity_score < BEHAVIORAL_SIMILARITY_THRESHOLD:
-            low_sim_warnings = [
-                w for w in result.warnings
-                if w.type == "low_behavioral_similarity"
-            ]
+            low_sim_warnings = [w for w in result.warnings if w.type == "low_behavioral_similarity"]
             assert len(low_sim_warnings) == 1
             assert str(BEHAVIORAL_SIMILARITY_THRESHOLD) in low_sim_warnings[0].description
 
@@ -494,10 +474,7 @@ class TestVerifyTraceSimilarity:
         """Trace with high behavioral similarity should not get similarity warning."""
         result = verify_trace(minimal_trace, minimal_alignment_card)
 
-        low_sim_warnings = [
-            w for w in result.warnings
-            if w.type == "low_behavioral_similarity"
-        ]
+        low_sim_warnings = [w for w in result.warnings if w.type == "low_behavioral_similarity"]
 
         # If similarity is high enough, no warning should be present
         if result.similarity_score >= BEHAVIORAL_SIMILARITY_THRESHOLD:
@@ -517,11 +494,14 @@ class TestVerifyTraceSimilarity:
 
         # Get similarity scores from SSMAnalyzer (used by detect_drift)
         from aap.verification.ssm import SSMAnalyzer
+
         analyzer = SSMAnalyzer()
         ssm_result = analyzer.analyze_against_card(aligned_trace_sequence, minimal_alignment_card)
 
         # Scores should match (within floating point tolerance)
-        for verify_sim, ssm_sim in zip(verify_similarities, ssm_result["similarities"], strict=True):
+        for verify_sim, ssm_sim in zip(
+            verify_similarities, ssm_result["similarities"], strict=True
+        ):
             assert abs(verify_sim - ssm_sim) < 0.0001, (
                 f"verify_trace similarity {verify_sim} doesn't match "
                 f"SSMAnalyzer similarity {ssm_sim}"
@@ -621,19 +601,16 @@ class TestCheckCoherenceScoring:
 
     def test_task_values_focus_scoring(self):
         """Task values should focus the scoring."""
-        card_a = {
-            "values": {"declared": ["principal_benefit", "transparency", "privacy"]}
-        }
-        card_b = {
-            "values": {"declared": ["principal_benefit", "fairness", "honesty"]}
-        }
+        card_a = {"values": {"declared": ["principal_benefit", "transparency", "privacy"]}}
+        card_b = {"values": {"declared": ["principal_benefit", "fairness", "honesty"]}}
 
         # Without task values — uses union
         result_no_task = check_coherence(card_a, card_b)
 
         # With task values — focuses on specific values
         result_with_task = check_coherence(
-            card_a, card_b,
+            card_a,
+            card_b,
             task_values=["principal_benefit"],  # Both have this
         )
 
@@ -758,7 +735,12 @@ class TestDetectDriftDirection:
         # Direction inference is best-effort; detecting drift is the primary goal
         directions = [alert.analysis.drift_direction for alert in alerts]
         assert any(
-            d in [DriftDirection.AUTONOMY_EXPANSION, DriftDirection.VALUE_DRIFT, DriftDirection.UNKNOWN]
+            d
+            in [
+                DriftDirection.AUTONOMY_EXPANSION,
+                DriftDirection.VALUE_DRIFT,
+                DriftDirection.UNKNOWN,
+            ]
             for d in directions
         )
 
@@ -874,50 +856,56 @@ class TestDetectDriftEdgeCases:
 
         # 2 bad
         for i in range(2):
-            traces.append({
-                "trace_id": f"tr-bad-{i}",
+            traces.append(
+                {
+                    "trace_id": f"tr-bad-{i}",
+                    "agent_id": "agent",
+                    "card_id": minimal_alignment_card["card_id"],
+                    "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
+                    "action": {"type": "execute", "name": "bad", "category": "bounded"},
+                    "decision": {
+                        "alternatives_considered": [{"option_id": "A", "description": "A"}],
+                        "selected": "A",
+                        "selection_reasoning": "Drift",
+                        "values_applied": ["undeclared"],
+                    },
+                }
+            )
+
+        # 1 good (recovery)
+        traces.append(
+            {
+                "trace_id": "tr-good",
                 "agent_id": "agent",
                 "card_id": minimal_alignment_card["card_id"],
-                "timestamp": (base_time + timedelta(minutes=i)).isoformat(),
-                "action": {"type": "execute", "name": "bad", "category": "bounded"},
+                "timestamp": (base_time + timedelta(minutes=2)).isoformat(),
+                "action": {"type": "recommend", "name": "search", "category": "bounded"},
                 "decision": {
                     "alternatives_considered": [{"option_id": "A", "description": "A"}],
                     "selected": "A",
-                    "selection_reasoning": "Drift",
-                    "values_applied": ["undeclared"],
+                    "selection_reasoning": "Aligned",
+                    "values_applied": ["principal_benefit", "transparency"],
                 },
-            })
-
-        # 1 good (recovery)
-        traces.append({
-            "trace_id": "tr-good",
-            "agent_id": "agent",
-            "card_id": minimal_alignment_card["card_id"],
-            "timestamp": (base_time + timedelta(minutes=2)).isoformat(),
-            "action": {"type": "recommend", "name": "search", "category": "bounded"},
-            "decision": {
-                "alternatives_considered": [{"option_id": "A", "description": "A"}],
-                "selected": "A",
-                "selection_reasoning": "Aligned",
-                "values_applied": ["principal_benefit", "transparency"],
-            },
-        })
+            }
+        )
 
         # 2 more bad
         for i in range(2):
-            traces.append({
-                "trace_id": f"tr-bad-again-{i}",
-                "agent_id": "agent",
-                "card_id": minimal_alignment_card["card_id"],
-                "timestamp": (base_time + timedelta(minutes=3+i)).isoformat(),
-                "action": {"type": "execute", "name": "bad", "category": "bounded"},
-                "decision": {
-                    "alternatives_considered": [{"option_id": "A", "description": "A"}],
-                    "selected": "A",
-                    "selection_reasoning": "Drift again",
-                    "values_applied": ["undeclared"],
-                },
-            })
+            traces.append(
+                {
+                    "trace_id": f"tr-bad-again-{i}",
+                    "agent_id": "agent",
+                    "card_id": minimal_alignment_card["card_id"],
+                    "timestamp": (base_time + timedelta(minutes=3 + i)).isoformat(),
+                    "action": {"type": "execute", "name": "bad", "category": "bounded"},
+                    "decision": {
+                        "alternatives_considered": [{"option_id": "A", "description": "A"}],
+                        "selected": "A",
+                        "selection_reasoning": "Drift again",
+                        "values_applied": ["undeclared"],
+                    },
+                }
+            )
 
         _alerts = detect_drift(minimal_alignment_card, traces)  # noqa: F841
 
@@ -948,29 +936,37 @@ class TestActionMatchesList:
 
     def test_colon_prefix_match(self):
         """Action should match by prefix before colon description."""
-        assert action_matches_list(
-            "exec", ["exec: execute shell commands", "read: read files"]
-        ) is True
+        assert (
+            action_matches_list("exec", ["exec: execute shell commands", "read: read files"])
+            is True
+        )
 
     def test_colon_prefix_no_match(self):
         """Action not matching any prefix should return False."""
-        assert action_matches_list(
-            "write", ["exec: execute shell commands", "read: read files"]
-        ) is False
+        assert (
+            action_matches_list("write", ["exec: execute shell commands", "read: read files"])
+            is False
+        )
 
     def test_compound_action_all_match(self):
         """Compound action should match when all components are in the list."""
-        assert action_matches_list(
-            "exec, read",
-            ["exec: execute shell commands", "read: read files"],
-        ) is True
+        assert (
+            action_matches_list(
+                "exec, read",
+                ["exec: execute shell commands", "read: read files"],
+            )
+            is True
+        )
 
     def test_compound_action_partial_match_fails(self):
         """Compound action should fail when one component is not in the list."""
-        assert action_matches_list(
-            "exec, purchase",
-            ["exec: execute shell commands", "read: read files"],
-        ) is False
+        assert (
+            action_matches_list(
+                "exec, purchase",
+                ["exec: execute shell commands", "read: read files"],
+            )
+            is False
+        )
 
     def test_backward_compat_no_colons(self):
         """Exact match should still work for entries without colons."""
@@ -986,15 +982,21 @@ class TestActionMatchesList:
 
     def test_whitespace_trimming(self):
         """Components should be trimmed after splitting."""
-        assert action_matches_list(
-            "exec,  read",  # extra space after comma — split on ", " gets ["exec, read"] as one
-            ["exec, read"],  # exact match on the full string
-        ) is False  # ", " split yields ["exec", " read"], " read" trimmed to "read" — but not "exec,  read"
+        assert (
+            action_matches_list(
+                "exec,  read",  # extra space after comma — split on ", " gets ["exec, read"] as one
+                ["exec, read"],  # exact match on the full string
+            )
+            is False
+        )  # ", " split yields ["exec", " read"], " read" trimmed to "read" — but not "exec,  read"
         # Correct test: compound with normal ", " separator
-        assert action_matches_list(
-            "exec, read",
-            ["exec: execute shell commands", "read: read files"],
-        ) is True
+        assert (
+            action_matches_list(
+                "exec, read",
+                ["exec: execute shell commands", "read: read files"],
+            )
+            is True
+        )
 
 
 class TestActionMatchingIntegration:

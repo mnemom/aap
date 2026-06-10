@@ -67,6 +67,7 @@ class TestTraceDecisionBasic:
 
     def test_decorator_preserves_function_behavior(self, sample_card: dict[str, Any]):
         """Decorated function should return same value as original."""
+
         @trace_decision(card=sample_card)
         def add_numbers(a: int, b: int) -> int:
             return a + b
@@ -76,6 +77,7 @@ class TestTraceDecisionBasic:
 
     def test_decorator_generates_trace(self, sample_card: dict[str, Any]):
         """Decorated function should generate a trace."""
+
         @trace_decision(card=sample_card)
         def recommend_product(query: str) -> str:
             return "Product A"
@@ -88,6 +90,7 @@ class TestTraceDecisionBasic:
 
     def test_trace_has_required_fields(self, sample_card: dict[str, Any]):
         """Generated trace should have all required AP-Trace fields."""
+
         @trace_decision(card=sample_card)
         def search_items(term: str) -> list[str]:
             return ["item1", "item2"]
@@ -109,6 +112,7 @@ class TestTraceDecisionBasic:
 
     def test_trace_captures_parameters(self, sample_card: dict[str, Any]):
         """Trace should capture function parameters when include_args=True."""
+
         @trace_decision(card=sample_card, include_args=True)
         def process_data(items: list[str], limit: int = 10) -> int:
             return len(items[:limit])
@@ -122,6 +126,7 @@ class TestTraceDecisionBasic:
 
     def test_trace_with_card_path(self, card_file: Path):
         """Should work with card_path instead of card dict."""
+
         @trace_decision(card_path=str(card_file))
         def my_function() -> str:
             return "result"
@@ -136,6 +141,7 @@ class TestTraceDecisionBasic:
     def test_missing_card_raises_error(self):
         """Should raise ValueError if no card provided."""
         with pytest.raises(ValueError, match="card or card_path must be provided"):
+
             @trace_decision()
             def no_card_function() -> str:
                 return "test"
@@ -144,6 +150,7 @@ class TestTraceDecisionBasic:
 
     def test_missing_card_file_raises_error(self, tmp_path: Path):
         """Should raise FileNotFoundError for missing card file."""
+
         @trace_decision(card_path=str(tmp_path / "nonexistent.json"))
         def missing_file_function() -> str:
             return "test"
@@ -158,6 +165,7 @@ class TestTraceDecisionAsync:
     @pytest.mark.asyncio
     async def test_async_function_traced(self, sample_card: dict[str, Any]):
         """Async functions should be traced correctly."""
+
         @trace_decision(card=sample_card)
         async def async_recommend(query: str) -> str:
             await asyncio.sleep(0.01)
@@ -173,6 +181,7 @@ class TestTraceDecisionAsync:
     @pytest.mark.asyncio
     async def test_async_execution_time_recorded(self, sample_card: dict[str, Any]):
         """Async execution time should be recorded in metadata."""
+
         @trace_decision(card=sample_card)
         async def slow_function() -> str:
             await asyncio.sleep(0.05)
@@ -190,6 +199,7 @@ class TestTracedResult:
 
     def test_traced_result_extracts_alternatives(self, sample_card: dict[str, Any]):
         """TracedResult should provide full decision structure."""
+
         @trace_decision(card=sample_card)
         def choose_response(context: dict) -> TracedResult:
             return TracedResult(
@@ -220,6 +230,7 @@ class TestTracedResult:
 
     def test_traced_result_action_type(self, sample_card: dict[str, Any]):
         """TracedResult should allow custom action type."""
+
         @trace_decision(card=sample_card)
         def recommend_action() -> TracedResult:
             return TracedResult(
@@ -237,6 +248,7 @@ class TestTracedResult:
 
     def test_traced_result_escalation(self, sample_card: dict[str, Any]):
         """TracedResult should capture escalation info."""
+
         @trace_decision(card=sample_card)
         def risky_action() -> TracedResult:
             return TracedResult(
@@ -342,6 +354,7 @@ class TestAutoVerify:
 
     def test_auto_verify_passes_for_compliant_trace(self, sample_card: dict[str, Any]):
         """Auto-verify should pass for compliant traces."""
+
         @trace_decision(
             card=sample_card,
             auto_verify=True,
@@ -380,9 +393,7 @@ class TestAutoVerify:
         assert exc_info.value.result is not None
         assert not exc_info.value.result.verified
 
-    def test_auto_verify_without_raise_logs_but_continues(
-        self, sample_card: dict[str, Any]
-    ):
+    def test_auto_verify_without_raise_logs_but_continues(self, sample_card: dict[str, Any]):
         """Auto-verify without raise_on_violation should continue."""
         strict_card = {
             "card_id": "strict-card",
@@ -408,6 +419,7 @@ class TestMcpTraced:
 
     def test_mcp_traced_generates_trace(self, sample_card: dict[str, Any]):
         """MCP traced functions should generate traces."""
+
         @mcp_traced(card=sample_card, tool_name="search_files")
         def search_files(query: str, path: str = ".") -> list[str]:
             return ["file1.py", "file2.py"]
@@ -423,6 +435,7 @@ class TestMcpTraced:
 
     def test_mcp_traced_uses_function_name_as_default(self, sample_card: dict[str, Any]):
         """MCP decorator should use function name if tool_name not provided."""
+
         @mcp_traced(card=sample_card)
         def read_file(path: str) -> str:
             return "file contents"
@@ -436,6 +449,7 @@ class TestMcpTraced:
     @pytest.mark.asyncio
     async def test_mcp_traced_async(self, sample_card: dict[str, Any]):
         """MCP decorator should work with async functions."""
+
         @mcp_traced(card=sample_card, tool_name="async_tool")
         async def async_tool(data: dict) -> dict:
             await asyncio.sleep(0.01)
@@ -453,6 +467,7 @@ class TestEdgeCases:
 
     def test_function_with_no_return_value(self, sample_card: dict[str, Any]):
         """Functions that return None should be traced."""
+
         @trace_decision(card=sample_card)
         def void_function(x: int) -> None:
             _ = x * 2
@@ -466,6 +481,7 @@ class TestEdgeCases:
 
     def test_function_that_raises_exception(self, sample_card: dict[str, Any]):
         """Exceptions should propagate without generating trace."""
+
         @trace_decision(card=sample_card)
         def failing_function() -> str:
             raise ValueError("intentional error")
@@ -479,6 +495,7 @@ class TestEdgeCases:
 
     def test_complex_return_types(self, sample_card: dict[str, Any]):
         """Complex return types should be handled."""
+
         @trace_decision(card=sample_card)
         def complex_return() -> dict[str, Any]:
             return {
@@ -495,6 +512,7 @@ class TestEdgeCases:
 
     def test_include_return_repr(self, sample_card: dict[str, Any]):
         """include_return_repr should capture return value."""
+
         @trace_decision(card=sample_card, include_return_repr=True)
         def my_function() -> dict:
             return {"key": "value"}
@@ -508,6 +526,7 @@ class TestEdgeCases:
 
     def test_exclude_args(self, sample_card: dict[str, Any]):
         """include_args=False should omit parameters."""
+
         @trace_decision(card=sample_card, include_args=False)
         def sensitive_function(password: str) -> bool:
             return len(password) > 8
@@ -519,6 +538,7 @@ class TestEdgeCases:
 
     def test_session_id_included(self, sample_card: dict[str, Any]):
         """session_id should be included in context."""
+
         @trace_decision(card=sample_card, session_id="session-12345")
         def my_function() -> str:
             return "result"
@@ -530,6 +550,7 @@ class TestEdgeCases:
 
     def test_default_values_applied(self, sample_card: dict[str, Any]):
         """default_values should be used when not in TracedResult."""
+
         @trace_decision(
             card=sample_card,
             default_values=["principal_benefit", "efficiency"],
@@ -550,6 +571,7 @@ class TestTraceVerification:
 
     def test_simple_trace_verifies(self, sample_card: dict[str, Any]):
         """Simple generated traces should verify against the card."""
+
         @trace_decision(
             card=sample_card,
             default_values=["principal_benefit"],
@@ -568,6 +590,7 @@ class TestTraceVerification:
 
     def test_rich_trace_verifies(self, sample_card: dict[str, Any]):
         """Rich traces with TracedResult should verify."""
+
         @trace_decision(card=sample_card)
         def choose_response() -> TracedResult:
             return TracedResult(
@@ -597,6 +620,7 @@ class TestDecoratorWithoutParentheses:
 
     def test_decorator_without_args_requires_card_later(self):
         """Decorator without args should require card at call time."""
+
         # This is an edge case - using @trace_decision without ()
         # It will fail because no card is provided
         @trace_decision

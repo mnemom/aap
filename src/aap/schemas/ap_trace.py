@@ -63,12 +63,8 @@ class Action(BaseModel):
     category: ActionCategory = Field(
         ..., description="How this action relates to autonomy envelope"
     )
-    target: ActionTarget | None = Field(
-        None, description="Resource affected"
-    )
-    parameters: dict[str, Any] | None = Field(
-        None, description="Action parameters"
-    )
+    target: ActionTarget | None = Field(None, description="Resource affected")
+    parameters: dict[str, Any] | None = Field(None, description="Action parameters")
 
 
 class Alternative(BaseModel):
@@ -76,15 +72,11 @@ class Alternative(BaseModel):
 
     option_id: str = Field(..., description="Unique identifier for this option")
     description: str = Field(..., description="Human-readable description")
-    score: float | None = Field(
-        None, ge=0.0, le=1.0, description="Computed score"
-    )
+    score: float | None = Field(None, ge=0.0, le=1.0, description="Computed score")
     scoring_factors: dict[str, float] | None = Field(
         None, description="Breakdown of score components"
     )
-    flags: list[str] | None = Field(
-        None, description="Concerns or flags about this option"
-    )
+    flags: list[str] | None = Field(None, description="Concerns or flags about this option")
 
 
 class ValueScore(BaseModel):
@@ -95,10 +87,7 @@ class ValueScore(BaseModel):
     )
     rationale: str = Field(
         ...,
-        description=(
-            "Free-form rationale citing one of the catalog "
-            "observer_signals patterns"
-        ),
+        description=("Free-form rationale citing one of the catalog observer_signals patterns"),
     )
 
 
@@ -108,18 +97,12 @@ class Decision(BaseModel):
     alternatives_considered: list[Alternative] = Field(
         ..., min_length=1, description="Options evaluated (minimum 1)"
     )
-    selected: str = Field(
-        ..., description="Option ID selected"
-    )
+    selected: str = Field(..., description="Option ID selected")
     selection_reasoning: str = Field(
         ..., description="Human-readable explanation of why this was chosen"
     )
-    values_applied: list[str] = Field(
-        ..., description="Values that influenced this decision"
-    )
-    confidence: float | None = Field(
-        None, ge=0.0, le=1.0, description="Decision confidence"
-    )
+    values_applied: list[str] = Field(..., description="Values that influenced this decision")
+    confidence: float | None = Field(None, ge=0.0, le=1.0, description="Decision confidence")
     value_scores: dict[str, ValueScore] | None = Field(
         None,
         description=(
@@ -147,9 +130,7 @@ class TriggerCheck(BaseModel):
 
     trigger: str = Field(..., description="Trigger condition that was checked")
     matched: bool = Field(..., description="Whether the trigger matched")
-    value_observed: Any | None = Field(
-        None, description="Observed value (for comparison triggers)"
-    )
+    value_observed: Any | None = Field(None, description="Observed value (for comparison triggers)")
 
 
 class EscalationStatus(str, Enum):
@@ -166,26 +147,18 @@ class PrincipalResponse(BaseModel):
 
     decision: str = Field(..., description="Principal's decision")
     timestamp: datetime = Field(..., description="When decision was made")
-    conditions: list[str] | None = Field(
-        None, description="Conditions attached to approval"
-    )
+    conditions: list[str] | None = Field(None, description="Conditions attached to approval")
 
 
 class Escalation(BaseModel):
     """Escalation evaluation record (SPEC Section 5.6)."""
 
-    evaluated: bool = Field(
-        ..., description="Whether escalation was evaluated"
-    )
+    evaluated: bool = Field(..., description="Whether escalation was evaluated")
     triggers_checked: list[TriggerCheck] | None = Field(
         None, description="Triggers that were evaluated"
     )
-    required: bool = Field(
-        ..., description="Whether escalation is required"
-    )
-    reason: str = Field(
-        ..., description="Human-readable explanation"
-    )
+    required: bool = Field(..., description="Whether escalation is required")
+    reason: str = Field(..., description="Human-readable explanation")
     escalation_id: str | None = Field(
         None, description="Escalation request ID (if escalation required)"
     )
@@ -200,21 +173,13 @@ class Escalation(BaseModel):
 class TraceContext(BaseModel):
     """Additional context for the trace (SPEC Section 5.7)."""
 
-    session_id: str | None = Field(
-        None, description="Session identifier"
-    )
-    conversation_turn: int | None = Field(
-        None, description="Turn number in conversation"
-    )
-    prior_trace_ids: list[str] | None = Field(
-        None, description="IDs of related prior traces"
-    )
+    session_id: str | None = Field(None, description="Session identifier")
+    conversation_turn: int | None = Field(None, description="Turn number in conversation")
+    prior_trace_ids: list[str] | None = Field(None, description="IDs of related prior traces")
     environment: dict[str, Any] | None = Field(
         None, description="Environment metadata (client, locale, etc.)"
     )
-    metadata: dict[str, Any] | None = Field(
-        None, description="Additional arbitrary metadata"
-    )
+    metadata: dict[str, Any] | None = Field(None, description="Additional arbitrary metadata")
 
 
 class APTrace(BaseModel):
@@ -257,30 +222,14 @@ class APTrace(BaseModel):
         )
     """
 
-    trace_id: str = Field(
-        ..., description="Unique identifier (UUID)"
-    )
-    agent_id: str = Field(
-        ..., description="Agent that generated this trace"
-    )
-    card_id: str = Field(
-        ..., description="Alignment Card in effect"
-    )
-    timestamp: datetime = Field(
-        ..., description="When this trace was created"
-    )
-    action: Action = Field(
-        ..., description="Action taken or considered"
-    )
-    decision: Decision = Field(
-        ..., description="Decision process record"
-    )
-    escalation: Escalation | None = Field(
-        None, description="Escalation evaluation (if applicable)"
-    )
-    context: TraceContext | None = Field(
-        None, description="Additional context"
-    )
+    trace_id: str = Field(..., description="Unique identifier (UUID)")
+    agent_id: str = Field(..., description="Agent that generated this trace")
+    card_id: str = Field(..., description="Alignment Card in effect")
+    timestamp: datetime = Field(..., description="When this trace was created")
+    action: Action = Field(..., description="Action taken or considered")
+    decision: Decision = Field(..., description="Decision process record")
+    escalation: Escalation | None = Field(None, description="Escalation evaluation (if applicable)")
+    context: TraceContext | None = Field(None, description="Additional context")
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary suitable for JSON serialization."""

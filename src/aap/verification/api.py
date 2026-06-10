@@ -41,6 +41,7 @@ from aap.verification.models import (
     ValueConflict,
     ValueDivergence,
     VerificationMetadata,
+    VerificationRecommendation,
     VerificationResult,
     Violation,
     ViolationType,
@@ -142,6 +143,7 @@ def verify_trace(
     tamper_evidence = _card_audit(card).get("tamper_evidence")
     if tamper_evidence in ("signed", "merkle"):
         import warnings as _warnings
+
         _warnings.warn(
             f'[AAP] Warning: tamper_evidence mode "{tamper_evidence}" is declared '
             "but NOT cryptographically enforced in this version.",
@@ -159,10 +161,12 @@ def verify_trace(
     # Check card reference
     checks_performed.append("card_reference")
     if trace.get("card_id") != card_id:
-        violations.append(Violation.create(
-            ViolationType.CARD_MISMATCH,
-            f"Trace references card '{trace.get('card_id')}' but verified against '{card_id}'",
-        ))
+        violations.append(
+            Violation.create(
+                ViolationType.CARD_MISMATCH,
+                f"Trace references card '{trace.get('card_id')}' but verified against '{card_id}'",
+            )
+        )
 
     # Check card expiration
     checks_performed.append("card_expiration")
@@ -171,16 +175,20 @@ def verify_trace(
         try:
             expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
             if datetime.now(expiry.tzinfo) > expiry:
-                violations.append(Violation.create(
-                    ViolationType.CARD_EXPIRED,
-                    f"Alignment Card expired at {expires_at}",
-                ))
+                violations.append(
+                    Violation.create(
+                        ViolationType.CARD_EXPIRED,
+                        f"Alignment Card expired at {expires_at}",
+                    )
+                )
         except (ValueError, TypeError):
-            warnings.append(Warning(
-                type="invalid_expiry",
-                description=f"Could not parse expires_at: {expires_at}",
-                trace_field="card.expires_at",
-            ))
+            warnings.append(
+                Warning(
+                    type="invalid_expiry",
+                    description=f"Could not parse expires_at: {expires_at}",
+                    trace_field="card.expires_at",
+                )
+            )
 
     # Extract the autonomy section for remaining checks (unified `autonomy`,
     # legacy `autonomy_envelope` fallback).
@@ -195,21 +203,25 @@ def verify_trace(
     if action_category == "bounded":
         bounded_actions = envelope.get("bounded_actions", [])
         if action_name and not action_matches_list(action_name, bounded_actions):
-            violations.append(Violation.create(
-                ViolationType.UNBOUNDED_ACTION,
-                f"Action '{action_name}' not in bounded_actions: {bounded_actions}",
-                trace_field="action.name",
-            ))
+            violations.append(
+                Violation.create(
+                    ViolationType.UNBOUNDED_ACTION,
+                    f"Action '{action_name}' not in bounded_actions: {bounded_actions}",
+                    trace_field="action.name",
+                )
+            )
 
     # Check forbidden actions
     checks_performed.append("forbidden")
     forbidden_actions = envelope.get("forbidden_actions", [])
     if action_name and action_matches_list(action_name, forbidden_actions):
-        violations.append(Violation.create(
-            ViolationType.FORBIDDEN_ACTION,
-            f"Action '{action_name}' is in forbidden_actions",
-            trace_field="action.name",
-        ))
+        violations.append(
+            Violation.create(
+                ViolationType.FORBIDDEN_ACTION,
+                f"Action '{action_name}' is in forbidden_actions",
+                trace_field="action.name",
+            )
+        )
 
     # Check escalation compliance
     checks_performed.append("escalation")
@@ -218,18 +230,22 @@ def verify_trace(
         condition = trigger.get("condition", "")
         if _evaluate_condition(condition, trace):
             if not escalation.get("required"):
-                violations.append(Violation.create(
-                    ViolationType.MISSED_ESCALATION,
-                    f"Trigger '{condition}' matched but escalation not required",
-                    trace_field="escalation.required",
-                ))
+                violations.append(
+                    Violation.create(
+                        ViolationType.MISSED_ESCALATION,
+                        f"Trigger '{condition}' matched but escalation not required",
+                        trace_field="escalation.required",
+                    )
+                )
             elif escalation.get("escalation_status") == "timeout":
                 # Timeout is not a violation if escalation was attempted
-                warnings.append(Warning(
-                    type="escalation_timeout",
-                    description=f"Escalation for trigger '{condition}' timed out",
-                    trace_field="escalation.escalation_status",
-                ))
+                warnings.append(
+                    Warning(
+                        type="escalation_timeout",
+                        description=f"Escalation for trigger '{condition}' timed out",
+                        trace_field="escalation.escalation_status",
+                    )
+                )
 
     # Check value consistency
     checks_performed.append("values")
@@ -239,50 +255,66 @@ def verify_trace(
 
     for value in values_applied:
         if value not in declared_values:
-            violations.append(Violation.create(
-                ViolationType.UNDECLARED_VALUE,
-                f"Value '{value}' applied but not in declared values: {declared_values}",
-                trace_field="decision.values_applied",
-            ))
+            violations.append(
+                Violation.create(
+                    ViolationType.UNDECLARED_VALUE,
+                    f"Value '{value}' applied but not in declared values: {declared_values}",
+                    trace_field="decision.values_applied",
+                )
+            )
 
     # Near-boundary warnings
     confidence = decision.get("confidence")
     if confidence is not None and confidence < NEAR_BOUNDARY_THRESHOLD:
-        warnings.append(Warning(
-            type="near_boundary",
-            description=f"Decision confidence {confidence:.2f} below threshold {NEAR_BOUNDARY_THRESHOLD}",
-            trace_field="decision.confidence",
-        ))
+        warnings.append(
+            Warning(
+                type="near_boundary",
+                description=f"Decision confidence {confidence:.2f} below threshold {NEAR_BOUNDARY_THRESHOLD}",
+                trace_field="decision.confidence",
+            )
+        )
 
     # Alternatives near boundary check
     for i, alt in enumerate(decision.get("alternatives_considered", [])):
         score = alt.get("score")
         if score is not None and score < NEAR_BOUNDARY_THRESHOLD:
-            warnings.append(Warning(
-                type="near_boundary",
-                description=f"Alternative '{alt.get('option_id')}' score {score:.2f} near boundary",
-                trace_field=f"decision.alternatives_considered[{i}].score",
-            ))
+            warnings.append(
+                Warning(
+                    type="near_boundary",
+                    description=f"Alternative '{alt.get('option_id')}' score {score:.2f} near boundary",
+                    trace_field=f"decision.alternatives_considered[{i}].score",
+                )
+            )
 
     # Compute behavioral similarity using SSM analysis
     checks_performed.append("behavioral_similarity")
     from aap.verification.ssm import SSMAnalyzer
+
     analyzer = SSMAnalyzer()
     similarity_result = analyzer.analyze_against_card([trace], card)
-    similarity_score = similarity_result["similarities"][0] if similarity_result["similarities"] else 0.0
+    similarity_score = (
+        similarity_result["similarities"][0] if similarity_result["similarities"] else 0.0
+    )
 
     # Warn if structurally valid but behaviorally divergent
     if len(violations) == 0 and similarity_score < BEHAVIORAL_SIMILARITY_THRESHOLD:
-        warnings.append(Warning(
-            type="low_behavioral_similarity",
-            description=f"Trace passes structural checks but behavioral similarity ({similarity_score:.2f}) is below threshold ({BEHAVIORAL_SIMILARITY_THRESHOLD})",
-            trace_field="(computed)",
-        ))
+        warnings.append(
+            Warning(
+                type="low_behavioral_similarity",
+                description=f"Trace passes structural checks but behavioral similarity ({similarity_score:.2f}) is below threshold ({BEHAVIORAL_SIMILARITY_THRESHOLD})",
+                trace_field="(computed)",
+            )
+        )
 
     duration_ms = (time.time() - start_time) * 1000
 
+    recommended_action: VerificationRecommendation = (
+        "deny" if violations else "review" if warnings else "proceed"
+    )
+
     return VerificationResult(
         verified=len(violations) == 0,
+        recommended_action=recommended_action,
         trace_id=trace_id,
         card_id=card_id,
         violations=violations,
@@ -344,21 +376,25 @@ def check_coherence(
     # Check for direct conflicts (value in one card's conflicts_with)
     for value in my_values:
         if value in their_conflicts:
-            conflicts.append(ValueConflict(
-                initiator_value=value,
-                responder_value="(conflicts_with)",
-                conflict_type="incompatible",
-                description=f"Initiator's '{value}' is in responder's conflicts_with",
-            ))
+            conflicts.append(
+                ValueConflict(
+                    initiator_value=value,
+                    responder_value="(conflicts_with)",
+                    conflict_type="incompatible",
+                    description=f"Initiator's '{value}' is in responder's conflicts_with",
+                )
+            )
 
     for value in their_values:
         if value in my_conflicts:
-            conflicts.append(ValueConflict(
-                initiator_value="(conflicts_with)",
-                responder_value=value,
-                conflict_type="incompatible",
-                description=f"Responder's '{value}' is in initiator's conflicts_with",
-            ))
+            conflicts.append(
+                ValueConflict(
+                    initiator_value="(conflicts_with)",
+                    responder_value=value,
+                    conflict_type="incompatible",
+                    description=f"Responder's '{value}' is in initiator's conflicts_with",
+                )
+            )
 
     # Compute coherence score
     total_required = len(required_values) or 1  # Avoid division by zero
@@ -427,11 +463,13 @@ def check_fleet_coherence(
     for i in range(len(cards)):
         for j in range(i + 1, len(cards)):
             result = check_coherence(cards[i]["card"], cards[j]["card"], task_values)
-            pairwise_matrix.append(PairwiseEntry(
-                agent_a=cards[i]["agent_id"],
-                agent_b=cards[j]["agent_id"],
-                result=result,
-            ))
+            pairwise_matrix.append(
+                PairwiseEntry(
+                    agent_a=cards[i]["agent_id"],
+                    agent_b=cards[j]["agent_id"],
+                    result=result,
+                )
+            )
 
     # Step 2: Fleet score (mean of all pairwise scores) + min/max
     all_scores = [p.result.score for p in pairwise_matrix]
@@ -479,13 +517,15 @@ def check_fleet_coherence(
                                 primary_conflicts.add(conflict.initiator_value)
                             if conflict.responder_value != "(conflicts_with)":
                                 primary_conflicts.add(conflict.responder_value)
-                outliers.append(FleetOutlier(
-                    agent_id=aid,
-                    agent_mean_score=round(agent_mean, 4),
-                    fleet_mean_score=round(fleet_mean_of_means, 4),
-                    deviation=round(deviation, 4),
-                    primary_conflicts=sorted(primary_conflicts),
-                ))
+                outliers.append(
+                    FleetOutlier(
+                        agent_id=aid,
+                        agent_mean_score=round(agent_mean, 4),
+                        fleet_mean_score=round(fleet_mean_of_means, 4),
+                        deviation=round(deviation, 4),
+                        primary_conflicts=sorted(primary_conflicts),
+                    )
+                )
 
     # Step 5: Cluster analysis (connected components at compatibility threshold)
     adjacency: dict[str, set[str]] = {aid: set() for aid in agent_ids}
@@ -518,8 +558,9 @@ def check_fleet_coherence(
         for ci in range(len(component)):
             for cj in range(ci + 1, len(component)):
                 for pair in pairwise_matrix:
-                    if ((pair.agent_a == component[ci] and pair.agent_b == component[cj]) or
-                            (pair.agent_a == component[cj] and pair.agent_b == component[ci])):
+                    if (pair.agent_a == component[ci] and pair.agent_b == component[cj]) or (
+                        pair.agent_a == component[cj] and pair.agent_b == component[ci]
+                    ):
                         internal_sum += pair.result.score
                         internal_count += 1
                         break
@@ -541,13 +582,15 @@ def check_fleet_coherence(
                     other_values.add(v)
         distinguishing = [v for v in shared_values if v not in other_values]
 
-        clusters.append(FleetCluster(
-            cluster_id=cluster_id,
-            agent_ids=component,
-            internal_coherence=round(internal_coherence, 4),
-            shared_values=shared_values,
-            distinguishing_values=distinguishing,
-        ))
+        clusters.append(
+            FleetCluster(
+                cluster_id=cluster_id,
+                agent_ids=component,
+                internal_coherence=round(internal_coherence, 4),
+                shared_values=shared_values,
+                distinguishing_values=distinguishing,
+            )
+        )
         cluster_id += 1
 
     # Step 6: Divergence report
@@ -572,13 +615,15 @@ def check_fleet_coherence(
             continue
 
         impact = round((len(missing) + len(conflicting)) / len(agent_ids), 4)
-        divergence_report.append(ValueDivergence(
-            value=value,
-            agents_declaring=declaring,
-            agents_missing=missing,
-            agents_conflicting=conflicting,
-            impact_on_fleet_score=impact,
-        ))
+        divergence_report.append(
+            ValueDivergence(
+                value=value,
+                agents_declaring=declaring,
+                agents_missing=missing,
+                agents_conflicting=conflicting,
+                impact_on_fleet_score=impact,
+            )
+        )
 
     divergence_report.sort(key=lambda d: d.impact_on_fleet_score, reverse=True)
 
@@ -694,7 +739,7 @@ def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:
         return actual == expected
 
     # Handle field > value (numeric comparison)
-    match = re.match(r'(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)', condition)
+    match = re.match(r"(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)", condition)
     if match:
         field, op, value = match.groups()
         value = float(value)
@@ -731,10 +776,11 @@ def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:
             return actual != value
 
     # Handle boolean fields (e.g., shares_personal_data)
-    if re.match(r'^\w+$', condition):
+    if re.match(r"^\w+$", condition):
         return bool((trace.get("context") or {}).get(condition))
 
     import logging
+
     logging.getLogger("aap").warning(
         '[AAP] Condition could not be parsed: "%s". Supported patterns: '
         '"field == value", "field > number", "field_name" (boolean). '
@@ -774,8 +820,7 @@ def _infer_drift_direction(
 
     # Check for value drift (using undeclared values)
     undeclared_usage = sum(
-        count for value, count in value_usage.items()
-        if value not in declared_values
+        count for value, count in value_usage.items() if value not in declared_values
     )
     total_usage = sum(value_usage.values()) or 1
     if undeclared_usage / total_usage > 0.3:
@@ -784,10 +829,7 @@ def _infer_drift_direction(
     # Check for principal misalignment (principal_benefit value declining)
     if "principal_benefit" in declared_values:
         # Look at confidence scores in recent traces
-        recent_confidences = [
-            t[0].get("decision", {}).get("confidence", 1.0)
-            for t in streak[-3:]
-        ]
+        recent_confidences = [t[0].get("decision", {}).get("confidence", 1.0) for t in streak[-3:]]
         if sum(recent_confidences) / len(recent_confidences) < 0.5:
             return DriftDirection.PRINCIPAL_MISALIGNMENT
 
@@ -816,22 +858,26 @@ def _build_drift_indicators(
         baseline_rate = sum(escalation_rates[:3]) / 3
         current_rate = sum(escalation_rates[-3:]) / 3
         if abs(baseline_rate - current_rate) > 0.05:
-            indicators.append(DriftIndicator(
-                indicator="escalation_rate_change",
-                baseline=round(baseline_rate, 2),
-                current=round(current_rate, 2),
-                description=f"Escalation rate changed from {baseline_rate:.0%} to {current_rate:.0%}",
-            ))
+            indicators.append(
+                DriftIndicator(
+                    indicator="escalation_rate_change",
+                    baseline=round(baseline_rate, 2),
+                    current=round(current_rate, 2),
+                    description=f"Escalation rate changed from {baseline_rate:.0%} to {current_rate:.0%}",
+                )
+            )
 
     # Similarity trend indicator
     similarities = [s for _, s in streak]
     if len(similarities) >= 3:
         trend = similarities[-1] - similarities[0]
-        indicators.append(DriftIndicator(
-            indicator="similarity_trend",
-            baseline=round(similarities[0], 4),
-            current=round(similarities[-1], 4),
-            description=f"Similarity {'decreasing' if trend < 0 else 'stable'} over {len(streak)} traces",
-        ))
+        indicators.append(
+            DriftIndicator(
+                indicator="similarity_trend",
+                baseline=round(similarities[0], 4),
+                current=round(similarities[-1], 4),
+                description=f"Similarity {'decreasing' if trend < 0 else 'stable'} over {len(streak)} traces",
+            )
+        )
 
     return indicators

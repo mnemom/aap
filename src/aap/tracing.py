@@ -197,8 +197,7 @@ def _serialize_arg(value: Any) -> Any:
     if hasattr(value, "to_dict"):
         return value.to_dict()
     if hasattr(value, "__dict__"):
-        return {k: _serialize_arg(v) for k, v in value.__dict__.items()
-                if not k.startswith("_")}
+        return {k: _serialize_arg(v) for k, v in value.__dict__.items() if not k.startswith("_")}
     # Fallback to string representation
     return str(value)
 
@@ -268,9 +267,7 @@ def _build_trace(
         # Simple mode: generate minimal decision structure
         actual_value = result
         selected_id = "selected"
-        alternatives = [
-            {"option_id": "selected", "description": f"Result of {action_name}"}
-        ]
+        alternatives = [{"option_id": "selected", "description": f"Result of {action_name}"}]
         reasoning = f"Executed {action_name}"
         values_applied = config.default_values or []
         confidence = None
@@ -289,7 +286,9 @@ def _build_trace(
         "action": {
             "type": action_type.value if isinstance(action_type, ActionType) else action_type,
             "name": action_name,
-            "category": action_category.value if isinstance(action_category, ActionCategory) else action_category,
+            "category": action_category.value
+            if isinstance(action_category, ActionCategory)
+            else action_category,
         },
         "decision": {
             "alternatives_considered": [
@@ -353,6 +352,7 @@ def _write_trace(trace: dict[str, Any], config: TraceConfig) -> Path | None:
 
     # Write to file
     import os
+
     output_dir = Path(config.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     # Ensure restrictive directory permissions (umask may weaken mode= arg)
@@ -399,8 +399,7 @@ class AlignmentViolationError(Exception):
 @overload
 def trace_decision(
     func: Callable[P, R],
-) -> Callable[P, R]:
-    ...
+) -> Callable[P, R]: ...
 
 
 @overload
@@ -417,8 +416,7 @@ def trace_decision(
     session_id: str | None = None,
     include_args: bool = False,
     include_return_repr: bool = False,
-) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    ...
+) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
 
 
 def trace_decision(
@@ -527,6 +525,7 @@ def trace_decision(
             return loaded_card
 
         if inspect.iscoroutinefunction(fn):
+
             @functools.wraps(fn)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 card_dict = get_card()
@@ -551,6 +550,7 @@ def trace_decision(
 
             return async_wrapper  # type: ignore[return-value]
         else:
+
             @functools.wraps(fn)
             def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 card_dict = get_card()
@@ -641,6 +641,7 @@ def mcp_traced(
         effective_tool_name = tool_name or fn.__name__
 
         if inspect.iscoroutinefunction(fn):
+
             @functools.wraps(fn)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 card_dict = get_card()
@@ -652,8 +653,15 @@ def mcp_traced(
 
                 # Build MCP-specific trace
                 trace = _build_mcp_trace(
-                    fn, effective_tool_name, args, kwargs, result,
-                    config, card_dict, start_time, end_time
+                    fn,
+                    effective_tool_name,
+                    args,
+                    kwargs,
+                    result,
+                    config,
+                    card_dict,
+                    start_time,
+                    end_time,
                 )
                 _write_trace(trace, config)
 
@@ -664,6 +672,7 @@ def mcp_traced(
 
             return async_wrapper  # type: ignore[return-value]
         else:
+
             @functools.wraps(fn)
             def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 card_dict = get_card()
@@ -674,8 +683,15 @@ def mcp_traced(
                 end_time = datetime.now(timezone.utc)
 
                 trace = _build_mcp_trace(
-                    fn, effective_tool_name, args, kwargs, result,
-                    config, card_dict, start_time, end_time
+                    fn,
+                    effective_tool_name,
+                    args,
+                    kwargs,
+                    result,
+                    config,
+                    card_dict,
+                    start_time,
+                    end_time,
                 )
                 _write_trace(trace, config)
 
@@ -738,9 +754,7 @@ def _build_mcp_trace(
             "metadata": {
                 "mcp_tool": True,
                 "tool_name": tool_name,
-                "execution_time_ms": round(
-                    (end_time - start_time).total_seconds() * 1000, 2
-                ),
+                "execution_time_ms": round((end_time - start_time).total_seconds() * 1000, 2),
             }
         },
     }

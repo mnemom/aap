@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -61,9 +61,7 @@ class Violation(BaseModel):
     type: ViolationType = Field(..., description="Type of violation")
     severity: Severity = Field(..., description="Severity level")
     description: str = Field(..., description="Human-readable description")
-    trace_field: str | None = Field(
-        None, description="JSON path to the violating field"
-    )
+    trace_field: str | None = Field(None, description="JSON path to the violating field")
 
     @classmethod
     def create(
@@ -86,9 +84,7 @@ class Warning(BaseModel):
 
     type: str = Field(..., description="Warning type identifier")
     description: str = Field(..., description="Human-readable description")
-    trace_field: str | None = Field(
-        None, description="JSON path to the relevant field"
-    )
+    trace_field: str | None = Field(None, description="JSON path to the relevant field")
 
 
 class VerificationMetadata(BaseModel):
@@ -106,11 +102,20 @@ class VerificationMetadata(BaseModel):
     )
 
 
+VerificationRecommendation = Literal["proceed", "review", "deny"]
+
+
 class VerificationResult(BaseModel):
     """Result of verifying an AP-Trace against an Alignment Card (SPEC Section 7.4)."""
 
-    verified: bool = Field(
-        ..., description="True if no violations were found"
+    verified: bool = Field(..., description="True if no violations were found")
+    recommended_action: VerificationRecommendation = Field(
+        ...,
+        description=(
+            "Explicit action recommendation derived from violations and warnings. "
+            "Prefer this over branching on `verified` alone — it distinguishes "
+            "warning-only results ('review') from clean results ('proceed')."
+        ),
     )
     trace_id: str = Field(..., description="ID of the verified trace")
     card_id: str = Field(..., description="ID of the Alignment Card used")
@@ -163,9 +168,7 @@ class DriftIndicator(BaseModel):
 class DriftAlert(BaseModel):
     """Alert generated when sustained drift is detected (SPEC Section 8.4)."""
 
-    alert_type: str = Field(
-        default="drift_detected", description="Type of alert"
-    )
+    alert_type: str = Field(default="drift_detected", description="Type of alert")
     agent_id: str = Field(..., description="Agent exhibiting drift")
     card_id: str = Field(..., description="Alignment Card being drifted from")
     detection_timestamp: datetime = Field(
@@ -192,12 +195,8 @@ class DriftAnalysis(BaseModel):
     sustained_traces: int = Field(
         ..., ge=1, description="Number of consecutive low-similarity traces"
     )
-    threshold: float = Field(
-        ..., ge=0.0, le=1.0, description="Similarity threshold used"
-    )
-    drift_direction: DriftDirection = Field(
-        ..., description="Categorized direction of drift"
-    )
+    threshold: float = Field(..., ge=0.0, le=1.0, description="Similarity threshold used")
+    drift_direction: DriftDirection = Field(..., description="Categorized direction of drift")
     specific_indicators: list[DriftIndicator] = Field(
         default_factory=list, description="Specific drift indicators"
     )
@@ -210,18 +209,10 @@ DriftAlert.model_rebuild()
 class CoherenceResult(BaseModel):
     """Result of checking value coherence between two Alignment Cards."""
 
-    compatible: bool = Field(
-        ..., description="Whether the cards are compatible for coordination"
-    )
-    score: float = Field(
-        ..., ge=0.0, le=1.0, description="Coherence score"
-    )
-    value_alignment: ValueAlignment = Field(
-        ..., description="Detailed value alignment analysis"
-    )
-    proceed: bool = Field(
-        ..., description="Whether to proceed with coordination"
-    )
+    compatible: bool = Field(..., description="Whether the cards are compatible for coordination")
+    score: float = Field(..., ge=0.0, le=1.0, description="Coherence score")
+    value_alignment: ValueAlignment = Field(..., description="Detailed value alignment analysis")
+    proceed: bool = Field(..., description="Whether to proceed with coordination")
     conditions: list[str] = Field(
         default_factory=list,
         description="Conditions for proceeding (if any)",
@@ -234,9 +225,7 @@ class CoherenceResult(BaseModel):
 class ValueAlignment(BaseModel):
     """Analysis of value alignment between two cards."""
 
-    matched: list[str] = Field(
-        default_factory=list, description="Values present in both cards"
-    )
+    matched: list[str] = Field(default_factory=list, description="Values present in both cards")
     unmatched: list[str] = Field(
         default_factory=list, description="Values in one card but not the other"
     )
@@ -288,9 +277,7 @@ class FleetCluster(BaseModel):
 
     cluster_id: int = Field(..., description="Cluster identifier")
     agent_ids: list[str] = Field(..., description="Agent IDs in this cluster")
-    internal_coherence: float = Field(
-        ..., description="Mean coherence score within the cluster"
-    )
+    internal_coherence: float = Field(..., description="Mean coherence score within the cluster")
     shared_values: list[str] = Field(
         default_factory=list,
         description="Values shared by all agents in the cluster",
@@ -324,32 +311,22 @@ class AgentCoherenceSummary(BaseModel):
     """Summary of one agent's position in the fleet."""
 
     agent_id: str = Field(..., description="Agent ID")
-    mean_score: float = Field(
-        ..., description="Mean pairwise score with all other agents"
-    )
+    mean_score: float = Field(..., description="Mean pairwise score with all other agents")
     compatible_count: int = Field(..., description="Number of compatible pairs")
     conflict_count: int = Field(..., description="Number of conflicting pairs")
     cluster_id: int = Field(..., description="Cluster this agent belongs to")
-    is_outlier: bool = Field(
-        ..., description="Whether this agent is flagged as an outlier"
-    )
+    is_outlier: bool = Field(..., description="Whether this agent is flagged as an outlier")
 
 
 class FleetCoherenceResult(BaseModel):
     """Result of N-way fleet coherence analysis."""
 
-    fleet_score: float = Field(
-        ..., description="Mean of all pairwise coherence scores"
-    )
-    min_pair_score: float = Field(
-        ..., description="Minimum pairwise score (weakest link)"
-    )
+    fleet_score: float = Field(..., description="Mean of all pairwise coherence scores")
+    min_pair_score: float = Field(..., description="Minimum pairwise score (weakest link)")
     max_pair_score: float = Field(..., description="Maximum pairwise score")
     agent_count: int = Field(..., description="Number of agents analyzed")
     pair_count: int = Field(..., description="Number of pairwise comparisons")
-    pairwise_matrix: list[PairwiseEntry] = Field(
-        ..., description="All pairwise coherence results"
-    )
+    pairwise_matrix: list[PairwiseEntry] = Field(..., description="All pairwise coherence results")
     outliers: list[FleetOutlier] = Field(
         default_factory=list, description="Agents flagged as outliers"
     )

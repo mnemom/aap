@@ -96,8 +96,7 @@ class DivergenceDetector:
 
         # Extract features for baseline traces and compute centroid
         baseline_features = [
-            self._feature_extractor.extract_trace_features(t)
-            for t in sorted_traces[:baseline_size]
+            self._feature_extractor.extract_trace_features(t) for t in sorted_traces[:baseline_size]
         ]
         baseline_centroid = compute_centroid(baseline_features)
 
@@ -194,12 +193,14 @@ class DivergenceDetector:
             trace_features = self._feature_extractor.extract_trace_features(trace)
             similarity = cosine_similarity(trace_features, card_features)
 
-            history.append({
-                "trace_id": trace.get("trace_id", str(i)),
-                "similarity": round(similarity, 4),
-                "below_threshold": similarity < self.similarity_threshold,
-                "index": i,
-            })
+            history.append(
+                {
+                    "trace_id": trace.get("trace_id", str(i)),
+                    "similarity": round(similarity, 4),
+                    "below_threshold": similarity < self.similarity_threshold,
+                    "index": i,
+                }
+            )
 
         return history
 
@@ -238,8 +239,7 @@ class DivergenceDetector:
 
         # Check for value drift (using undeclared values)
         undeclared_usage = sum(
-            count for value, count in value_usage.items()
-            if value not in declared_values
+            count for value, count in value_usage.items() if value not in declared_values
         )
         total_usage = sum(value_usage.values()) or 1
         if undeclared_usage / total_usage > 0.3:
@@ -248,8 +248,7 @@ class DivergenceDetector:
         # Check for principal misalignment
         if "principal_benefit" in declared_values:
             recent_confidences = [
-                t[0].get("decision", {}).get("confidence", 1.0)
-                for t in streak[-3:]
+                t[0].get("decision", {}).get("confidence", 1.0) for t in streak[-3:]
             ]
             if sum(recent_confidences) / len(recent_confidences) < 0.5:
                 return DriftDirection.PRINCIPAL_MISALIGNMENT
@@ -279,23 +278,27 @@ class DivergenceDetector:
             baseline_rate = sum(escalation_rates[:3]) / 3
             current_rate = sum(escalation_rates[-3:]) / 3
             if abs(baseline_rate - current_rate) > 0.05:
-                indicators.append(DriftIndicator(
-                    indicator="escalation_rate_change",
-                    baseline=round(baseline_rate, 2),
-                    current=round(current_rate, 2),
-                    description=f"Escalation rate changed from {baseline_rate:.0%} to {current_rate:.0%}",
-                ))
+                indicators.append(
+                    DriftIndicator(
+                        indicator="escalation_rate_change",
+                        baseline=round(baseline_rate, 2),
+                        current=round(current_rate, 2),
+                        description=f"Escalation rate changed from {baseline_rate:.0%} to {current_rate:.0%}",
+                    )
+                )
 
         # Similarity trend indicator
         similarities = [s for _, s in streak]
         if len(similarities) >= 2:
             trend = similarities[-1] - similarities[0]
-            indicators.append(DriftIndicator(
-                indicator="similarity_trend",
-                baseline=round(similarities[0], 4),
-                current=round(similarities[-1], 4),
-                description=f"Similarity {'decreasing' if trend < 0 else 'stable'} over {len(streak)} traces",
-            ))
+            indicators.append(
+                DriftIndicator(
+                    indicator="similarity_trend",
+                    baseline=round(similarities[0], 4),
+                    current=round(similarities[-1], 4),
+                    description=f"Similarity {'decreasing' if trend < 0 else 'stable'} over {len(streak)} traces",
+                )
+            )
 
         return indicators
 

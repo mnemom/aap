@@ -139,6 +139,19 @@ describe("golden fixture: value_drift_sequence (detect_drift parity)", () => {
     }
   });
 
+  it("alert similarity_score must match fixture expected value within ±0.005 (AC3)", () => {
+    const expectedScore = (
+      fixture._expected_result as { expected_alert_similarity_score: number }
+    ).expected_alert_similarity_score;
+    expect(expectedScore).toBeDefined();
+
+    const alerts = detectDrift(fixture.card, fixture.traces);
+    expect(alerts.length).toBeGreaterThan(0);
+
+    const score = alerts[0].analysis.similarity_score;
+    expect(Math.abs(score - expectedScore)).toBeLessThanOrEqual(0.005);
+  });
+
   it("feature vectors for baseline traces should be consistent (parity invariant)", () => {
     // Run cosine similarity manually on a representative pair from the sequence.
     // This asserts the feature extractor is deterministic and that no flag:*
