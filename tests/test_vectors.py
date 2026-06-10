@@ -15,7 +15,6 @@ Design principles:
 from __future__ import annotations
 
 import json
-import math
 from datetime import timezone
 from pathlib import Path
 from typing import Any
@@ -23,7 +22,6 @@ from typing import Any
 import pytest
 
 from aap import detect_drift, verify_trace
-from aap.verification.constants import BEHAVIORAL_SIMILARITY_THRESHOLD
 from aap.verification.features import FeatureExtractor, cosine_similarity
 from aap.verification.models import ViolationType
 
