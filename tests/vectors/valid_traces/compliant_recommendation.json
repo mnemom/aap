@@ -9,7 +9,8 @@
         "type": "low_behavioral_similarity",
         "note": "Structural compliance does not guarantee high behavioral similarity. TF-IDF similarity between sparse card text and trace content is inherently limited. This warning is informational."
       }
-    ]
+    ],
+    "expected_similarity_score": 0.3642
   },
   "card": {
     "card_version": "unified/2026-04-26",

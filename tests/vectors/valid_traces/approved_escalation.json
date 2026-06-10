@@ -4,7 +4,8 @@
   "_expected_result": {
     "verified": true,
     "violations": [],
-    "warnings": []
+    "warnings": [],
+    "expected_similarity_score": 0.1885
   },
   "card": {
     "card_version": "unified/2026-04-26",

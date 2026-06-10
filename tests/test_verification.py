@@ -428,8 +428,9 @@ class TestVerifyTraceSimilarity:
 
         assert result.verification_metadata.similarity_details is not None
         details = result.verification_metadata.similarity_details
-        assert "similarities" in details
-        assert "mean_similarity" in details
+        assert "similarity_score" in details
+        assert "method" in details
+        assert details["method"] == "cosine"
 
     def test_verify_trace_warns_on_low_similarity(
         self,

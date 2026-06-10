@@ -250,6 +250,19 @@ class TestGoldenParitySDK:
         result = verify_trace(vector["trace"], vector["card"])
         assert result.similarity_score == expected
 
+    def test_verify_trace_similarity_score_matches_fixture(self):
+        """verify_trace similarity_score must equal the language-independent fixture constant.
+
+        Both Python and TypeScript assert against this same stored value (AC3),
+        so any cross-language extractor divergence becomes CI-visible.
+        """
+        vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
+        expected = vector["_expected_result"]["expected_similarity_score"]
+        result = verify_trace(vector["trace"], vector["card"])
+        assert abs(result.similarity_score - expected) <= 1e-9, (
+            f"similarity_score {result.similarity_score} != fixture expected {expected}"
+        )
+
     def test_verify_trace_timestamp_is_utc_aware(self):
         """verify_trace timestamp must be timezone-aware UTC."""
         vector = load_vector(VECTORS_DIR / "valid_traces" / "compliant_recommendation.json")
