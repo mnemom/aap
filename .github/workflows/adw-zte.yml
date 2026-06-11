@@ -137,11 +137,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "$EVENT_NAME" != "check_suite" ]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-            echo "resume_issue=" >> "$GITHUB_OUTPUT"
+            { echo "should_run=true"; echo "resume_issue="; } >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          skip() { echo "should_run=false" >> "$GITHUB_OUTPUT"; echo "resume_issue=" >> "$GITHUB_OUTPUT"; exit 0; }
+          skip() { { echo "should_run=false"; echo "resume_issue="; } >> "$GITHUB_OUTPUT"; exit 0; }
           ISSUE=$(expr "$HEAD_BRANCH" : '.*-issue-\([0-9]\{1,\}\)-adw-' || true)
           [ -n "$ISSUE" ] || skip
           STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq '.state' 2>/dev/null || true)
@@ -151,8 +150,7 @@ jobs:
           if printf '%s' "$LABELS" | grep -q 'adw:freeze'; then skip; fi
           PR_OPEN=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$HEAD_BRANCH&state=open" --jq 'length' 2>/dev/null || echo 0)
           [ "${PR_OPEN:-0}" -ge 1 ] || skip
-          echo "should_run=true" >> "$GITHUB_OUTPUT"
-          echo "resume_issue=$ISSUE" >> "$GITHUB_OUTPUT"
+          { echo "should_run=true"; echo "resume_issue=$ISSUE"; } >> "$GITHUB_OUTPUT"
 
   zte:
     # Heavy worker job — runs only when the gate passed. A skipped gate (guard false)
@@ -260,10 +258,12 @@ jobs:
           # recovered the issue; the mode is always ship-only (resume the parked
           # ship against the existing PR — never a fresh full pipeline).
           if [ "$EVENT_NAME" = "check_suite" ]; then
-            echo "issue=$RESUME_ISSUE" >> "$GITHUB_OUTPUT"
-            echo "adw_id=" >> "$GITHUB_OUTPUT"
-            echo "ship_only=true" >> "$GITHUB_OUTPUT"
-            echo "sync_only=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "issue=$RESUME_ISSUE"
+              echo "adw_id="
+              echo "ship_only=true"
+              echo "sync_only=false"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
