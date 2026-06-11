@@ -11,6 +11,8 @@ on:
   # `opened` issue would spawn a run that immediately skips at the `if:` guard, and
   # an issue created WITH an adw:* label fires BOTH `opened` and `labeled` (a
   # double-trigger). `workflow_dispatch` covers the manual case. (MNE-251)
+  # The gate's `issues` branch keys off the ADDED label (`github.event.label.name`),
+  # not label presence — see the gate comment below. (MNE-420)
   issues:
     types: [labeled]
   issue_comment:
@@ -33,6 +35,14 @@ on:
         default: false
   repository_dispatch:
     types: [adw-zte]
+  # Event-driven ship resume (ADW_EVENT_DRIVEN_SHIP): when the worker parks a
+  # ship awaiting required checks (adw:awaiting-checks label + [ADW-SHIP-PAUSE]
+  # comment), the completion of a check suite on the ADW branch resumes
+  # --ship-only — no runner idles polling CI in the meantime. The gate's
+  # check_suite branch below verifies the resume conditions (canonical ADW
+  # branch, open + labelled issue, open PR) before the heavy job runs.
+  check_suite:
+    types: [completed]
 
 permissions:
   contents: read
@@ -53,6 +63,17 @@ jobs:
   # comments, never on a frozen issue. workflow_dispatch / repository_dispatch
   # already require write access.
   #
+  # Label grammar (MNE-420): the `issues` branch gates on WHICH label was just added
+  # (`github.event.label.name` == exactly one adw command label), NEVER on label
+  # PRESENCE (`issue.labels.*`). Presence-gating made every later `labeled` event on
+  # an issue that still carried adw:zte a trigger: an issue created with
+  # `bug` + `adw:zte` fired one run per label (a double-fire), and — far worse — the
+  # worker's own `adw:needs-human` label add on an abort RE-LAUNCHED the very run
+  # that had just stopped to ask a human. `adw:needs-human` is a STOP signal and must
+  # never appear as a trigger label here. A bot actor (sender type `Bot` / login
+  # ending in `[bot]`, e.g. the worker's own App identity) never label-triggers a
+  # run — the labeled-event mirror of the [ADW-AGENTS] comment loop guard below.
+  #
   # Comment grammar (free text like "adw fix lint issues" must NOT spawn a run): the
   # comment body must START WITH exactly one recognized command line —
   #   `adw run` / `adw zte`  → full pipeline
@@ -64,14 +85,26 @@ jobs:
   # followed by prose both qualify, while "adw fix ..." does not.
   gate:
     runs-on: ubuntu-latest
+    # The resume step needs READ access to issues/PRs to verify the resume
+    # conditions; still no write scope on the gate (MNE-321).
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'check_suite' &&
+        github.event.check_suite.head_branch != null &&
+        contains(github.event.check_suite.head_branch, '-issue-') &&
+        contains(github.event.check_suite.head_branch, '-adw-')) ||
       (github.event_name == 'issues' &&
-        (contains(github.event.issue.labels.*.name, 'adw:zte') ||
-         contains(github.event.issue.labels.*.name, 'adw:ship') ||
-         contains(github.event.issue.labels.*.name, 'adw:sync') ||
-         contains(github.event.issue.labels.*.name, 'adw:rebase')) &&
+        (github.event.label.name == 'adw:zte' ||
+         github.event.label.name == 'adw:ship' ||
+         github.event.label.name == 'adw:sync' ||
+         github.event.label.name == 'adw:rebase') &&
+        github.event.sender.type != 'Bot' &&
+        !endsWith(github.event.sender.login, '[bot]') &&
         !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) ||
       (github.event_name == 'issue_comment' &&
@@ -87,10 +120,39 @@ jobs:
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     outputs:
       should_run: ${{ steps.decide.outputs.should_run }}
+      resume_issue: ${{ steps.decide.outputs.resume_issue }}
     steps:
-      # The gate's `if:` already vetted the trigger; reaching this step means run.
+      # The gate's `if:` already vetted every non-resume trigger; a check_suite
+      # resume additionally needs the issue-side conditions verified: the issue
+      # parsed from the canonical ADW branch token must be OPEN, carry the
+      # adw:awaiting-checks resume label (set only by the worker when it parked
+      # the ship), NOT be frozen, and still have an open PR on that branch. The
+      # branch name reaches the shell ONLY via env (MNE-311) — check_suite
+      # head_branch is repo-controlled but the discipline is uniform.
       - id: decide
-        run: echo "should_run=true" >> "$GITHUB_OUTPUT"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_BRANCH: ${{ github.event.check_suite.head_branch }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$EVENT_NAME" != "check_suite" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "resume_issue=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          skip() { echo "should_run=false" >> "$GITHUB_OUTPUT"; echo "resume_issue=" >> "$GITHUB_OUTPUT"; exit 0; }
+          ISSUE=$(expr "$HEAD_BRANCH" : '.*-issue-\([0-9]\{1,\}\)-adw-' || true)
+          [ -n "$ISSUE" ] || skip
+          STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq '.state' 2>/dev/null || true)
+          [ "$STATE" = "open" ] || skip
+          LABELS=$(gh api "repos/$REPO/issues/$ISSUE" --jq '[.labels[].name] | join(",")' 2>/dev/null || true)
+          printf '%s' "$LABELS" | grep -q 'adw:awaiting-checks' || skip
+          if printf '%s' "$LABELS" | grep -q 'adw:freeze'; then skip; fi
+          PR_OPEN=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$HEAD_BRANCH&state=open" --jq 'length' 2>/dev/null || echo 0)
+          [ "${PR_OPEN:-0}" -ge 1 ] || skip
+          echo "should_run=true" >> "$GITHUB_OUTPUT"
+          echo "resume_issue=$ISSUE" >> "$GITHUB_OUTPUT"
 
   zte:
     # Heavy worker job — runs only when the gate passed. A skipped gate (guard false)
@@ -108,7 +170,15 @@ jobs:
       issues: write
       checks: read
     concurrency:
-      group: adw-zte-${{ github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
+      # ONE group per issue across EVERY trigger type — a check_suite resume
+      # (issue number recovered by the gate from the branch token) can never run
+      # concurrently with a comment/label-triggered run on the same issue. With
+      # cancel-in-progress off, a storm of k check-suite completions per SHA
+      # collapses to at most one running + one pending run (GitHub supersedes
+      # queued runs in the group); redundant resumes are also cheap (green
+      # checks return on the first poll; still-pending re-parks after the short
+      # initial wait, bounded by ADW_MAX_SHIP_RESUMES).
+      group: adw-zte-${{ needs.gate.outputs.resume_issue || github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -147,6 +217,12 @@ jobs:
           token: ${{ steps.app.outputs.token }}
 
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          # Cache uv's wheel/source store across runs: the worker install below
+          # re-resolves mnemom-adw@main every run (correct — it must track main),
+          # but its dependency set (pydantic, the Agent SDK, …) is stable and
+          # restores from the cache instead of the network (~30-60s saved/run).
+          enable-cache: true
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
@@ -173,10 +249,24 @@ jobs:
           # the script body — they reach $GITHUB_OUTPUT only through quoted shell vars.
           ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
           ADW_ID: ${{ github.event.inputs.adw_id || github.event.client_payload.adw_id }}
+          # Event-driven ship resume: the issue number the gate recovered from the
+          # check_suite head branch's canonical ADW token (empty on other events).
+          RESUME_ISSUE: ${{ needs.gate.outputs.resume_issue }}
           # Label-derived modes (issues / issue_comment carry the issue's labels).
           HAS_SHIP_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:ship') }}
           HAS_SYNC_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:sync') || contains(github.event.issue.labels.*.name, 'adw:rebase') }}
         run: |
+          # check_suite resume: the gate verified the resume conditions and
+          # recovered the issue; the mode is always ship-only (resume the parked
+          # ship against the existing PR — never a fresh full pipeline).
+          if [ "$EVENT_NAME" = "check_suite" ]; then
+            echo "issue=$RESUME_ISSUE" >> "$GITHUB_OUTPUT"
+            echo "adw_id=" >> "$GITHUB_OUTPUT"
+            echo "ship_only=true" >> "$GITHUB_OUTPUT"
+            echo "sync_only=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           echo "issue=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
           echo "adw_id=$ADW_ID" >> "$GITHUB_OUTPUT"
 
@@ -221,8 +311,19 @@ jobs:
           # work_root = the checkout, so the capability manifest + run state + any
           # worktrees resolve under the repo. cwd is already the repo (origin set).
           MNEMOM_ADW_HOME: ${{ github.workspace }}
-          # Heavy phases (opus implement/resolve) get a longer per-call watchdog.
-          ADW_AGENT_TIMEOUT_SEC_HEAVY: "1800"
+          # Heavy phases (opus implement/resolve) get a longer per-call HARD CAP.
+          # Hang detection is the per-message idle watchdog (default 600s): a
+          # steadily-streaming heavy run may use the whole cap; a silent one dies
+          # after one idle window. The cap is generous for that reason.
+          ADW_AGENT_TIMEOUT_SEC_HEAVY: "3600"
+          ADW_AGENT_IDLE_TIMEOUT_SEC: "600"
+          # Event-driven shipping: instead of idle-polling CI for up to 45 min on
+          # this runner, the ship phase waits a short initial window
+          # (ADW_EVENT_SHIP_INITIAL_WAIT_MIN, default 3), then parks the run
+          # (adw:awaiting-checks label + [ADW-SHIP-PAUSE] comment, clean exit 0);
+          # the check_suite trigger above resumes --ship-only when checks finish.
+          # Cross-run resume bound: ADW_MAX_SHIP_RESUMES (worker default 5).
+          ADW_EVENT_DRIVEN_SHIP: "true"
           # The issue number, adw id, and repo slug reach the worker only as quoted
           # shell vars — never interpolated into the command body (they can carry
           # attacker-controlled input on workflow_dispatch / repository_dispatch).
