@@ -8,6 +8,9 @@ version = "2.0.0"
 description = "Agent Alignment Protocol - The missing alignment layer for the agent protocol stack"
 readme = "README.md"
 license = "Apache-2.0"
+# Deliberate floor: 3.10 = published-SDK minimum (don't break downstream
+# consumers); dev/CI baseline is pinned to 3.12 via .python-version. ruff
+# target-version / mypy python_version stay at py310 to lint against the floor.
 requires-python = ">=3.10"
 authors = [
     { name = "Mnemom.ai", email = "dev@mnemom.ai" }
