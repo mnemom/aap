@@ -15,3 +15,9 @@ Documentation for the Agent Alignment Protocol has moved to **[docs.mnemom.ai](h
 | EU AI Act Mapping | [docs.mnemom.ai/guides/eu-compliance](https://docs.mnemom.ai/guides/eu-compliance) |
 | WEF Governance | [docs.mnemom.ai/guides/wef-governance](https://docs.mnemom.ai/guides/wef-governance) |
 | Whitepaper | [docs.mnemom.ai/concepts/whitepaper](https://docs.mnemom.ai/concepts/whitepaper) |
+
+## Operations
+
+| Document | Link |
+|----------|------|
+| Triage Runbook (delegation / card-validation / schema-version) | [runbook-aap.md](runbook-aap.md) |
