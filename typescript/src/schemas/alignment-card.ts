@@ -39,6 +39,50 @@ export type TriggerAction = "escalate" | "deny" | "log";
 /** Tamper-evidence mechanism for audit logs. */
 export type TamperEvidence = "append_only" | "signed" | "merkle";
 
+/** Runtime-accessible AlignmentMode values (mirrors the schema $def). */
+export const ALIGNMENT_MODES = [
+  "off",
+  "observe",
+  "nudge",
+  "enforce",
+] as const satisfies ReadonlyArray<AlignmentMode>;
+
+/** Runtime-accessible PrincipalType values (mirrors the schema $def). */
+export const PRINCIPAL_TYPES = [
+  "human",
+  "organization",
+  "agent",
+  "unspecified",
+] as const satisfies ReadonlyArray<PrincipalType>;
+
+/** Runtime-accessible RelationshipType values (mirrors the schema $def). */
+export const RELATIONSHIP_TYPES = [
+  "delegated_authority",
+  "advisory",
+  "autonomous",
+] as const satisfies ReadonlyArray<RelationshipType>;
+
+/** Runtime-accessible HierarchyType values (mirrors the schema $def). */
+export const HIERARCHY_TYPES = [
+  "lexicographic",
+  "weighted",
+  "contextual",
+] as const satisfies ReadonlyArray<HierarchyType>;
+
+/** Runtime-accessible TriggerAction values (mirrors the schema $def). */
+export const TRIGGER_ACTIONS = [
+  "escalate",
+  "deny",
+  "log",
+] as const satisfies ReadonlyArray<TriggerAction>;
+
+/** Runtime-accessible TamperEvidence values (mirrors the schema $def). */
+export const TAMPER_EVIDENCES = [
+  "append_only",
+  "signed",
+  "merkle",
+] as const satisfies ReadonlyArray<TamperEvidence>;
+
 /** Principal relationship declaration (unified / ADR-039 §principal). */
 export interface Principal {
   /** Type of principal */
