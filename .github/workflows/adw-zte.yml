@@ -233,7 +233,7 @@ jobs:
       - name: Install the mnemom-adw worker (+ Agent SDK)
         run: |
           uv tool install --python 3.12 \
-            "mnemom-adw[sdk] @ git+https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository_owner }}/mnemom-adw.git@main"
+            "mnemom-adw[sdk] @ git+https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository_owner }}/mnemom-adw.git@main#subdirectory=packages/adw-worker"
 
       - name: Resolve context
         id: ctx
