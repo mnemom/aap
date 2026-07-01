@@ -16,6 +16,29 @@ export type ActionCategory = "bounded" | "escalation_trigger" | "forbidden";
 /** Status of an escalation. */
 export type EscalationStatus = "pending" | "approved" | "denied" | "timeout";
 
+/** Runtime-accessible ActionType values (mirrors the schema $def). */
+export const ACTION_TYPES = [
+  "recommend",
+  "execute",
+  "escalate",
+  "deny",
+] as const satisfies ReadonlyArray<ActionType>;
+
+/** Runtime-accessible ActionCategory values (mirrors the schema $def). */
+export const ACTION_CATEGORIES = [
+  "bounded",
+  "escalation_trigger",
+  "forbidden",
+] as const satisfies ReadonlyArray<ActionCategory>;
+
+/** Runtime-accessible EscalationStatus values (mirrors the schema $def). */
+export const ESCALATION_STATUSES = [
+  "pending",
+  "approved",
+  "denied",
+  "timeout",
+] as const satisfies ReadonlyArray<EscalationStatus>;
+
 /** Resource affected by the action. */
 export interface ActionTarget {
   /** Resource type */
