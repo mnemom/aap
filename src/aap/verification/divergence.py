@@ -101,7 +101,7 @@ class DivergenceDetector:
         baseline_centroid = compute_centroid(baseline_features)
 
         alerts: list[DriftAlert] = []
-        low_similarity_streak: list[tuple[dict, float]] = []
+        low_similarity_streak: list[tuple[dict[str, Any], float]] = []
 
         # Track metrics for drift direction inference
         escalation_rates: list[float] = []
@@ -206,7 +206,7 @@ class DivergenceDetector:
 
     def _infer_drift_direction(
         self,
-        streak: list[tuple[dict, float]],
+        streak: list[tuple[dict[str, Any], float]],
         card: dict[str, Any],
         escalation_rates: list[float],
         value_usage: dict[str, int],
@@ -257,7 +257,7 @@ class DivergenceDetector:
 
     def _build_drift_indicators(
         self,
-        streak: list[tuple[dict, float]],
+        streak: list[tuple[dict[str, Any], float]],
         card: dict[str, Any],
         escalation_rates: list[float],
     ) -> list[DriftIndicator]:

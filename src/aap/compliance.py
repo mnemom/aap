@@ -25,9 +25,11 @@ qualified legal counsel for your specific compliance obligations.
 
 from __future__ import annotations
 
+from typing import Any
+
 # Audit commitment values that satisfy Article 50(4) audit trail requirements.
 # Spread into the unified card's `audit` section (Audit(**EU_COMPLIANCE_AUDIT)).
-EU_COMPLIANCE_AUDIT: dict = {
+EU_COMPLIANCE_AUDIT: dict[str, Any] = {
     "retention_days": 90,
     "queryable": True,
     "query_endpoint": "https://audit.example.com/traces",
@@ -36,7 +38,7 @@ EU_COMPLIANCE_AUDIT: dict = {
 }
 
 # Extension block for EU AI Act metadata on the Alignment Card.
-EU_COMPLIANCE_EXTENSIONS: dict = {
+EU_COMPLIANCE_EXTENSIONS: dict[str, Any] = {
     "eu_ai_act": {
         "article_50_compliant": True,
         "ai_system_classification": "general_purpose",
