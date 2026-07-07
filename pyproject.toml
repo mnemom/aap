@@ -101,6 +101,13 @@ strict = true
 warn_return_any = true
 warn_unused_ignores = true
 
+# scikit-learn is an optional, lazily-imported dependency (TF-IDF fallback in
+# verification/features.py) and ships no type stubs; ignore its missing imports
+# without loosening strict checking of aap's own code. (MNE-988)
+[[tool.mypy.overrides]]
+module = "sklearn.*"
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

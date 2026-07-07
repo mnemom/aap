@@ -740,7 +740,7 @@ def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:
     if match:
         expected = match.group(1)
         actual = trace.get("action", {}).get("type", "")
-        return actual == expected
+        return bool(actual == expected)
 
     # Handle field > value (numeric comparison)
     match = re.match(r"(\w+)\s*([><=!]+)\s*(\d+(?:\.\d+)?)", condition)
@@ -795,7 +795,7 @@ def _evaluate_condition(condition: str, trace: dict[str, Any]) -> bool:
 
 
 def _infer_drift_direction(
-    streak: list[tuple[dict, float]],
+    streak: list[tuple[dict[str, Any], float]],
     card: dict[str, Any],
     escalation_rates: list[float],
     value_usage: dict[str, int],
@@ -841,7 +841,7 @@ def _infer_drift_direction(
 
 
 def _build_drift_indicators(
-    streak: list[tuple[dict, float]],
+    streak: list[tuple[dict[str, Any], float]],
     card: dict[str, Any],
     escalation_rates: list[float],
 ) -> list[DriftIndicator]:

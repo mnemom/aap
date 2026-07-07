@@ -14,7 +14,7 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import click
 
@@ -151,6 +151,9 @@ def init_cmd(
     if interactive:
         card_dict = _create_card_interactive(agent_id, card_id)
     else:
+        # Non-interactive path is guarded above (`if not values and not
+        # interactive: sys.exit(1)`), so `values` is guaranteed non-None here.
+        assert values is not None
         value_list = [v.strip() for v in values.split(",") if v.strip()]
         if not value_list:
             click.echo(error("No values provided"))
@@ -663,7 +666,7 @@ def drift_cmd(
 def _load_json(path: str) -> dict[str, Any]:
     """Load JSON file."""
     with open(path) as f:
-        return json.load(f)
+        return cast("dict[str, Any]", json.load(f))
 
 
 if __name__ == "__main__":

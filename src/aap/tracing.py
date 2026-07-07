@@ -30,6 +30,7 @@ from typing import (
     ParamSpec,
     Protocol,
     TypeVar,
+    cast,
     overload,
 )
 
@@ -180,7 +181,7 @@ def _load_card(config: TraceConfig) -> dict[str, Any]:
         if not path.exists():
             raise FileNotFoundError(f"Alignment card not found: {config.card_path}")
         with open(path) as f:
-            return json.load(f)
+            return cast("dict[str, Any]", json.load(f))
 
     raise ValueError("Either card or card_path must be provided")
 
@@ -545,8 +546,8 @@ def trace_decision(
 
                 # Return the actual value, not TracedResult
                 if isinstance(result, TracedResult):
-                    return result.value  # type: ignore[return-value]
-                return result
+                    return cast("R", result.value)
+                return cast("R", result)
 
             return async_wrapper  # type: ignore[return-value]
         else:
@@ -570,10 +571,10 @@ def trace_decision(
 
                 # Return the actual value, not TracedResult
                 if isinstance(result, TracedResult):
-                    return result.value  # type: ignore[return-value]
+                    return cast("R", result.value)
                 return result
 
-            return sync_wrapper  # type: ignore[return-value]
+            return sync_wrapper
 
     # Handle @trace_decision without parentheses (requires card to be set elsewhere)
     if func is not None:
@@ -668,7 +669,7 @@ def mcp_traced(
                 if config.auto_verify:
                     _verify_and_handle(trace, card_dict, config)
 
-                return result
+                return cast("R", result)
 
             return async_wrapper  # type: ignore[return-value]
         else:
@@ -700,7 +701,7 @@ def mcp_traced(
 
                 return result
 
-            return sync_wrapper  # type: ignore[return-value]
+            return sync_wrapper
 
     return decorator
 

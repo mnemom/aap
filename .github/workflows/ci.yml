@@ -34,6 +34,12 @@ jobs:
       - name: Install dependencies (frozen, from uv.lock)
         run: uv sync --locked --extra dev
 
+      # mypy is pinned to python_version=3.10 in [tool.mypy], so its result is
+      # identical across the matrix — run it once (on 3.12) as a required gate.
+      - name: Type check (mypy strict)
+        if: matrix.python-version == '3.12'
+        run: uv run --locked --extra dev mypy src/
+
       - name: Run tests with coverage
         run: |
           uv run --locked --extra dev pytest tests/ --cov=src/aap --cov-report=xml --cov-report=term-missing
