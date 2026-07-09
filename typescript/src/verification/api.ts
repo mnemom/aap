@@ -20,7 +20,7 @@ import {
   OUTLIER_STD_DEV_THRESHOLD,
 } from "../constants";
 import type { AlignmentCard } from "../schemas/alignment-card";
-import { appliedValueIds, cardAudit, cardAutonomy, declaredValueIds } from "../schemas/alignment-card";
+import { appliedValueIds, cardAudit, cardAutonomy, declaredValueIds, isCardExpired } from "../schemas/alignment-card";
 import type { APTrace } from "../schemas/ap-trace";
 import {
   computeCentroid,
@@ -51,6 +51,14 @@ import {
   type Warning,
 } from "./models";
 
+/** Round to 4 decimal places — canonical precision used throughout the verification API. */
+function round4(x: number): number {
+  return Math.round(x * 10000) / 10000;
+}
+
+/** Sentinel used in ValueConflictResult when the conflict source is a conflicts_with entry. */
+const CONFLICTS_WITH_SENTINEL = "(conflicts_with)";
+
 /**
  * Check if a (possibly compound) action name matches any entry in a list.
  * Supports exact match, prefix match (before ':'), and compound name splitting.
@@ -73,6 +81,138 @@ function actionMatchesList(actionName: string, list: string[]): boolean {
       return false;
     });
   });
+}
+
+// ============================================================================
+// Private check helpers for verifyTrace
+// ============================================================================
+
+function checkCardReference(trace: APTrace, cardId: string): Violation[] {
+  if (trace.card_id !== cardId) {
+    return [
+      createViolation(
+        "card_mismatch",
+        `Trace references card '${trace.card_id}' but verified against '${cardId}'`,
+      ),
+    ];
+  }
+  return [];
+}
+
+function checkCardExpiration(
+  card: AlignmentCard,
+): { violations: Violation[]; warnings: Warning[] } {
+  if (!card.expires_at) return { violations: [], warnings: [] };
+  try {
+    if (isCardExpired(card)) {
+      return {
+        violations: [
+          createViolation(
+            "card_expired",
+            `Alignment Card expired at ${card.expires_at}`,
+          ),
+        ],
+        warnings: [],
+      };
+    }
+    return { violations: [], warnings: [] };
+  } catch {
+    return {
+      violations: [],
+      warnings: [
+        {
+          type: "invalid_expiry",
+          description: `Could not parse expires_at: ${card.expires_at}`,
+          trace_field: "card.expires_at",
+        },
+      ],
+    };
+  }
+}
+
+function checkAutonomyCompliance(
+  action: APTrace["action"],
+  envelope: ReturnType<typeof cardAutonomy>,
+): Violation[] {
+  if (action.category !== "bounded") return [];
+  const boundedActions = envelope.bounded_actions ?? [];
+  if (action.name && !actionMatchesList(action.name, boundedActions)) {
+    return [
+      createViolation(
+        "unbounded_action",
+        `Action '${action.name}' not in bounded_actions: ${JSON.stringify(boundedActions)}`,
+        "action.name",
+      ),
+    ];
+  }
+  return [];
+}
+
+function checkForbiddenActions(
+  action: APTrace["action"],
+  envelope: ReturnType<typeof cardAutonomy>,
+): Violation[] {
+  const forbiddenActions = envelope.forbidden_actions ?? [];
+  if (action.name && actionMatchesList(action.name, forbiddenActions)) {
+    return [
+      createViolation(
+        "forbidden_action",
+        `Action '${action.name}' is in forbidden_actions`,
+        "action.name",
+      ),
+    ];
+  }
+  return [];
+}
+
+function checkEscalationCompliance(
+  trace: APTrace,
+  envelope: ReturnType<typeof cardAutonomy>,
+): { violations: Violation[]; warnings: Warning[] } {
+  const violations: Violation[] = [];
+  const warnings: Warning[] = [];
+  const escalation = trace.escalation;
+  for (const trigger of envelope.escalation_triggers ?? []) {
+    const condition = trigger.condition ?? "";
+    if (evaluateCondition(condition, trace)) {
+      if (!escalation?.required) {
+        violations.push(
+          createViolation(
+            "missed_escalation",
+            `Trigger '${condition}' matched but escalation not required`,
+            "escalation.required",
+          ),
+        );
+      } else if (escalation.escalation_status === "timeout") {
+        warnings.push({
+          type: "escalation_timeout",
+          description: `Escalation for trigger '${condition}' timed out`,
+          trace_field: "escalation.escalation_status",
+        });
+      }
+    }
+  }
+  return { violations, warnings };
+}
+
+function checkValueConsistency(
+  card: AlignmentCard,
+  decision: APTrace["decision"],
+): Violation[] {
+  const declaredValueIdList = declaredValueIds(card.values.declared);
+  const violations: Violation[] = [];
+  for (const value of appliedValueIds(decision.values_applied)) {
+    if (!declaredValueIdList.includes(value)) {
+      violations.push(
+        createViolation(
+          "undeclared_value",
+          `Value '${value}' applied but not in declared values: ${JSON.stringify(declaredValueIdList)}`,
+          "decision.values_applied",
+        ),
+      );
+    }
+  }
+  return violations;
 }
 
 /**
@@ -116,126 +256,33 @@ export function verifyTrace(
 
   const traceId = trace.trace_id ?? "";
   const cardId = card.card_id ?? "";
-
-  // Check card reference
-  checksPerformed.push("card_reference");
-  if (trace.card_id !== cardId) {
-    violations.push(
-      createViolation(
-        "card_mismatch",
-        `Trace references card '${trace.card_id}' but verified against '${cardId}'`,
-      ),
-    );
-  }
-
-  // Check card expiration
-  checksPerformed.push("card_expiration");
-  if (card.expires_at) {
-    try {
-      const expiry = new Date(card.expires_at);
-      if (new Date() > expiry) {
-        violations.push(
-          createViolation(
-            "card_expired",
-            `Alignment Card expired at ${card.expires_at}`,
-          ),
-        );
-      }
-    } catch {
-      warnings.push({
-        type: "invalid_expiry",
-        description: `Could not parse expires_at: ${card.expires_at}`,
-        trace_field: "card.expires_at",
-      });
-    }
-  }
-
-  // Extract the autonomy section for remaining checks (unified `autonomy`,
-  // legacy `autonomy_envelope` fallback).
   const envelope = cardAutonomy(card);
   const action = trace.action;
-
-  // Check autonomy compliance
-  checksPerformed.push("autonomy");
-  const actionCategory = action.category;
-  const actionName = action.name;
-
-  if (actionCategory === "bounded") {
-    const boundedActions = envelope.bounded_actions ?? [];
-    if (actionName && !actionMatchesList(actionName, boundedActions)) {
-      violations.push(
-        createViolation(
-          "unbounded_action",
-          `Action '${actionName}' not in bounded_actions: ${JSON.stringify(boundedActions)}`,
-          "action.name",
-        ),
-      );
-    }
-  }
-
-  // Check forbidden actions
-  checksPerformed.push("forbidden");
-  const forbiddenActions = envelope.forbidden_actions ?? [];
-  if (actionName && actionMatchesList(actionName, forbiddenActions)) {
-    violations.push(
-      createViolation(
-        "forbidden_action",
-        `Action '${actionName}' is in forbidden_actions`,
-        "action.name",
-      ),
-    );
-  }
-
-  // Check escalation compliance
-  checksPerformed.push("escalation");
-  const escalation = trace.escalation;
-  for (const trigger of envelope.escalation_triggers ?? []) {
-    const condition = trigger.condition ?? "";
-    if (evaluateCondition(condition, trace)) {
-      if (!escalation?.required) {
-        violations.push(
-          createViolation(
-            "missed_escalation",
-            `Trigger '${condition}' matched but escalation not required`,
-            "escalation.required",
-          ),
-        );
-      } else if (escalation.escalation_status === "timeout") {
-        // Timeout is not a violation if escalation was attempted
-        warnings.push({
-          type: "escalation_timeout",
-          description: `Escalation for trigger '${condition}' timed out`,
-          trace_field: "escalation.escalation_status",
-        });
-      }
-    }
-  }
-
-  // Check value consistency. BOTH sides may be bare strings OR parameterized
-  // objects ({id, domain, intensity}) at runtime: declared (Phase-3.2+ cards)
-  // and values_applied (ADR-065 #16 — observer fallback paths emit objects
-  // despite the string[] type). Normalize BOTH → ids before membership, else an
-  // object string-coerces to '[object Object]' and either an object-form
-  // declaration or an object-form applied value falsely flags `undeclared_value`
-  // → spurious deny.
-  checksPerformed.push("values");
   const decision = trace.decision;
-  const declaredValueIdList = declaredValueIds(card.values.declared);
-  const valuesApplied = appliedValueIds(decision.values_applied);
 
-  for (const value of valuesApplied) {
-    if (!declaredValueIdList.includes(value)) {
-      violations.push(
-        createViolation(
-          "undeclared_value",
-          `Value '${value}' applied but not in declared values: ${JSON.stringify(declaredValueIdList)}`,
-          "decision.values_applied",
-        ),
-      );
-    }
-  }
+  checksPerformed.push("card_reference");
+  violations.push(...checkCardReference(trace, cardId));
 
-  // Near-boundary warnings
+  checksPerformed.push("card_expiration");
+  const expiryResult = checkCardExpiration(card);
+  violations.push(...expiryResult.violations);
+  warnings.push(...expiryResult.warnings);
+
+  checksPerformed.push("autonomy");
+  violations.push(...checkAutonomyCompliance(action, envelope));
+
+  checksPerformed.push("forbidden");
+  violations.push(...checkForbiddenActions(action, envelope));
+
+  checksPerformed.push("escalation");
+  const escalationResult = checkEscalationCompliance(trace, envelope);
+  violations.push(...escalationResult.violations);
+  warnings.push(...escalationResult.warnings);
+
+  checksPerformed.push("values");
+  violations.push(...checkValueConsistency(card, decision));
+
+  // Near-boundary confidence warnings
   const confidence = decision.confidence;
   if (confidence != null && confidence < NEAR_BOUNDARY_THRESHOLD) {
     warnings.push({
@@ -244,8 +291,6 @@ export function verifyTrace(
       trace_field: "decision.confidence",
     });
   }
-
-  // Alternatives near boundary check
   for (let i = 0; i < decision.alternatives_considered.length; i++) {
     const alt = decision.alternatives_considered[i];
     const score = alt.score;
@@ -260,11 +305,9 @@ export function verifyTrace(
 
   // Compute behavioral similarity using feature cosine similarity (trace vs card)
   checksPerformed.push("behavioral_similarity");
-  const similarityScore =
-    Math.round(
-      cosineSimilarity(extractTraceFeatures(trace), extractCardFeatures(card)) *
-        10000,
-    ) / 10000;
+  const similarityScore = round4(
+    cosineSimilarity(extractTraceFeatures(trace), extractCardFeatures(card)),
+  );
 
   const similarityDetails: Record<string, unknown> = {
     similarity_score: similarityScore,
@@ -336,22 +379,12 @@ export function checkCoherence(
     ? new Set(taskValues)
     : new Set([...myValues, ...theirValues]);
 
-  // Compute matches and conflicts
-  const matched: string[] = [];
-  const unmatched: string[] = [];
-
-  for (const value of myValues) {
-    if (theirValues.has(value)) {
-      matched.push(value);
-    } else {
-      unmatched.push(value);
-    }
-  }
-  for (const value of theirValues) {
-    if (!myValues.has(value)) {
-      unmatched.push(value);
-    }
-  }
+  // Compute matches and unmatched declaratively
+  const matched = [...myValues].filter((v) => theirValues.has(v));
+  const unmatched = [
+    ...[...myValues].filter((v) => !theirValues.has(v)),
+    ...[...theirValues].filter((v) => !myValues.has(v)),
+  ];
 
   const conflicts: ValueConflictResult[] = [];
 
@@ -360,7 +393,7 @@ export function checkCoherence(
     if (theirConflicts.has(value)) {
       conflicts.push({
         initiator_value: value,
-        responder_value: "(conflicts_with)",
+        responder_value: CONFLICTS_WITH_SENTINEL,
         conflict_type: "incompatible",
         description: `Initiator's '${value}' is in responder's conflicts_with`,
       });
@@ -370,7 +403,7 @@ export function checkCoherence(
   for (const value of theirValues) {
     if (myConflicts.has(value)) {
       conflicts.push({
-        initiator_value: "(conflicts_with)",
+        initiator_value: CONFLICTS_WITH_SENTINEL,
         responder_value: value,
         conflict_type: "incompatible",
         description: `Responder's '${value}' is in initiator's conflicts_with`,
@@ -407,7 +440,7 @@ export function checkCoherence(
 
   return {
     compatible,
-    score: Math.round(score * 10000) / 10000,
+    score: round4(score),
     value_alignment: {
       matched,
       unmatched,
@@ -523,10 +556,10 @@ export function checkFleetCoherence(
         for (const pair of pairwiseMatrix) {
           if (pair.agent_a === id || pair.agent_b === id) {
             for (const conflict of pair.result.value_alignment.conflicts) {
-              if (conflict.initiator_value !== "(conflicts_with)") {
+              if (conflict.initiator_value !== CONFLICTS_WITH_SENTINEL) {
                 primaryConflicts.add(conflict.initiator_value);
               }
-              if (conflict.responder_value !== "(conflicts_with)") {
+              if (conflict.responder_value !== CONFLICTS_WITH_SENTINEL) {
                 primaryConflicts.add(conflict.responder_value);
               }
             }
@@ -534,9 +567,9 @@ export function checkFleetCoherence(
         }
         outliers.push({
           agent_id: id,
-          agent_mean_score: Math.round(agentMean * 10000) / 10000,
-          fleet_mean_score: Math.round(fleetMeanOfMeans * 10000) / 10000,
-          deviation: Math.round(deviation * 10000) / 10000,
+          agent_mean_score: round4(agentMean),
+          fleet_mean_score: round4(fleetMeanOfMeans),
+          deviation: round4(deviation),
           primary_conflicts: [...primaryConflicts],
         });
       }
@@ -621,7 +654,7 @@ export function checkFleetCoherence(
     clusters.push({
       cluster_id: clusterId++,
       agent_ids: component,
-      internal_coherence: Math.round(internalCoherence * 10000) / 10000,
+      internal_coherence: round4(internalCoherence),
       shared_values: sharedValues,
       distinguishing_values: distinguishingValues,
     });
@@ -654,10 +687,9 @@ export function checkFleetCoherence(
     if (missing.length === 0 && conflicting.length === 0) continue;
 
     // Estimate impact: fraction of agents not aligned on this value
-    const impactOnFleetScore =
-      Math.round(
-        ((missing.length + conflicting.length) / agentIds.length) * 10000,
-      ) / 10000;
+    const impactOnFleetScore = round4(
+      (missing.length + conflicting.length) / agentIds.length,
+    );
 
     divergenceReport.push({
       value,
@@ -685,7 +717,7 @@ export function checkFleetCoherence(
 
   const agentSummaries: AgentCoherenceSummary[] = agentIds.map((id) => ({
     agent_id: id,
-    mean_score: Math.round(agentMeans.get(id)! * 10000) / 10000,
+    mean_score: round4(agentMeans.get(id)!),
     compatible_count: agentCompatibleCount.get(id)!,
     conflict_count: agentConflictCount.get(id)!,
     cluster_id: agentClusterMap.get(id) ?? 0,
@@ -693,9 +725,9 @@ export function checkFleetCoherence(
   }));
 
   return {
-    fleet_score: Math.round(fleetScore * 10000) / 10000,
-    min_pair_score: Math.round(minPairScore * 10000) / 10000,
-    max_pair_score: Math.round(maxPairScore * 10000) / 10000,
+    fleet_score: round4(fleetScore),
+    min_pair_score: round4(minPairScore),
+    max_pair_score: round4(maxPairScore),
     agent_count: cards.length,
     pair_count: pairwiseMatrix.length,
     pairwise_matrix: pairwiseMatrix,
@@ -763,13 +795,7 @@ export function detectDrift(
 
   // Include baseline traces in escalation/value tracking
   for (const trace of sorted.slice(0, baselineSize)) {
-    const escalation = trace.escalation;
-    escalationRates.push(escalation?.required ? 1.0 : 0.0);
-    // ADR-065 #16: normalize applied values to ids — object entries would
-    // otherwise key the usage map under '[object Object]'.
-    for (const value of appliedValueIds(trace.decision.values_applied)) {
-      valueUsage[value] = (valueUsage[value] ?? 0) + 1;
-    }
+    accumulateTraceMetrics(trace, escalationRates, valueUsage);
   }
 
   // Iterate from after baseline to end
@@ -778,14 +804,7 @@ export function detectDrift(
     const traceFeatures = extractTraceFeatures(trace);
     const similarity = cosineSimilarity(traceFeatures, baselineCentroid);
 
-    // Track escalation rate
-    const escalation = trace.escalation;
-    escalationRates.push(escalation?.required ? 1.0 : 0.0);
-
-    // Track value usage (ADR-065 #16: normalize applied values to ids).
-    for (const value of appliedValueIds(trace.decision.values_applied)) {
-      valueUsage[value] = (valueUsage[value] ?? 0) + 1;
-    }
+    accumulateTraceMetrics(trace, escalationRates, valueUsage);
 
     if (similarity < similarityThreshold) {
       lowSimilarityStreak.push({ trace, similarity });
@@ -818,7 +837,7 @@ export function detectDrift(
         card_id: card.card_id ?? "",
         detection_timestamp: new Date().toISOString(),
         analysis: {
-          similarity_score: Math.round(latest.similarity * 10000) / 10000,
+          similarity_score: round4(latest.similarity),
           sustained_traces: lowSimilarityStreak.length,
           threshold: similarityThreshold,
           drift_direction: direction,
@@ -1112,7 +1131,7 @@ export function analyzeFaultLines(
       agents_declaring,
       agents_missing,
       agents_conflicting,
-      impact_score: Math.round(impactScore * 10000) / 10000,
+      impact_score: round4(impactScore),
       resolution_hint: resolutionHint,
       affects_capabilities: affectsCapabilities,
     });
@@ -1229,7 +1248,7 @@ export function analyzeFaultLines(
       fault_line_ids: sortedFaultLineIds,
       minority_agents: minorityAgents,
       majority_agents: majorityAgents,
-      alignment_score: Math.round(alignmentScore * 10000) / 10000,
+      alignment_score: round4(alignmentScore),
       severity,
       description: `${groupFaultLines.length} fault lines consistently isolate ${minorityAgents.join(", ")} from the team`,
     });
@@ -1365,6 +1384,22 @@ function evaluateCondition(condition: string, trace: APTrace): boolean {
 }
 
 /**
+ * Accumulate escalation rate and value usage metrics from a single trace.
+ * ADR-065 #16: normalizes applied values to ids — object entries would
+ * otherwise key the usage map under '[object Object]'.
+ */
+function accumulateTraceMetrics(
+  trace: APTrace,
+  escalationRates: number[],
+  valueUsage: Record<string, number>,
+): void {
+  escalationRates.push(trace.escalation?.required ? 1.0 : 0.0);
+  for (const value of appliedValueIds(trace.decision.values_applied)) {
+    valueUsage[value] = (valueUsage[value] ?? 0) + 1;
+  }
+}
+
+/**
  * Infer the direction of behavioral drift.
  */
 function inferDriftDirection(
@@ -1444,9 +1479,8 @@ function buildDriftIndicators(
     const trend = similarities[similarities.length - 1] - similarities[0];
     indicators.push({
       indicator: "similarity_trend",
-      baseline: Math.round(similarities[0] * 10000) / 10000,
-      current:
-        Math.round(similarities[similarities.length - 1] * 10000) / 10000,
+      baseline: round4(similarities[0]),
+      current: round4(similarities[similarities.length - 1]),
       description: `Similarity ${trend < 0 ? "decreasing" : "stable"} over ${streak.length} traces`,
     });
   }
