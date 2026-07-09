@@ -333,6 +333,37 @@ def verify_trace(
     )
 
 
+def _collect_value_conflicts(
+    my_values: set[str],
+    their_values: set[str],
+    my_conflicts: set[str],
+    their_conflicts: set[str],
+) -> list[ValueConflict]:
+    """Collect pairwise value conflicts between two agents' value sets."""
+    conflicts: list[ValueConflict] = []
+    for value in my_values:
+        if value in their_conflicts:
+            conflicts.append(
+                ValueConflict(
+                    initiator_value=value,
+                    responder_value="(conflicts_with)",
+                    conflict_type="incompatible",
+                    description=f"Initiator's '{value}' is in responder's conflicts_with",
+                )
+            )
+    for value in their_values:
+        if value in my_conflicts:
+            conflicts.append(
+                ValueConflict(
+                    initiator_value="(conflicts_with)",
+                    responder_value=value,
+                    conflict_type="incompatible",
+                    description=f"Responder's '{value}' is in initiator's conflicts_with",
+                )
+            )
+    return conflicts
+
+
 def check_coherence(
     my_card: dict[str, Any],
     their_card: dict[str, Any],
@@ -375,30 +406,7 @@ def check_coherence(
     matched = list(my_values & their_values)
     unmatched = list((my_values | their_values) - (my_values & their_values))
 
-    conflicts: list[ValueConflict] = []
-
-    # Check for direct conflicts (value in one card's conflicts_with)
-    for value in my_values:
-        if value in their_conflicts:
-            conflicts.append(
-                ValueConflict(
-                    initiator_value=value,
-                    responder_value="(conflicts_with)",
-                    conflict_type="incompatible",
-                    description=f"Initiator's '{value}' is in responder's conflicts_with",
-                )
-            )
-
-    for value in their_values:
-        if value in my_conflicts:
-            conflicts.append(
-                ValueConflict(
-                    initiator_value="(conflicts_with)",
-                    responder_value=value,
-                    conflict_type="incompatible",
-                    description=f"Responder's '{value}' is in initiator's conflicts_with",
-                )
-            )
+    conflicts = _collect_value_conflicts(my_values, their_values, my_conflicts, their_conflicts)
 
     # Compute coherence score
     total_required = len(required_values) or 1  # Avoid division by zero
@@ -433,6 +441,70 @@ def check_coherence(
         conditions=[],
         proposed_resolution=proposed_resolution,
     )
+
+
+def _compute_fleet_clusters(
+    agent_ids: list[str],
+    adjacency: dict[str, set[str]],
+    pairwise_matrix: list[PairwiseEntry],
+    cards: list[dict[str, Any]],
+) -> list[FleetCluster]:
+    """Find connected components in the compatibility graph and build FleetCluster objects."""
+    visited: set[str] = set()
+    clusters: list[FleetCluster] = []
+
+    # generator is lazy; visited is correct at yield time
+    for cluster_id, aid in enumerate(a for a in agent_ids if a not in visited):
+        component: list[str] = []
+        queue = [aid]
+        visited.add(aid)
+        while queue:
+            current = queue.pop(0)
+            component.append(current)
+            for neighbor in adjacency[current]:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+
+        # Compute internal coherence
+        internal_sum = 0.0
+        internal_count = 0
+        for ci in range(len(component)):
+            for cj in range(ci + 1, len(component)):
+                for pair in pairwise_matrix:
+                    if {pair.agent_a, pair.agent_b} == {component[ci], component[cj]}:
+                        internal_sum += pair.result.score
+                        internal_count += 1
+                        break
+        internal_coherence = internal_sum / internal_count if internal_count > 0 else 1.0
+
+        # Find shared values
+        cluster_cards_list = [c for c in cards if c["agent_id"] in component]
+        shared: set[str] | None = None
+        for entry in cluster_cards_list:
+            declared = set(entry["card"].get("values", {}).get("declared", []))
+            shared = declared if shared is None else shared & declared
+        shared_values = sorted(shared or set())
+
+        # Find distinguishing values
+        other_values: set[str] = set()
+        for entry in cards:
+            if entry["agent_id"] not in component:
+                for v in entry["card"].get("values", {}).get("declared", []):
+                    other_values.add(v)
+        distinguishing = [v for v in shared_values if v not in other_values]
+
+        clusters.append(
+            FleetCluster(
+                cluster_id=cluster_id,
+                agent_ids=component,
+                internal_coherence=round(internal_coherence, 4),
+                shared_values=shared_values,
+                distinguishing_values=distinguishing,
+            )
+        )
+
+    return clusters
 
 
 def check_fleet_coherence(
@@ -538,64 +610,7 @@ def check_fleet_coherence(
             adjacency[pair.agent_a].add(pair.agent_b)
             adjacency[pair.agent_b].add(pair.agent_a)
 
-    visited: set[str] = set()
-    clusters: list[FleetCluster] = []
-    cluster_id = 0
-
-    for aid in agent_ids:
-        if aid in visited:
-            continue
-        component: list[str] = []
-        queue = [aid]
-        visited.add(aid)
-        while queue:
-            current = queue.pop(0)
-            component.append(current)
-            for neighbor in adjacency[current]:
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    queue.append(neighbor)
-
-        # Compute internal coherence
-        internal_sum = 0.0
-        internal_count = 0
-        for ci in range(len(component)):
-            for cj in range(ci + 1, len(component)):
-                for pair in pairwise_matrix:
-                    if (pair.agent_a == component[ci] and pair.agent_b == component[cj]) or (
-                        pair.agent_a == component[cj] and pair.agent_b == component[ci]
-                    ):
-                        internal_sum += pair.result.score
-                        internal_count += 1
-                        break
-        internal_coherence = internal_sum / internal_count if internal_count > 0 else 1.0
-
-        # Find shared values
-        cluster_cards_list = [c for c in cards if c["agent_id"] in component]
-        shared: set[str] | None = None
-        for entry in cluster_cards_list:
-            declared = set(entry["card"].get("values", {}).get("declared", []))
-            shared = declared if shared is None else shared & declared
-        shared_values = sorted(shared or set())
-
-        # Find distinguishing values
-        other_values: set[str] = set()
-        for entry in cards:
-            if entry["agent_id"] not in component:
-                for v in entry["card"].get("values", {}).get("declared", []):
-                    other_values.add(v)
-        distinguishing = [v for v in shared_values if v not in other_values]
-
-        clusters.append(
-            FleetCluster(
-                cluster_id=cluster_id,
-                agent_ids=component,
-                internal_coherence=round(internal_coherence, 4),
-                shared_values=shared_values,
-                distinguishing_values=distinguishing,
-            )
-        )
-        cluster_id += 1
+    clusters = _compute_fleet_clusters(agent_ids, adjacency, pairwise_matrix, cards)
 
     # Step 6: Divergence report
     all_values: set[str] = set()
