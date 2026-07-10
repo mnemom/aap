@@ -163,46 +163,31 @@ function setupEventListeners() {
  * Set up example dropdown selectors
  */
 function setupExampleSelectors() {
-    // Verify mode
-    document.getElementById('card-examples')?.addEventListener('change', (e) => {
-        if (e.target.value && EXAMPLES.cards[e.target.value]) {
-            document.getElementById('card-input').value = JSON.stringify(EXAMPLES.cards[e.target.value], null, 2);
-            validateJsonInput({ target: document.getElementById('card-input') });
-        }
-    });
+    const configs = [
+        { selectId: 'card-examples',        examples: EXAMPLES.cards,     inputId: 'card-input',          validate: true  },
+        { selectId: 'trace-examples',       examples: EXAMPLES.traces,    inputId: 'trace-input',         validate: true  },
+        { selectId: 'my-card-examples',     examples: EXAMPLES.coherence, inputId: 'my-card-input',       validate: false },
+        { selectId: 'their-card-examples',  examples: EXAMPLES.coherence, inputId: 'their-card-input',    validate: false },
+        { selectId: 'drift-card-examples',  examples: EXAMPLES.cards,     inputId: 'drift-card-input',    validate: false },
+        { selectId: 'drift-traces-examples',examples: EXAMPLES.drift,     inputId: 'drift-traces-input',  validate: false },
+    ];
 
-    document.getElementById('trace-examples')?.addEventListener('change', (e) => {
-        if (e.target.value && EXAMPLES.traces[e.target.value]) {
-            document.getElementById('trace-input').value = JSON.stringify(EXAMPLES.traces[e.target.value], null, 2);
-            validateJsonInput({ target: document.getElementById('trace-input') });
+    for (const { selectId, examples, inputId, validate } of configs) {
+        const el = document.getElementById(selectId);
+        if (!el) {
+            console.warn(`[playground] setupExampleSelectors: element #${selectId} not found`);
+            continue;
         }
-    });
-
-    // Coherence mode
-    document.getElementById('my-card-examples')?.addEventListener('change', (e) => {
-        if (e.target.value && EXAMPLES.coherence[e.target.value]) {
-            document.getElementById('my-card-input').value = JSON.stringify(EXAMPLES.coherence[e.target.value], null, 2);
-        }
-    });
-
-    document.getElementById('their-card-examples')?.addEventListener('change', (e) => {
-        if (e.target.value && EXAMPLES.coherence[e.target.value]) {
-            document.getElementById('their-card-input').value = JSON.stringify(EXAMPLES.coherence[e.target.value], null, 2);
-        }
-    });
-
-    // Drift mode
-    document.getElementById('drift-card-examples')?.addEventListener('change', (e) => {
-        if (e.target.value && EXAMPLES.cards[e.target.value]) {
-            document.getElementById('drift-card-input').value = JSON.stringify(EXAMPLES.cards[e.target.value], null, 2);
-        }
-    });
-
-    document.getElementById('drift-traces-examples')?.addEventListener('change', (e) => {
-        if (e.target.value && EXAMPLES.drift[e.target.value]) {
-            document.getElementById('drift-traces-input').value = JSON.stringify(EXAMPLES.drift[e.target.value], null, 2);
-        }
-    });
+        el.addEventListener('change', (e) => {
+            if (e.target.value && examples[e.target.value]) {
+                const inputEl = document.getElementById(inputId);
+                inputEl.value = JSON.stringify(examples[e.target.value], null, 2);
+                if (validate) {
+                    validateJsonInput({ target: inputEl });
+                }
+            }
+        });
+    }
 }
 
 /**
@@ -1506,6 +1491,18 @@ js_compute_similarity_history('''${escapeJson(cardJson)}''', '''${escapeJson(tra
 }
 
 /**
+ * Render an array of items as an HTML <ul> string using a per-item render function.
+ * All call sites pass array-typed inputs per the Python API contract (the SDK always
+ * returns arrays for violations, warnings, matched values, and specific_indicators).
+ * The optional-chain guard on items?.length defends against future callers that may
+ * not share this guarantee.
+ */
+function renderItemList(items, renderItem) {
+    if (!items?.length) return '';
+    return '<ul>' + items.map(renderItem).join('') + '</ul>';
+}
+
+/**
  * Display verify result
  */
 function displayVerifyResult(result) {
@@ -1524,19 +1521,17 @@ function displayVerifyResult(result) {
     let summary = '';
 
     if (result.violations.length > 0) {
-        summary += '<strong>Violations:</strong><ul>';
-        result.violations.forEach(v => {
-            summary += `<li class="violation-item"><strong>${v.type}</strong>: ${escapeHtml(v.description)}</li>`;
-        });
-        summary += '</ul>';
+        summary += '<strong>Violations:</strong>';
+        summary += renderItemList(result.violations, v =>
+            `<li class="violation-item"><strong>${v.type}</strong>: ${escapeHtml(v.description)}</li>`
+        );
     }
 
     if (result.warnings.length > 0) {
-        summary += '<strong>Warnings:</strong><ul>';
-        result.warnings.forEach(w => {
-            summary += `<li class="warning-item"><strong>${w.type}</strong>: ${escapeHtml(w.description)}</li>`;
-        });
-        summary += '</ul>';
+        summary += '<strong>Warnings:</strong>';
+        summary += renderItemList(result.warnings, w =>
+            `<li class="warning-item"><strong>${w.type}</strong>: ${escapeHtml(w.description)}</li>`
+        );
     }
 
     if (result.verified && result.warnings.length === 0) {
@@ -1568,27 +1563,24 @@ function displayCoherenceResult(result) {
     let summary = '';
 
     if (result.value_alignment.matched.length > 0) {
-        summary += '<strong>Matched Values:</strong><ul>';
-        result.value_alignment.matched.forEach(v => {
-            summary += `<li class="match-item">${escapeHtml(v)}</li>`;
-        });
-        summary += '</ul>';
+        summary += '<strong>Matched Values:</strong>';
+        summary += renderItemList(result.value_alignment.matched, v =>
+            `<li class="match-item">${escapeHtml(v)}</li>`
+        );
     }
 
     if (result.value_alignment.unmatched.length > 0) {
-        summary += '<strong>Unmatched Values:</strong><ul>';
-        result.value_alignment.unmatched.forEach(v => {
-            summary += `<li>${escapeHtml(v)}</li>`;
-        });
-        summary += '</ul>';
+        summary += '<strong>Unmatched Values:</strong>';
+        summary += renderItemList(result.value_alignment.unmatched, v =>
+            `<li>${escapeHtml(v)}</li>`
+        );
     }
 
     if (result.value_alignment.conflicts.length > 0) {
-        summary += '<strong>Conflicts:</strong><ul>';
-        result.value_alignment.conflicts.forEach(c => {
-            summary += `<li class="violation-item">${escapeHtml(c.description)}</li>`;
-        });
-        summary += '</ul>';
+        summary += '<strong>Conflicts:</strong>';
+        summary += renderItemList(result.value_alignment.conflicts, c =>
+            `<li class="violation-item">${escapeHtml(c.description)}</li>`
+        );
     }
 
     if (result.proposed_resolution) {
@@ -1622,11 +1614,11 @@ function displayDriftResult(result) {
             summary += `<li>Sustained traces: ${alert.analysis.sustained_traces}</li>`;
 
             if (alert.analysis.specific_indicators.length > 0) {
-                summary += '<li>Indicators:<ul>';
-                alert.analysis.specific_indicators.forEach(ind => {
-                    summary += `<li class="warning-item">${escapeHtml(ind.description)}</li>`;
-                });
-                summary += '</ul></li>';
+                summary += '<li>Indicators:';
+                summary += renderItemList(alert.analysis.specific_indicators, ind =>
+                    `<li class="warning-item">${escapeHtml(ind.description)}</li>`
+                );
+                summary += '</li>';
             }
 
             summary += '</ul>';
@@ -1749,10 +1741,11 @@ function switchVizView(view) {
         tab.setAttribute('aria-selected', isActive);
     });
 
-    // Update panels
+    // Update panels — each panel's id follows the pattern viz-<view-name>, so
+    // matching panel.id === `viz-${view}` is both self-documenting and correct
+    // for any number of future views without modification.
     elements.vizPanels?.forEach(panel => {
-        const isTimeline = panel.id === 'viz-timeline';
-        const isActive = (view === 'timeline' && isTimeline) || (view === 'matrix' && !isTimeline);
+        const isActive = panel.id === `viz-${view}`;
         panel.classList.toggle('active', isActive);
         panel.hidden = !isActive;
     });
