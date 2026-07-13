@@ -6,8 +6,8 @@ This file is a pointer index — one row per ADR that directly shapes `aap`.
 
 | ADR | Title | Status | Canonical source |
 |-----|-------|--------|-----------------|
-| ADR-006 | SDK Versioning Support Policy | Accepted | [decisions/ (slug unconfirmed)](https://github.com/mnemom/scale/tree/main/decisions) |
-| ADR-007 | Unified Agent-Card Roadmap | Accepted | [decisions/ (slug unconfirmed)](https://github.com/mnemom/scale/tree/main/decisions) |
+| ADR-006 | SDK Versioning Support Policy | Accepted | [decisions/ (slug unconfirmed, tracked in #103)](https://github.com/mnemom/scale/tree/main/decisions) |
+| ADR-007 | Unified Agent-Card Roadmap | Accepted | [decisions/ (slug unconfirmed, tracked in #103)](https://github.com/mnemom/scale/tree/main/decisions) |
 | ADR-048 | Governance Signals Layering | Accepted | [ADR-048-governance-signals-layering.md](https://github.com/mnemom/scale/blob/main/decisions/ADR-048-governance-signals-layering.md) |
 
 ## Notes
