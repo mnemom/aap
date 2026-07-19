@@ -47,6 +47,7 @@ export type {
   RelationshipType,
   Values,
   ValueDefinition,
+  ParameterizedValue,
   HierarchyType,
   Autonomy,
   EscalationTrigger,
