@@ -166,6 +166,7 @@ TS_ONLY_SYMBOLS: frozenset[str] = frozenset(
         "HierarchyType",
         "MonetaryValue",
         "TamperEvidence",
+        "ParameterizedValue",
         # AP-Trace structural sub-types
         "ActionTarget",
         "ValueScore",
