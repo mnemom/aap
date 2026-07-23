@@ -344,8 +344,8 @@ def verify_trace(trace: dict, card: dict) -> dict:
                 "description": f"Could not parse expires_at: {expires_at}",
             })
 
-    # Extract the autonomy section (unified `autonomy`, legacy
-    # `autonomy_envelope` fallback)
+    # Extract the autonomy section (unified 'autonomy', legacy
+    # 'autonomy_envelope' fallback)
     envelope = card.get("autonomy") or card.get("autonomy_envelope") or {}
     action = trace.get("action", {})
 
