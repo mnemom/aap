@@ -1741,11 +1741,10 @@ function switchVizView(view) {
         tab.setAttribute('aria-selected', isActive);
     });
 
-    // Update panels — each panel's id follows the pattern viz-<view-name>, so
-    // matching panel.id === `viz-${view}` is both self-documenting and correct
-    // for any number of future views without modification.
+    // Update panels
     elements.vizPanels?.forEach(panel => {
-        const isActive = panel.id === `viz-${view}`;
+        const isTimeline = panel.id === 'viz-timeline';
+        const isActive = (view === 'timeline' && isTimeline) || (view === 'matrix' && !isTimeline);
         panel.classList.toggle('active', isActive);
         panel.hidden = !isActive;
     });
