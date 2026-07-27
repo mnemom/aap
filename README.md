@@ -309,7 +309,7 @@ No server required — runs entirely client-side via WebAssembly.
 
 ## Status
 
-**Current Version**: 0.4.0
+**Current Version**: [![PyPI](https://img.shields.io/pypi/v/agent-alignment-protocol.svg)](https://pypi.org/project/agent-alignment-protocol/) (Python) / [![npm](https://img.shields.io/npm/v/@mnemom/agent-alignment-protocol.svg)](https://www.npmjs.com/package/@mnemom/agent-alignment-protocol) (TypeScript)
 
 | Component | Status |
 |-----------|--------|
