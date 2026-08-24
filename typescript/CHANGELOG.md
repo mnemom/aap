@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0](https://github.com/mnemom/aap/compare/v2.0.0...v2.1.0) (2026-08-24)
+
+
+### Added
+
+* [#75](https://github.com/mnemom/aap/issues/75) - SDK parity: fix card feature extractor divergence (Python vs TS) ([#76](https://github.com/mnemom/aap/issues/76)) ([174082b](https://github.com/mnemom/aap/commit/174082bac96401c02df29c34432da8f0885b050a))
+
+
+### Fixed
+
+* **typescript:** export ParameterizedValue from package root ([#108](https://github.com/mnemom/aap/issues/108)) ([f5cb254](https://github.com/mnemom/aap/commit/f5cb254dd4823beb8df1133a7ed0d5e34033b3b4))
+
 ## [2.0.1] - 2026-06-10
 
 ### Fixed
