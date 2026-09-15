@@ -1,0 +1,69 @@
+name: Mirror to GitHub Packages
+
+# WHY THIS EXISTS
+# publish.yml ships @mnemom/agent-alignment-protocol to the PUBLIC npm registry
+# (npmjs.org). But internal consumers — notably the mnemom-platform observer —
+# resolve the ENTIRE @mnemom scope ONLY from GitHub Packages (npm.pkg.github.com),
+# because their .npmrc maps `@mnemom:registry=https://npm.pkg.github.com` and npm
+# scoping is all-or-nothing (MNE-2323 / MNE-2320). Historically only 1.3.0 + 0.6.2
+# were hand-backfilled into GitHub Packages (2026-07-22), so every release since is
+# unreachable to those consumers. This job closes that gap: it re-publishes each
+# released version from npmjs into GitHub Packages, byte-for-byte (same tarball).
+#
+# The @mnemom/agent-alignment-protocol package is linked to THIS repo, so the
+# workflow's own GITHUB_TOKEN (packages: write) can publish it — no PAT/secret.
+#
+#   * release  -> mirrors the just-released version (ongoing, closes the class)
+#   * dispatch -> mirrors an explicit version (one-time backfill, e.g. 1.3.1)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Exact version to mirror from npmjs into GitHub Packages (e.g. 1.3.1)"
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  mirror:
+    name: Mirror ${{ github.event.release.tag_name || inputs.version }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write   # publish @mnemom/* to GitHub Packages (package linked to this repo)
+      contents: read
+    steps:
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: "20"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@mnemom"
+
+      - name: Resolve version (strip any leading v)
+        id: v
+        run: |
+          RAW="${{ github.event.release.tag_name || inputs.version }}"
+          VERSION="${RAW#v}"
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: no version to mirror" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Pull the published tarball from npmjs (public, no auth)
+        run: |
+          npm pack "@mnemom/agent-alignment-protocol@${{ steps.v.outputs.version }}" \
+            --registry=https://registry.npmjs.org
+
+      - name: Publish that exact tarball to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TARBALL="mnemom-agent-alignment-protocol-${{ steps.v.outputs.version }}.tgz"
+          test -f "$TARBALL" || { echo "ERROR: $TARBALL not found (npm pack failed?)" >&2; exit 1; }
+          # setup-node wrote an .npmrc mapping @mnemom -> npm.pkg.github.com with
+          # NODE_AUTH_TOKEN; --registry is belt-and-suspenders on the same target.
+          npm publish "$TARBALL" --registry=https://npm.pkg.github.com
