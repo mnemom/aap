@@ -72,14 +72,23 @@ def action_matches_list(action_name: str, action_list: list[str]) -> bool:
 
 
 def _action_component_matches(component: str, action_list: list[str]) -> bool:
-    """Check if a single action component matches any entry in the list."""
+    """Check if a single action component matches any entry in the list.
+
+    Matching is case-insensitive and locale-independent: both sides are folded
+    with ``str.lower()`` (never ``str.casefold()`` or a locale-aware mapping) so
+    the verdict never depends on the host locale, mirroring the TypeScript
+    port's ``toLowerCase()``. Case is a naming convention, not an authorization
+    boundary -- an action named "Edit"/"Bash" must match an entry written
+    "edit"/"bash".
+    """
+    target = component.lower()
     for entry in action_list:
-        if entry == component:
+        if entry.lower() == target:
             return True
         colon_index = entry.find(":")
         if colon_index > 0:
             prefix = entry[:colon_index].strip()
-            if prefix == component:
+            if prefix.lower() == target:
                 return True
     return False
 

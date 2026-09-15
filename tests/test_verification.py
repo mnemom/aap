@@ -996,6 +996,37 @@ class TestActionMatchesList:
             ["exec: execute shell commands", "read: read files"],
         ) is True
 
+    # --- Case-insensitive matching -----------------------------------------
+    # Regression for the flood of false unbounded_action violations: an action
+    # named "Edit"/"Bash" must match a bounded entry written "edit"/"bash".
+    # Case is a naming convention, not an authorization boundary. Kept in
+    # lockstep with the TypeScript parity tests in verify-trace.test.ts.
+
+    def test_case_insensitive_exact_match(self):
+        """A capitalized action name matches a lowercase entry."""
+        assert action_matches_list("Edit", ["read", "write", "edit"]) is True
+        assert action_matches_list("BASH", ["bash", "read"]) is True
+
+    def test_case_insensitive_entry_uppercased(self):
+        """A lowercase action name matches an uppercase entry (both folded)."""
+        assert action_matches_list("edit", ["READ", "WRITE", "EDIT"]) is True
+
+    def test_case_insensitive_colon_prefix_match(self):
+        """Case-folding applies to the colon-prefix path too."""
+        assert action_matches_list(
+            "EXEC", ["exec: execute shell commands", "read: read files"]
+        ) is True
+
+    def test_case_insensitive_compound_all_match(self):
+        """A compound action matches when components differ only in case."""
+        assert action_matches_list(
+            "Search, Recommend", ["search", "recommend", "summarize"]
+        ) is True
+
+    def test_case_insensitive_still_rejects_genuine_mismatch(self):
+        """Case-folding must not turn a genuine non-match into a match."""
+        assert action_matches_list("Delete", ["read", "write", "edit"]) is False
+
 
 class TestActionMatchingIntegration:
     """Integration tests: action_matches_list used within verify_trace."""
