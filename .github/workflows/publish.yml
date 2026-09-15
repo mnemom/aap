@@ -121,7 +121,12 @@ jobs:
     uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
     with:
       npm-directory: typescript
-      tag: latest
+      # 1.x MAINTENANCE LINE — do NOT publish as `latest`. npm `latest` points
+      # to the current 2.x major; publishing 1.3.x as `latest` would silently
+      # downgrade every bare `npm install` to the old major + old card schema.
+      # Consumers pinned to ^1.3.0 (e.g. the platform observer) still resolve
+      # 1.3.1 by semver range — dist-tags do not affect range resolution.
+      tag: legacy-1
 
   # ── Orchestrator dispatch publishing ──
 
@@ -143,5 +148,6 @@ jobs:
       # empty; the `||` fallback keeps the expression valid on both event types.
       npm-directory: ${{ inputs.npm-directory || 'typescript' }}
       dispatch-id: ${{ inputs.dispatch-id || '' }}
-      tag: latest
+      # 1.x maintenance line — same reason as publish-npm above: never `latest`.
+      tag: legacy-1
       attach-sbom-to-release: false   # dispatch path has no release to attach to
