@@ -52,6 +52,14 @@ import {
 /**
  * Check if a (possibly compound) action name matches any entry in a list.
  * Supports exact match, prefix match (before ':'), and compound name splitting.
+ *
+ * Matching is CASE-INSENSITIVE and locale-INDEPENDENT: both sides are folded
+ * with `toLowerCase()` (the Unicode default mapping) — never
+ * `toLocaleLowerCase()`, so the verdict never depends on the host locale (e.g.
+ * the Turkish dotless-i). This mirrors the Python port's `.lower()` so the two
+ * SDKs agree action-for-action. An action name like "Edit"/"Bash" must match a
+ * bounded/forbidden entry written "edit"/"bash"; case is a naming convention,
+ * not an authorization boundary.
  */
 function actionMatchesList(actionName: string, list: string[]): boolean {
   const components = actionName.includes(", ")
@@ -61,12 +69,13 @@ function actionMatchesList(actionName: string, list: string[]): boolean {
   return components.every((component) => {
     const trimmed = component.trim();
     if (!trimmed) return true;
+    const target = trimmed.toLowerCase();
     return list.some((entry) => {
-      if (entry === trimmed) return true;
+      if (entry.toLowerCase() === target) return true;
       const colonIndex = entry.indexOf(":");
       if (colonIndex > 0) {
         const prefix = entry.substring(0, colonIndex).trim();
-        if (prefix === trimmed) return true;
+        if (prefix.toLowerCase() === target) return true;
       }
       return false;
     });
