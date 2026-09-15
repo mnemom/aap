@@ -55,8 +55,13 @@ jobs:
 
       - name: Pull the published tarball from npmjs (public, no auth)
         run: |
+          # setup-node wrote an .npmrc mapping @mnemom -> npm.pkg.github.com. A
+          # scope-specific registry beats a plain --registry flag, so we must
+          # override the SCOPE here (CLI --@scope:registry wins over the config
+          # file) — otherwise npm pack tries GitHub Packages, where this version
+          # does not exist yet, and 401s. npmjs is public, so no auth is needed.
           npm pack "@mnemom/agent-alignment-protocol@${{ steps.v.outputs.version }}" \
-            --registry=https://registry.npmjs.org
+            --@mnemom:registry=https://registry.npmjs.org
 
       - name: Publish that exact tarball to GitHub Packages
         env:
