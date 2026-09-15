@@ -121,7 +121,12 @@ jobs:
     uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
     with:
       npm-directory: typescript
-      tag: latest
+      # Default branch serves the 2.x major, which is correctly `latest`. This
+      # guard is belt-and-suspenders: if a v1.x release event ever resolves THIS
+      # (default-branch) workflow, publish under the 1.x maintenance dist-tag so
+      # npm `latest` is never dragged backward off 2.x. The 1.3.x line's own
+      # publish.yml already pins legacy-1 unconditionally.
+      tag: ${{ startsWith(github.event.release.tag_name, 'v1.') && 'legacy-1' || 'latest' }}
 
   # ── Orchestrator dispatch publishing ──
 
