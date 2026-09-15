@@ -227,6 +227,92 @@ describe("verifyTrace", () => {
     });
   });
 
+  describe("action-name matching is case-insensitive", () => {
+    // Regression for the flood of false unbounded_action violations: an action
+    // named "Edit"/"Bash" must match a bounded entry written "edit"/"bash".
+    // Case is a naming convention, not an authorization boundary. Kept in
+    // lockstep with the Python parity tests in tests/test_verification.py.
+
+    it("does not flag a capitalized bounded action as unbounded", () => {
+      const trace: APTrace = {
+        ...minimalTrace,
+        trace_id: "tr-case-bounded-001",
+        action: { type: "recommend", name: "Recommend", category: "bounded" },
+      };
+
+      const result = verifyTrace(trace, minimalAlignmentCard);
+
+      expect(
+        result.violations.find((v) => v.type === "unbounded_action"),
+      ).toBeUndefined();
+    });
+
+    it("does not flag an all-caps bounded action as unbounded", () => {
+      const trace: APTrace = {
+        ...minimalTrace,
+        trace_id: "tr-case-bounded-002",
+        action: { type: "search", name: "SEARCH", category: "bounded" },
+      };
+
+      const result = verifyTrace(trace, minimalAlignmentCard);
+
+      expect(
+        result.violations.find((v) => v.type === "unbounded_action"),
+      ).toBeUndefined();
+    });
+
+    it("matches a capitalized action against a colon-prefixed bounded entry", () => {
+      const card: AlignmentCard = {
+        ...minimalAlignmentCard,
+        card_id: "ac-case-prefix-001",
+        autonomy: {
+          bounded_actions: ["exec: execute shell commands", "read: read files"],
+          escalation_triggers: [],
+        },
+      };
+      const trace: APTrace = {
+        ...minimalTrace,
+        trace_id: "tr-case-prefix-001",
+        card_id: "ac-case-prefix-001",
+        action: { type: "execute", name: "EXEC", category: "bounded" },
+      };
+
+      const result = verifyTrace(trace, card);
+
+      expect(
+        result.violations.find((v) => v.type === "unbounded_action"),
+      ).toBeUndefined();
+    });
+
+    it("matches a compound action whose components differ only in case", () => {
+      const trace: APTrace = {
+        ...minimalTrace,
+        trace_id: "tr-case-compound-001",
+        action: { type: "execute", name: "Search, Recommend", category: "bounded" },
+      };
+
+      const result = verifyTrace(trace, minimalAlignmentCard);
+
+      expect(
+        result.violations.find((v) => v.type === "unbounded_action"),
+      ).toBeUndefined();
+    });
+
+    it("still flags a forbidden action regardless of case", () => {
+      const trace: APTrace = {
+        ...traceWithForbiddenAction,
+        trace_id: "tr-case-forbidden-001",
+        action: { type: "execute", name: "Delete_Data", category: "forbidden" },
+      };
+
+      const result = verifyTrace(trace, cardWithForbiddenActions);
+
+      expect(
+        result.violations.find((v) => v.type === "forbidden_action"),
+      ).toBeDefined();
+    });
+  });
+
   describe("undeclared_value violation", () => {
     it("should detect undeclared values in values_applied", () => {
       const result = verifyTrace(
