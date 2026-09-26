@@ -108,9 +108,8 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip==25.0.1
-          pip install ruff==0.15.5
+        # Hash-pinned (OpenSSF Scorecard Pinned-Dependencies); same pip/ruff pins as before.
+        run: python -m pip install --require-hashes -r .github/requirements/lint.txt
 
       - name: Run ruff
         run: ruff check src/ tests/
