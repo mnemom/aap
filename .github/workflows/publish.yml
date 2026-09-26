@@ -81,11 +81,14 @@ jobs:
           npm run typecheck
           npm run build
           npm test
+      # Frozen, hash-verified install from uv.lock — the same resolution ci.yml's
+      # python job gates on (OpenSSF Scorecard Pinned-Dependencies).
+      - uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6.4.3
       - name: Python checks
         run: |
-          pip install -e '.[dev]'
-          ruff check .
-          pytest
+          uv sync --locked --extra dev
+          uv run --locked --extra dev ruff check .
+          uv run --locked --extra dev pytest
 
   publish-pypi:
     name: Publish to PyPI
@@ -103,8 +106,8 @@ jobs:
           python-version: "3.12"
       - name: Build sdist + wheel
         run: |
-          python -m pip install --upgrade pip
-          pip install build
+          # Hash-pinned build frontend (OpenSSF Scorecard Pinned-Dependencies).
+          python -m pip install --require-hashes -r .github/requirements/build.txt
           python -m build
       - name: Publish to PyPI (Trusted Publisher)
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
