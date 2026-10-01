@@ -1,6 +1,6 @@
 {
   "name": "@mnemom/agent-alignment-protocol",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Agent Alignment Protocol (AAP) - Verification and drift detection for AI agents",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
