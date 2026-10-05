@@ -24,7 +24,7 @@ from aap import (
     detect_drift,
     verify_trace,
 )
-from aap.verification.api import action_matches_list
+from aap.verification.api import action_matches_any_in_list, action_matches_list
 from aap.verification.constants import (
     BEHAVIORAL_SIMILARITY_THRESHOLD,
     DEFAULT_SIMILARITY_THRESHOLD,
@@ -1033,6 +1033,33 @@ class TestActionMatchesList:
         assert action_matches_list("Delete", ["read", "write", "edit"]) is False
 
 
+class TestActionMatchesAnyInList:
+    """Tests for action_matches_any_in_list — the forbidden-actions rule."""
+
+    def test_single_action_match(self):
+        assert action_matches_any_in_list("force_push", ["force_push"]) is True
+
+    def test_single_action_no_match(self):
+        assert action_matches_any_in_list("Bash", ["force_push"]) is False
+
+    def test_compound_one_component_matches(self):
+        assert action_matches_any_in_list("Bash, force_push", ["force_push"]) is True
+
+    def test_compound_no_component_matches(self):
+        assert action_matches_any_in_list("Bash, Write", ["force_push"]) is False
+
+    def test_prefix_and_case_insensitive(self):
+        assert (
+            action_matches_any_in_list("Edit, FORCE_PUSH", ["force_push: rewrite history"]) is True
+        )
+
+    def test_empty_name_matches_nothing(self):
+        assert action_matches_any_in_list("", ["force_push"]) is False
+
+    def test_empty_list_matches_nothing(self):
+        assert action_matches_any_in_list("Bash, Write", []) is False
+
+
 class TestActionMatchingIntegration:
     """Integration tests: action_matches_list used within verify_trace."""
 
@@ -1156,6 +1183,85 @@ class TestActionMatchingIntegration:
 
         forbidden = [v for v in result.violations if v.type == ViolationType.FORBIDDEN_ACTION]
         assert len(forbidden) == 1
+
+    def _forbidden_compound_case(self, action_name: str) -> list:
+        card = {
+            "card_id": "ac-forbidden-compound-001",
+            "values": {"declared": ["principal_benefit"]},
+            "autonomy": {
+                "bounded_actions": ["Bash", "Edit", "Write", "force_push"],
+                "escalation_triggers": [],
+                "forbidden_actions": ["force_push: rewrite remote history"],
+            },
+            "audit": {"retention_days": 90, "queryable": False},
+        }
+        trace = {
+            "trace_id": "tr-forbidden-compound-001",
+            "agent_id": "agent-001",
+            "card_id": "ac-forbidden-compound-001",
+            "timestamp": "2026-02-12T00:00:00Z",
+            "action": {"type": "execute", "name": action_name, "category": "bounded"},
+            "decision": {
+                "alternatives_considered": [{"option_id": "A", "description": "A"}],
+                "selected": "A",
+                "selection_reasoning": "Test",
+                "values_applied": ["principal_benefit"],
+            },
+        }
+        result = verify_trace(trace, card)
+        return [v for v in result.violations if v.type == ViolationType.FORBIDDEN_ACTION]
+
+    def test_compound_action_with_one_forbidden_component_is_forbidden(self):
+        """A multi-tool turn is forbidden if ANY of its tools is forbidden.
+
+        The bounded check requires every component to be bounded; the
+        forbidden check is the dual and must fire when a single component is
+        forbidden, otherwise pairing a forbidden tool with a benign one in the
+        same turn hides it from the forbidden check.
+        """
+        forbidden = self._forbidden_compound_case("Bash, force_push")
+        assert len(forbidden) == 1
+        assert "force_push" in forbidden[0].description
+
+    def test_compound_action_forbidden_component_in_any_position(self):
+        """Position of the forbidden tool within the turn does not matter."""
+        assert len(self._forbidden_compound_case("force_push, Edit, Write")) == 1
+        assert len(self._forbidden_compound_case("Edit, FORCE_PUSH, Write")) == 1
+
+    def test_compound_action_all_forbidden_is_forbidden(self):
+        """Every component forbidden still yields exactly one violation."""
+        assert len(self._forbidden_compound_case("force_push, force_push")) == 1
+
+    def test_compound_action_without_forbidden_component_is_not_forbidden(self):
+        """A multi-tool turn of only non-forbidden tools raises no forbidden violation."""
+        assert self._forbidden_compound_case("Bash, Bash") == []
+        assert self._forbidden_compound_case("Write, Bash") == []
+        assert self._forbidden_compound_case("Edit, Edit, Bash") == []
+
+    def test_compound_bounded_turn_of_repeated_bounded_tools_passes(self):
+        """A turn calling the same bounded tool repeatedly is bounded (per-tool check)."""
+        card = {
+            "card_id": "ac-repeat-001",
+            "values": {"declared": ["principal_benefit"]},
+            "autonomy": {"bounded_actions": ["Bash", "Write", "Edit"], "escalation_triggers": []},
+            "audit": {"retention_days": 90, "queryable": False},
+        }
+        for name in ("Bash, Bash", "Write, Bash", "Edit, Edit, Bash"):
+            trace = {
+                "trace_id": "tr-repeat-001",
+                "agent_id": "agent-001",
+                "card_id": "ac-repeat-001",
+                "timestamp": "2026-02-12T00:00:00Z",
+                "action": {"type": "execute", "name": name, "category": "bounded"},
+                "decision": {
+                    "alternatives_considered": [{"option_id": "A", "description": "A"}],
+                    "selected": "A",
+                    "selection_reasoning": "Test",
+                    "values_applied": ["principal_benefit"],
+                },
+            }
+            result = verify_trace(trace, card)
+            assert [v for v in result.violations if v.type == ViolationType.UNBOUNDED_ACTION] == []
 
     def test_backward_compat_exact_match(self):
         """Existing cards without colons should still work (backward compat)."""
