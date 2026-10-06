@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2](https://github.com/mnemom/aap/compare/v1.3.1...v1.3.2) (2026-10-06)
+
+
+### Fixed
+
+* **verify:** flag a multi-tool turn as a `forbidden_action` when ANY of its tools is forbidden. A turn that calls several tools is recorded as one action named with the tool list joined by `", "`; the forbidden check previously reused the all-components matcher, so pairing a forbidden tool with a benign one (e.g. `Bash, force_push`) produced no violation. New any-component matchers (TS `actionAnyComponentInList`, Python `action_matches_any_in_list`) back `forbidden_actions` in both SDKs; the `bounded_actions` rule (every tool must be bounded) and the public `action_matches_list` are unchanged. Backport of the fix on `main` (#161) to the 1.3.x line consumed by the platform observer.
+
 ## [1.3.1](https://github.com/mnemom/aap/compare/v1.3.0...v1.3.1) (2026-09-15)
 
 

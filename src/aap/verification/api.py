@@ -48,11 +48,24 @@ from aap.verification.models import (
 )
 
 
+def _action_components(action_name: str) -> list[str]:
+    """Split a (possibly compound) action name into its non-empty components.
+
+    A multi-tool turn is recorded as one action whose name is the tool list
+    joined with ", " (e.g. "Write, Bash"); each component is one tool call.
+    """
+    components = action_name.split(", ") if ", " in action_name else [action_name]
+    return [c.strip() for c in components if c.strip()]
+
+
 def action_matches_list(action_name: str, action_list: list[str]) -> bool:
-    """Check if a (possibly compound) action name matches any entry in a list.
+    """Check whether EVERY component of a (possibly compound) action is in a list.
 
     Supports exact match, prefix match (before ':'), and compound name splitting.
-    Port of the TypeScript actionMatchesList() for SDK parity.
+    Port of the TypeScript actionMatchesList() for SDK parity. This is the
+    bounded-actions rule: a multi-tool turn is bounded only if each of its
+    tools is bounded. Use :func:`action_matches_any_in_list` for the
+    forbidden-actions rule.
 
     Args:
         action_name: Action name, possibly compound (e.g. "exec, read")
@@ -60,14 +73,33 @@ def action_matches_list(action_name: str, action_list: list[str]) -> bool:
                      possibly with colon descriptions (e.g. "exec: execute shell commands")
 
     Returns:
-        True if the action name matches an entry in the list
+        True if every component of the action name matches an entry in the list
     """
-    components = action_name.split(", ") if ", " in action_name else [action_name]
-
     return all(
-        _action_component_matches(component.strip(), action_list)
-        for component in components
-        if component.strip()
+        _action_component_matches(component, action_list)
+        for component in _action_components(action_name)
+    )
+
+
+def action_matches_any_in_list(action_name: str, action_list: list[str]) -> bool:
+    """Check whether ANY component of a (possibly compound) action is in a list.
+
+    This is the forbidden-actions rule: a multi-tool turn is forbidden if any
+    one of its tools is forbidden, so pairing a forbidden tool with a benign
+    one in the same turn cannot hide it. Port of the TypeScript
+    actionAnyComponentInList() for SDK parity. Same per-component matching as
+    :func:`action_matches_list` (case-insensitive exact or colon-prefix).
+
+    Args:
+        action_name: Action name, possibly compound (e.g. "Bash, force_push")
+        action_list: List of action entries, possibly with colon descriptions
+
+    Returns:
+        True if at least one component of the action name matches an entry
+    """
+    return any(
+        _action_component_matches(component, action_list)
+        for component in _action_components(action_name)
     )
 
 
@@ -194,7 +226,7 @@ def verify_trace(
     # Check forbidden actions
     checks_performed.append("forbidden")
     forbidden_actions = envelope.get("forbidden_actions", [])
-    if action_name and action_matches_list(action_name, forbidden_actions):
+    if action_name and action_matches_any_in_list(action_name, forbidden_actions):
         violations.append(Violation.create(
             ViolationType.FORBIDDEN_ACTION,
             f"Action '{action_name}' is in forbidden_actions",

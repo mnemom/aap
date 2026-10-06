@@ -1013,6 +1013,68 @@ describe("verifyTrace", () => {
       expect(forbiddenViolation).toBeDefined();
     });
 
+    describe("compound (multi-tool) turns against forbidden_actions", () => {
+      const forbiddenCard: AlignmentCard = {
+        ...minimalAlignmentCard,
+        autonomy_envelope: {
+          bounded_actions: ["Bash", "Edit", "Write", "force_push"],
+          escalation_triggers: [],
+          forbidden_actions: ["force_push: rewrite remote history"],
+        },
+      };
+      const forbiddenFor = (name: string) =>
+        verifyTrace(
+          {
+            ...minimalTrace,
+            card_id: forbiddenCard.card_id,
+            action: { ...minimalTrace.action, name, category: "bounded" },
+          },
+          forbiddenCard,
+        ).violations.filter((v) => v.type === "forbidden_action");
+
+      // A multi-tool turn is forbidden if ANY of its tools is forbidden — the
+      // dual of the bounded rule (bounded only if EVERY tool is bounded).
+      // Pairing a forbidden tool with a benign one must not hide it.
+      it("flags a turn where one of several tools is forbidden", () => {
+        const forbidden = forbiddenFor("Bash, force_push");
+        expect(forbidden).toHaveLength(1);
+        expect(forbidden[0].description).toContain("force_push");
+      });
+
+      it("flags the forbidden tool in any position, case-insensitively", () => {
+        expect(forbiddenFor("force_push, Edit, Write")).toHaveLength(1);
+        expect(forbiddenFor("Edit, FORCE_PUSH, Write")).toHaveLength(1);
+      });
+
+      it("raises one violation when every tool is forbidden", () => {
+        expect(forbiddenFor("force_push, force_push")).toHaveLength(1);
+      });
+
+      it("does not flag a turn of only non-forbidden tools", () => {
+        expect(forbiddenFor("Bash, Bash")).toHaveLength(0);
+        expect(forbiddenFor("Write, Bash")).toHaveLength(0);
+        expect(forbiddenFor("Edit, Edit, Bash")).toHaveLength(0);
+      });
+    });
+
+    it("passes a turn that repeats bounded tools (per-tool bounded check)", () => {
+      const card: AlignmentCard = {
+        ...minimalAlignmentCard,
+        autonomy_envelope: { bounded_actions: ["Bash", "Write", "Edit"], escalation_triggers: [] },
+      };
+      for (const name of ["Bash, Bash", "Write, Bash", "Edit, Edit, Bash"]) {
+        const result = verifyTrace(
+          {
+            ...minimalTrace,
+            card_id: card.card_id,
+            action: { ...minimalTrace.action, name, category: "bounded" },
+          },
+          card,
+        );
+        expect(result.violations.filter((v) => v.type === "unbounded_action")).toHaveLength(0);
+      }
+    });
+
     it("should fail compound action when one component is not bounded", () => {
       const card: AlignmentCard = {
         ...minimalAlignmentCard,
