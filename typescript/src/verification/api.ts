@@ -50,8 +50,20 @@ import {
 } from "./models";
 
 /**
- * Check if a (possibly compound) action name matches any entry in a list.
- * Supports exact match, prefix match (before ':'), and compound name splitting.
+ * Split a (possibly compound) action name into its non-empty components.
+ * A multi-tool turn is recorded as one action whose name is the tool list
+ * joined with ", " (e.g. "Write, Bash"); each component is one tool call.
+ */
+function actionComponents(actionName: string): string[] {
+  const components = actionName.includes(", ")
+    ? actionName.split(", ")
+    : [actionName];
+  return components.map((c) => c.trim()).filter((c) => c.length > 0);
+}
+
+/**
+ * Check if a single action component matches any entry in a list: exact
+ * match, or the prefix (before ':') of a "name: description" entry.
  *
  * Matching is CASE-INSENSITIVE and locale-INDEPENDENT: both sides are folded
  * with `toLowerCase()` (the Unicode default mapping) — never
@@ -61,25 +73,42 @@ import {
  * bounded/forbidden entry written "edit"/"bash"; case is a naming convention,
  * not an authorization boundary.
  */
-function actionMatchesList(actionName: string, list: string[]): boolean {
-  const components = actionName.includes(", ")
-    ? actionName.split(", ")
-    : [actionName];
-
-  return components.every((component) => {
-    const trimmed = component.trim();
-    if (!trimmed) return true;
-    const target = trimmed.toLowerCase();
-    return list.some((entry) => {
-      if (entry.toLowerCase() === target) return true;
-      const colonIndex = entry.indexOf(":");
-      if (colonIndex > 0) {
-        const prefix = entry.substring(0, colonIndex).trim();
-        if (prefix.toLowerCase() === target) return true;
-      }
-      return false;
-    });
+function actionComponentMatches(component: string, list: string[]): boolean {
+  const target = component.toLowerCase();
+  return list.some((entry) => {
+    if (entry.toLowerCase() === target) return true;
+    const colonIndex = entry.indexOf(":");
+    if (colonIndex > 0) {
+      const prefix = entry.substring(0, colonIndex).trim();
+      if (prefix.toLowerCase() === target) return true;
+    }
+    return false;
   });
+}
+
+/**
+ * Check whether EVERY component of a (possibly compound) action name matches
+ * an entry in a list. This is the bounded-actions rule: a multi-tool turn is
+ * bounded only if each of its tools is bounded. Mirrors Python's
+ * `action_matches_list()`.
+ */
+function actionMatchesList(actionName: string, list: string[]): boolean {
+  return actionComponents(actionName).every((component) =>
+    actionComponentMatches(component, list),
+  );
+}
+
+/**
+ * Check whether ANY component of a (possibly compound) action name matches an
+ * entry in a list. This is the forbidden-actions rule: a multi-tool turn is
+ * forbidden if any one of its tools is forbidden, so pairing a forbidden tool
+ * with a benign one in the same turn cannot hide it. Mirrors Python's
+ * `action_matches_any_in_list()`.
+ */
+function actionAnyComponentInList(actionName: string, list: string[]): boolean {
+  return actionComponents(actionName).some((component) =>
+    actionComponentMatches(component, list),
+  );
 }
 
 /**
@@ -181,7 +210,7 @@ export function verifyTrace(
   // Check forbidden actions
   checksPerformed.push("forbidden");
   const forbiddenActions = envelope.forbidden_actions ?? [];
-  if (actionName && actionMatchesList(actionName, forbiddenActions)) {
+  if (actionName && actionAnyComponentInList(actionName, forbiddenActions)) {
     violations.push(
       createViolation(
         "forbidden_action",
