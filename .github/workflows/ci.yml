@@ -125,10 +125,13 @@ jobs:
       !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     steps:
+      # `client-id` is the current name for the input that used to be `app-id`: the action
+      # reads `client-id || app-id` into one slot, and GitHub accepts an App ID or a Client
+      # ID as the JWT `iss`, so this secret's value stays valid under the new key.
       - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         id: app-token
         with:
-          app-id: ${{ secrets.DEPLOY_APP_ID }}
+          client-id: ${{ secrets.DEPLOY_APP_ID }}
           private-key: ${{ secrets.DEPLOY_APP_PRIVATE_KEY }}
           owner: mnemom
 
