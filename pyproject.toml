@@ -118,3 +118,12 @@ source = ["src/aap"]
 
 [tool.coverage.report]
 show_missing = true
+
+[tool.uv]
+# Security floor for the transitive dev dependency filelock (pre-commit -> virtualenv):
+# GHSA-v4x8-3wr5-3wq8 / GHSA-9vhv-jxww-xfm5 / GHSA-567q-5qvw-pf92 are fixed in 4.2.1,
+# which requires Python >= 3.11. No patched filelock exists for Python 3.10, so the
+# 3.10 lane keeps its previously locked filelock until 3.10 support is dropped.
+constraint-dependencies = [
+    "filelock>=4.2.1; python_full_version >= '3.11'",
+]
