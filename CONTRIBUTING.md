@@ -15,9 +15,6 @@ source .venv/bin/activate
 
 # Install with dev dependencies
 pip install -e ".[dev]"
-
-# Install pre-commit hooks
-pre-commit install
 ```
 
 ## Running Tests
