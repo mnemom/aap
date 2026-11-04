@@ -119,6 +119,12 @@ jobs:
       - name: Run ruff
         run: ruff check src/ tests/
 
+      - name: Run actionlint
+        # MNE-1286: fleet-wide actionlint gate, pinned to the same SHA as mnemom/deploy's ci.yml.
+        uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2
+        with:
+          shellcheck: false
+
   dispatch-deploy:
     name: Trigger Deploy
     permissions:
