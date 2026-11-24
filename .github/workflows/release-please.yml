@@ -21,7 +21,7 @@ jobs:
       # `client-id` is the current name for the input that used to be `app-id`: the action
       # reads `client-id || app-id` into one slot, and GitHub accepts an App ID or a Client
       # ID as the JWT `iss`, so this secret's value stays valid under the new key.
-      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         id: app-token
         with:
           client-id: ${{ secrets.MNEMOM_RELEASE_APP_ID }}
